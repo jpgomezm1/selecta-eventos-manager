@@ -3,16 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { 
   Plus, 
   Users, 
-  Calendar, 
-  DollarSign, 
-  AlertTriangle, 
   Mail, 
-  MessageSquare, 
-  FileText, 
+  AlertTriangle, 
+  DollarSign, 
   CheckSquare,
-  BarChart3,
-  Clock,
-  Eye
+  Zap,
+  Activity
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -75,11 +71,18 @@ export function AccionesRapidas() {
     if (stats.eventosSinPersonal > 0) {
       return (
         <Button 
-          className="w-full bg-red-600 hover:bg-red-700 text-white"
+          className="w-full h-14 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
           onClick={() => navigate('/eventos')}
         >
-          <AlertTriangle className="h-4 w-4 mr-2" />
-          🚨 Asignar Personal Urgente ({stats.eventosSinPersonal})
+          <div className="flex items-center justify-center space-x-3">
+            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div className="text-left">
+              <div className="text-sm font-bold">🚨 URGENTE</div>
+              <div className="text-xs opacity-90">Asignar Personal ({stats.eventosSinPersonal})</div>
+            </div>
+          </div>
         </Button>
       );
     }
@@ -87,192 +90,139 @@ export function AccionesRapidas() {
     if (stats.pagosPendientes > 0) {
       return (
         <Button 
-          className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+          className="w-full h-14 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
           onClick={() => navigate('/personal')}
         >
-          <DollarSign className="h-4 w-4 mr-2" />
-          💰 Liquidar Pagos ({stats.pagosPendientes} pendientes)
+          <div className="flex items-center justify-center space-x-3">
+            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+              <DollarSign className="h-5 w-5" />
+            </div>
+            <div className="text-left">
+              <div className="text-sm font-bold">💰 PAGOS</div>
+              <div className="text-xs opacity-90">Liquidar ({stats.pagosPendientes} pendientes)</div>
+            </div>
+          </div>
         </Button>
       );
     }
 
     return (
       <Button 
-        className="w-full bg-green-600 hover:bg-green-700 text-white"
+        className="w-full h-14 bg-gradient-primary hover:bg-gradient-primary/90 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
         onClick={() => navigate('/eventos')}
       >
-        <CheckSquare className="h-4 w-4 mr-2" />
-        ✅ Todo bajo control - Ver eventos
+        <div className="flex items-center justify-center space-x-3">
+          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+            <CheckSquare className="h-5 w-5" />
+          </div>
+          <div className="text-left">
+            <div className="text-sm font-bold">✅ TODO BIEN</div>
+            <div className="text-xs opacity-90">Sistema bajo control</div>
+          </div>
+        </div>
       </Button>
     );
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <CheckSquare className="h-5 w-5" />
-          <span>Acciones Rápidas</span>
-        </CardTitle>
+    <Card className="border-0 shadow-none bg-transparent">
+      <CardHeader className="pb-6">
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 bg-gradient-to-r from-selecta-green to-primary rounded-2xl flex items-center justify-center shadow-lg">
+            <Zap className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <CardTitle className="text-xl font-bold bg-gradient-to-r from-selecta-green to-primary bg-clip-text text-transparent">
+              Acciones Rápidas
+            </CardTitle>
+            <p className="text-slate-600 font-medium">Herramientas esenciales de gestión</p>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+
+      <CardContent className="space-y-8">
         {/* Botón inteligente contextual */}
-        <div>
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-slate-200/60 shadow-sm">
           {getBotonInteligente()}
         </div>
 
-        {/* Gestión de Eventos */}
+        {/* Acciones Principales */}
         <div>
-          <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide mb-3">
-            Gestión de Eventos
-          </h3>
-          <div className="grid grid-cols-2 gap-2">
-            <Button 
-              variant="outline" 
-              className="h-auto py-3 flex flex-col items-center space-y-1"
-              onClick={() => navigate('/eventos')}
-            >
-              <Plus className="h-4 w-4" />
-              <span className="text-xs">Crear Evento</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-auto py-3 flex flex-col items-center space-y-1"
-              onClick={() => navigate('/eventos')}
-            >
-              <Users className="h-4 w-4" />
-              <span className="text-xs">Asignar Personal</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-auto py-3 flex flex-col items-center space-y-1"
-              onClick={() => navigate('/eventos')}
-            >
-              <Calendar className="h-4 w-4" />
-              <span className="text-xs">Ver Calendario</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-auto py-3 flex flex-col items-center space-y-1 relative"
-              onClick={() => navigate('/eventos')}
-            >
-              <AlertTriangle className="h-4 w-4" />
-              <span className="text-xs">Resolver Conflictos</span>
-              {stats.conflictos > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs bg-red-500">
-                  {stats.conflictos}
-                </Badge>
-              )}
-            </Button>
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-8 h-8 bg-selecta-green/20 rounded-xl flex items-center justify-center">
+              <Activity className="h-4 w-4 text-selecta-green" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-800">Acciones Principales</h3>
+              <p className="text-xs text-slate-600">Funciones más utilizadas del sistema</p>
+            </div>
           </div>
-        </div>
 
-        {/* Gestión de Personal */}
-        <div>
-          <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide mb-3">
-            Gestión de Personal
-          </h3>
-          <div className="grid grid-cols-2 gap-2">
+          {/* Grid de 3 botones principales */}
+          <div className="grid grid-cols-1 gap-4">
+            {/* Crear Evento */}
             <Button 
               variant="outline" 
-              className="h-auto py-3 flex flex-col items-center space-y-1"
-              onClick={() => navigate('/personal')}
+              className="h-16 flex items-center justify-start space-x-4 bg-white/80 backdrop-blur-sm border-slate-200/60 hover:bg-blue-50/80 hover:border-blue-200/60 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] px-6"
+              onClick={() => navigate('/eventos')}
             >
-              <Plus className="h-4 w-4" />
-              <span className="text-xs">Agregar Empleado</span>
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
+                <Plus className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="text-left flex-1">
+                <div className="font-bold text-slate-800">Crear Evento</div>
+                <div className="text-sm text-slate-600">Programar un nuevo evento</div>
+              </div>
             </Button>
-            <Button 
-              variant="outline" 
-              className="h-auto py-3 flex flex-col items-center space-y-1"
-              onClick={() => navigate('/personal')}
-            >
-              <Eye className="h-4 w-4" />
-              <span className="text-xs">Ver Disponibilidad</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-auto py-3 flex flex-col items-center space-y-1 relative"
-              onClick={() => navigate('/personal')}
-            >
-              <DollarSign className="h-4 w-4" />
-              <span className="text-xs">Procesar Pagos</span>
-              {stats.pagosPendientes > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs bg-orange-500">
-                  {stats.pagosPendientes}
-                </Badge>
-              )}
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-auto py-3 flex flex-col items-center space-y-1"
-              onClick={() => navigate('/personal')}
-            >
-              <BarChart3 className="h-4 w-4" />
-              <span className="text-xs">Reportes</span>
-            </Button>
-          </div>
-        </div>
 
-        {/* Comunicación */}
-        <div>
-          <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide mb-3">
-            Comunicación
-          </h3>
-          <div className="grid grid-cols-2 gap-2">
+            {/* Agregar Empleado */}
             <Button 
               variant="outline" 
-              className="h-auto py-3 flex flex-col items-center space-y-1"
+              className="h-16 flex items-center justify-start space-x-4 bg-white/80 backdrop-blur-sm border-slate-200/60 hover:bg-emerald-50/80 hover:border-emerald-200/60 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] px-6"
+              onClick={() => navigate('/personal')}
+            >
+              <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0">
+                <Users className="h-6 w-6 text-emerald-600" />
+              </div>
+              <div className="text-left flex-1">
+                <div className="font-bold text-slate-800">Agregar Empleado</div>
+                <div className="text-sm text-slate-600">Registrar nuevo personal</div>
+              </div>
+            </Button>
+
+            {/* Enviar Cronogramas */}
+            <Button 
+              variant="outline" 
+              className="h-16 flex items-center justify-start space-x-4 bg-white/80 backdrop-blur-sm border-slate-200/60 hover:bg-violet-50/80 hover:border-violet-200/60 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] px-6"
               onClick={() => setIsCronogramaDialogOpen(true)}
             >
-              <Mail className="h-4 w-4" />
-              <span className="text-xs">Enviar Cronogramas</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-auto py-3 flex flex-col items-center space-y-1"
-              onClick={() => {
-                // TODO: Implementar notificaciones WhatsApp
-                alert("Función de WhatsApp próximamente");
-              }}
-            >
-              <MessageSquare className="h-4 w-4" />
-              <span className="text-xs">Notificar Empleados</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-auto py-3 flex flex-col items-center space-y-1"
-              onClick={() => {
-                // TODO: Implementar generación de reportes
-                alert("Generación de reportes próximamente");
-              }}
-            >
-              <FileText className="h-4 w-4" />
-              <span className="text-xs">Generar Reportes</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-auto py-3 flex flex-col items-center space-y-1"
-              onClick={() => {
-                // TODO: Implementar lista de verificación
-                alert("Lista de verificación próximamente");
-              }}
-            >
-              <CheckSquare className="h-4 w-4" />
-              <span className="text-xs">Lista Verificación</span>
+              <div className="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center shrink-0">
+                <Mail className="h-6 w-6 text-violet-600" />
+              </div>
+              <div className="text-left flex-1">
+                <div className="font-bold text-slate-800">Enviar Cronogramas</div>
+                <div className="text-sm text-slate-600">Notificar horarios al personal</div>
+              </div>
             </Button>
           </div>
         </div>
 
         {/* Estadísticas rápidas */}
-        <div className="pt-4 border-t">
-          <div className="grid grid-cols-2 gap-4 text-center">
-            <div>
-              <div className="text-lg font-bold text-primary">{stats.totalEventosProximos}</div>
-              <div className="text-xs text-muted-foreground">Eventos próximos</div>
+        <div className="bg-gradient-to-r from-selecta-green/10 to-primary/10 backdrop-blur-sm rounded-2xl p-6 border border-selecta-green/20">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-8 h-8 bg-selecta-green/20 rounded-xl flex items-center justify-center">
+              <Activity className="h-4 w-4 text-selecta-green" />
             </div>
-            <div>
-              <div className="text-lg font-bold text-secondary">{stats.eventosSinPersonal}</div>
-              <div className="text-xs text-muted-foreground">Sin personal</div>
+            <h3 className="font-bold text-slate-800">Resumen del Sistema</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-selecta-green">{stats.totalEventosProximos}</div>
+              <div className="text-xs font-medium text-slate-600 uppercase tracking-wide">Eventos próximos</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-600">{stats.eventosSinPersonal}</div>
+              <div className="text-xs font-medium text-slate-600 uppercase tracking-wide">Sin personal</div>
             </div>
           </div>
         </div>

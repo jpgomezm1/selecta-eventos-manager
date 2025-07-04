@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { AlertTriangle, Clock, Info, CheckCircle, X } from "lucide-react";
+import { AlertTriangle, Clock, Info, CheckCircle, X, Shield, Zap, Bell } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -170,19 +170,47 @@ export function AlertasPanel() {
 
   const getAlertaIcon = (tipo: string) => {
     switch (tipo) {
-      case 'urgente': return <AlertTriangle className="h-4 w-4 text-red-600" />;
-      case 'atencion': return <Clock className="h-4 w-4 text-yellow-600" />;
+      case 'urgente': return <Zap className="h-4 w-4 text-red-600" />;
+      case 'atencion': return <Clock className="h-4 w-4 text-orange-600" />;
       case 'informacion': return <Info className="h-4 w-4 text-blue-600" />;
       default: return <Info className="h-4 w-4" />;
     }
   };
 
-  const getAlertaBadge = (tipo: string) => {
+  const getAlertaConfig = (tipo: string) => {
     switch (tipo) {
-      case 'urgente': return <Badge className="bg-red-100 text-red-800 border-red-200">🔴 URGENTE</Badge>;
-      case 'atencion': return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">🟡 ATENCIÓN</Badge>;
-      case 'informacion': return <Badge className="bg-blue-100 text-blue-800 border-blue-200">🔵 INFORMACIÓN</Badge>;
-      default: return null;
+      case 'urgente': 
+        return {
+          badge: "🔴 URGENTE",
+          bgColor: "bg-gradient-to-r from-red-50/80 to-red-100/80",
+          borderColor: "border-red-200/60",
+          textColor: "text-red-800",
+          badgeColor: "bg-red-100/80 text-red-800 border-red-200/60"
+        };
+      case 'atencion': 
+        return {
+          badge: "🟡 ATENCIÓN",
+          bgColor: "bg-gradient-to-r from-orange-50/80 to-orange-100/80",
+          borderColor: "border-orange-200/60",
+          textColor: "text-orange-800",
+          badgeColor: "bg-orange-100/80 text-orange-800 border-orange-200/60"
+        };
+      case 'informacion': 
+        return {
+          badge: "🔵 INFORMACIÓN",
+          bgColor: "bg-gradient-to-r from-blue-50/80 to-blue-100/80",
+          borderColor: "border-blue-200/60",
+          textColor: "text-blue-800",
+          badgeColor: "bg-blue-100/80 text-blue-800 border-blue-200/60"
+        };
+      default: 
+        return {
+          badge: "INFO",
+          bgColor: "bg-slate-50/80",
+          borderColor: "border-slate-200/60",
+          textColor: "text-slate-800",
+          badgeColor: "bg-slate-100/80 text-slate-800 border-slate-200/60"
+        };
     }
   };
 
@@ -192,17 +220,22 @@ export function AlertasPanel() {
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <AlertTriangle className="h-5 w-5" />
-            <span>Alertas y Notificaciones</span>
-          </CardTitle>
+      <Card className="border-0 shadow-none bg-transparent">
+        <CardHeader className="pb-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl flex items-center justify-center animate-pulse">
+              <Bell className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <div className="h-6 bg-slate-200 rounded-lg w-40 animate-pulse"></div>
+              <div className="h-4 bg-slate-100 rounded w-28 mt-2 animate-pulse"></div>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="animate-pulse space-y-2">
-            <div className="h-4 bg-muted rounded w-3/4"></div>
-            <div className="h-4 bg-muted rounded w-1/2"></div>
+          <div className="space-y-3">
+            <div className="h-16 bg-slate-100 rounded-xl animate-pulse"></div>
+            <div className="h-16 bg-slate-100 rounded-xl animate-pulse"></div>
           </div>
         </CardContent>
       </Card>
@@ -210,110 +243,208 @@ export function AlertasPanel() {
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="border-0 shadow-none bg-transparent">
+      <CardHeader className="pb-6">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center space-x-2">
-            <AlertTriangle className="h-5 w-5" />
-            <span>🚨 Alertas y Notificaciones</span>
-          </CardTitle>
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <Bell className="h-6 w-6 text-white" />
+              </div>
+              {alertas.length > 0 && (
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
+                  <span className="text-xs text-white font-bold">{alertas.length}</span>
+                </div>
+              )}
+            </div>
+            <div>
+              <CardTitle className="text-xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+                Alertas y Notificaciones
+              </CardTitle>
+              <p className="text-slate-600 font-medium">Centro de monitoreo y seguimiento</p>
+            </div>
+          </div>
+          
           {alertas.length > 0 && (
-            <Button variant="outline" size="sm" onClick={marcarTodasComoVistas}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={marcarTodasComoVistas}
+              className="bg-white/80 backdrop-blur-sm border-slate-200/60 hover:bg-white hover:shadow-md transition-all duration-200"
+            >
               <CheckCircle className="h-4 w-4 mr-2" />
-              Marcar todas como vistas
+              Marcar todas
             </Button>
           )}
         </div>
       </CardHeader>
+      
       <CardContent>
         {alertas.length === 0 ? (
-          <div className="text-center py-8">
-            <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-            <p className="text-muted-foreground">No hay alertas pendientes</p>
-            <p className="text-sm text-muted-foreground mt-2">¡Todo está bajo control!</p>
+          <div className="text-center py-12">
+            <div className="w-20 h-20 bg-gradient-to-r from-green-100 to-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Shield className="h-10 w-10 text-green-600" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Todo bajo control</h3>
+            <p className="text-slate-600 max-w-sm mx-auto mb-4">
+              No hay alertas pendientes en este momento. El sistema está funcionando correctamente.
+            </p>
+            <div className="inline-flex items-center space-x-2 bg-green-50/80 rounded-full px-4 py-2 border border-green-200/60">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium text-green-700">Sistema estable</span>
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
             {/* Alertas Urgentes */}
             {alertasUrgentes.length > 0 && (
-              <div>
-                <div className="flex items-center space-x-2 mb-3">
-                  <Badge className="bg-red-100 text-red-800 border-red-200">
-                    🔴 URGENTE ({alertasUrgentes.length})
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-md">
+                    <Zap className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-red-800">Alertas Urgentes</h3>
+                    <p className="text-sm text-red-600">Requieren atención inmediata</p>
+                  </div>
+                  <Badge className="bg-red-100/80 text-red-800 border-red-200/60 font-bold">
+                    {alertasUrgentes.length}
                   </Badge>
                 </div>
-                <div className="space-y-2">
-                  {alertasUrgentes.map((alerta) => (
-                    <div key={alerta.id} className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        {getAlertaIcon(alerta.tipo)}
-                        <span className="text-sm font-medium">{alerta.mensaje}</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => marcarComoVisto(alerta.id)}
+                
+                <div className="space-y-3">
+                  {alertasUrgentes.map((alerta) => {
+                    const config = getAlertaConfig(alerta.tipo);
+                    return (
+                      <div 
+                        key={alerta.id} 
+                        className={`${config.bgColor} backdrop-blur-sm border ${config.borderColor} rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200`}
                       >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-3 flex-1">
+                            <div className="mt-1">
+                              {getAlertaIcon(alerta.tipo)}
+                            </div>
+                            <div className="flex-1">
+                              <p className={`font-semibold ${config.textColor} leading-relaxed`}>
+                                {alerta.mensaje}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => marcarComoVisto(alerta.id)}
+                            className="ml-3 hover:bg-white/60 rounded-lg"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
             {/* Alertas Atención */}
             {alertasAtencion.length > 0 && (
-              <div>
-                <div className="flex items-center space-x-2 mb-3">
-                  <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
-                    🟡 ATENCIÓN ({alertasAtencion.length})
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md">
+                    <Clock className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-orange-800">Requieren Atención</h3>
+                    <p className="text-sm text-orange-600">Revisar en las próximas horas</p>
+                  </div>
+                  <Badge className="bg-orange-100/80 text-orange-800 border-orange-200/60 font-bold">
+                    {alertasAtencion.length}
                   </Badge>
                 </div>
-                <div className="space-y-2">
-                  {alertasAtencion.map((alerta) => (
-                    <div key={alerta.id} className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        {getAlertaIcon(alerta.tipo)}
-                        <span className="text-sm">{alerta.mensaje}</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => marcarComoVisto(alerta.id)}
+                
+                <div className="space-y-3">
+                  {alertasAtencion.map((alerta) => {
+                    const config = getAlertaConfig(alerta.tipo);
+                    return (
+                      <div 
+                        key={alerta.id} 
+                        className={`${config.bgColor} backdrop-blur-sm border ${config.borderColor} rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200`}
                       >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-3 flex-1">
+                            <div className="mt-1">
+                              {getAlertaIcon(alerta.tipo)}
+                            </div>
+                            <div className="flex-1">
+                              <p className={`font-medium ${config.textColor} leading-relaxed`}>
+                                {alerta.mensaje}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => marcarComoVisto(alerta.id)}
+                            className="ml-3 hover:bg-white/60 rounded-lg"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
             {/* Alertas Información */}
             {alertasInformacion.length > 0 && (
-              <div>
-                <div className="flex items-center space-x-2 mb-3">
-                  <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                    🔵 INFORMACIÓN ({alertasInformacion.length})
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                    <Info className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-blue-800">Información General</h3>
+                    <p className="text-sm text-blue-600">Recordatorios y sugerencias</p>
+                  </div>
+                  <Badge className="bg-blue-100/80 text-blue-800 border-blue-200/60 font-bold">
+                    {alertasInformacion.length}
                   </Badge>
                 </div>
-                <div className="space-y-2">
-                  {alertasInformacion.map((alerta) => (
-                    <div key={alerta.id} className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        {getAlertaIcon(alerta.tipo)}
-                        <span className="text-sm">{alerta.mensaje}</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => marcarComoVisto(alerta.id)}
+                
+                <div className="space-y-3">
+                  {alertasInformacion.map((alerta) => {
+                    const config = getAlertaConfig(alerta.tipo);
+                    return (
+                      <div 
+                        key={alerta.id} 
+                        className={`${config.bgColor} backdrop-blur-sm border ${config.borderColor} rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200`}
                       >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-3 flex-1">
+                            <div className="mt-1">
+                              {getAlertaIcon(alerta.tipo)}
+                            </div>
+                            <div className="flex-1">
+                              <p className={`font-medium ${config.textColor} leading-relaxed`}>
+                                {alerta.mensaje}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => marcarComoVisto(alerta.id)}
+                            className="ml-3 hover:bg-white/60 rounded-lg"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

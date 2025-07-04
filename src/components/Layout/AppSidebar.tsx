@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Users, Calendar, LayoutDashboard, LogOut, Menu, ChevronRight } from "lucide-react";
+import { Users, Calendar, LayoutDashboard, LogOut, Menu, ChevronLeft, ChevronRight } from "lucide-react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -58,25 +58,37 @@ export function AppSidebar() {
         end
         className={({ isActive }) =>
           cn(
-            "flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 relative group",
+            "flex items-center rounded-xl text-sm font-semibold transition-all duration-300 relative group overflow-hidden",
             isActive
-              ? "bg-primary/10 text-primary border border-primary/20 shadow-sm"
-              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
-            isCollapsed && "justify-center px-2"
+              ? "bg-gradient-primary text-white shadow-lg"
+              : "text-slate-600 hover:bg-slate-100/80 hover:text-selecta-green",
+            isCollapsed ? "justify-center p-3 mx-2" : "px-4 py-3"
           )
         }
       >
-        <item.icon className={cn("h-5 w-5 shrink-0", isCollapsed && "mx-auto")} />
+        {/* Glow effect para item activo */}
+        {isActive && (
+          <div className="absolute inset-0 bg-gradient-primary opacity-10 rounded-xl"></div>
+        )}
+        
+        <item.icon className={cn(
+          "h-5 w-5 shrink-0 transition-all duration-300",
+          isCollapsed ? "mx-auto" : "mr-3",
+          isActive ? "text-white" : "text-current"
+        )} />
+        
         <span 
           className={cn(
-            "transition-all duration-300",
+            "transition-all duration-300 whitespace-nowrap",
             isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
           )}
         >
           {item.title}
         </span>
+        
+        {/* Indicador lateral para item activo cuando está colapsado */}
         {isActive && isCollapsed && (
-          <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-primary rounded-l-full" />
+          <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-primary rounded-l-full shadow-lg" />
         )}
       </NavLink>
     );
@@ -84,12 +96,12 @@ export function AppSidebar() {
     if (isCollapsed) {
       return (
         <TooltipProvider>
-          <Tooltip delayDuration={500}>
+          <Tooltip delayDuration={300}>
             <TooltipTrigger asChild>
               {content}
             </TooltipTrigger>
-            <TooltipContent side="right" className="ml-2">
-              <p>{item.title}</p>
+            <TooltipContent side="right" className="ml-3 bg-slate-800 text-white border-slate-700">
+              <p className="font-medium">{item.title}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -102,60 +114,69 @@ export function AppSidebar() {
   return (
     <aside 
       className={cn(
-        "bg-background border-r border-border shadow-soft flex flex-col min-h-screen lg:flex hidden transition-all duration-300 ease-in-out",
-        isCollapsed ? "w-[70px]" : "w-64"
+        "bg-white/90 backdrop-blur-xl border-r border-slate-200/60 shadow-xl flex flex-col min-h-screen lg:flex hidden transition-all duration-300 ease-in-out relative",
+        isCollapsed ? "w-[80px]" : "w-72"
       )}
     >
-      {/* Header */}
-      <div className={cn("p-6 border-b border-border", isCollapsed && "p-4")}>
+      {/* Efecto de gradiente sutil en el fondo */}
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-50/50 to-transparent pointer-events-none"></div>
+      
+      {/* Header mejorado */}
+      <div className={cn("border-b border-slate-200/60 relative z-10", isCollapsed ? "p-3" : "p-6")}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-primary rounded-full flex items-center justify-center shadow-sm shrink-0">
-              <span className="text-white font-bold text-sm">SE</span>
+          {!isCollapsed && (
+            <div className="flex items-center space-x-4">
+              {/* Logo container mejorado */}
+              <div className="relative">
+                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg border border-slate-200/60 shrink-0 p-2">
+                  <img 
+                    src="https://storage.googleapis.com/cluvi/Web-Risk/logo_selecta.png" 
+                    alt="Selecta Logo"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                {/* Glow effect del logo con colores verdes */}
+                <div className="absolute inset-0 w-12 h-12 bg-gradient-to-br from-selecta-green/20 to-primary/20 rounded-2xl blur-lg -z-10"></div>
+              </div>
+              
+              <div>
+                <h2 className="font-bold text-2xl text-selecta-green">
+                  Selecta
+                </h2>
+                <p className="text-sm text-slate-500 font-medium -mt-1">Eventos</p>
+              </div>
             </div>
-            <div 
-              className={cn(
-                "transition-all duration-300",
-                isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
-              )}
-            >
-              <h2 className="font-bold text-xl text-selecta-green">Selecta</h2>
-              <p className="text-sm text-muted-foreground -mt-1">Eventos</p>
-            </div>
-          </div>
+          )}
           
-          {/* Toggle Button */}
+          {/* Toggle Button mejorado - Más prominente cuando está colapsado */}
           <Button
             variant="ghost"
             size="sm"
             onClick={toggle}
             className={cn(
-              "h-8 w-8 p-0 hover:bg-muted/50 transition-colors shrink-0",
-              isCollapsed && "ml-2"
+              "p-0 hover:bg-slate-100/80 transition-all duration-300 rounded-xl border border-slate-200/60 bg-white/80 shadow-sm hover:scale-105 hover:shadow-md",
+              isCollapsed ? "h-12 w-12 mx-auto" : "h-10 w-10"
             )}
             aria-label={isCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
             aria-expanded={!isCollapsed}
           >
             {isCollapsed ? (
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-6 w-6 text-selecta-green" />
             ) : (
-              <Menu className="h-4 w-4" />
+              <ChevronLeft className="h-5 w-5 text-selecta-green" />
             )}
           </Button>
         </div>
       </div>
 
-      {/* Navigation */}
-      <div className="flex-1 p-4">
-        <div className="mb-4">
-          <h3 
-            className={cn(
-              "text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3 transition-all duration-300",
-              isCollapsed ? "opacity-0 h-0 mb-0 overflow-hidden" : "opacity-100"
-            )}
-          >
-            Navegación
-          </h3>
+      {/* Navigation mejorada - SIEMPRE VISIBLE */}
+      <div className="flex-1 relative z-10" style={{ padding: isCollapsed ? "16px 8px" : "20px" }}>
+        <div className="mb-6">
+          {!isCollapsed && (
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 transition-all duration-300">
+              Navegación
+            </h3>
+          )}
           <nav className="space-y-2">
             {navigation.map((item) => (
               <SidebarItem 
@@ -168,37 +189,48 @@ export function AppSidebar() {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-border">
+      {/* Footer mejorado - SIEMPRE VISIBLE */}
+      <div className={cn("border-t border-slate-200/60 relative z-10", isCollapsed ? "p-3" : "p-5")}>
         <TooltipProvider>
-          <Tooltip delayDuration={500}>
+          <Tooltip delayDuration={300}>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 onClick={handleLogout}
                 className={cn(
-                  "w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors",
-                  isCollapsed && "justify-center px-2"
+                  "w-full text-slate-600 hover:text-red-600 hover:bg-red-50/80 transition-all duration-300 rounded-xl font-semibold",
+                  isCollapsed ? "justify-center p-3" : "justify-start py-3"
                 )}
               >
-                <LogOut className={cn("h-5 w-5", isCollapsed ? "mx-auto" : "mr-3")} />
-                <span 
-                  className={cn(
-                    "transition-all duration-300",
-                    isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
-                  )}
-                >
-                  Cerrar Sesión
-                </span>
+                <LogOut className={cn(
+                  "h-5 w-5 transition-all duration-300", 
+                  isCollapsed ? "mx-auto" : "mr-3"
+                )} />
+                {!isCollapsed && (
+                  <span className="whitespace-nowrap">
+                    Cerrar Sesión
+                  </span>
+                )}
               </Button>
             </TooltipTrigger>
             {isCollapsed && (
-              <TooltipContent side="right" className="ml-2">
-                <p>Cerrar Sesión</p>
+              <TooltipContent side="right" className="ml-3 bg-slate-800 text-white border-slate-700">
+                <p className="font-medium">Cerrar Sesión</p>
               </TooltipContent>
             )}
           </Tooltip>
         </TooltipProvider>
+        
+        {/* Shortcut hint cuando no está colapsado */}
+        {!isCollapsed && (
+          <div className="mt-4 pt-4 border-t border-slate-200/60">
+            <p className="text-xs text-slate-400 text-center">
+              <kbd className="px-2 py-1 bg-slate-100 rounded text-xs font-mono">Ctrl</kbd> + 
+              <kbd className="px-2 py-1 bg-slate-100 rounded text-xs font-mono ml-1">B</kbd>
+              <span className="block mt-1">para colapsar</span>
+            </p>
+          </div>
+        )}
       </div>
     </aside>
   );

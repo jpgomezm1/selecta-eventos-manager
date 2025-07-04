@@ -14,7 +14,10 @@ import {
   Eye,
   Mail,
   MessageSquare,
-  FileText
+  FileText,
+  MoreHorizontal,
+  Star,
+  TrendingUp
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -219,15 +222,23 @@ export function ProximosEventos() {
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Próximos Eventos</CardTitle>
+      <Card className="border-0 shadow-none bg-transparent">
+        <CardHeader className="pb-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-gradient-primary rounded-2xl flex items-center justify-center animate-pulse">
+              <Calendar className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <div className="h-7 bg-slate-200 rounded-lg w-48 animate-pulse"></div>
+              <div className="h-4 bg-slate-100 rounded w-32 mt-2 animate-pulse"></div>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-muted rounded w-3/4"></div>
-            <div className="h-4 bg-muted rounded w-1/2"></div>
-            <div className="h-4 bg-muted rounded w-5/6"></div>
+          <div className="space-y-4">
+            <div className="h-12 bg-slate-100 rounded-xl animate-pulse"></div>
+            <div className="h-32 bg-slate-100 rounded-xl animate-pulse"></div>
+            <div className="h-32 bg-slate-100 rounded-xl animate-pulse"></div>
           </div>
         </CardContent>
       </Card>
@@ -235,267 +246,329 @@ export function ProximosEventos() {
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="border-0 shadow-none bg-transparent">
+      <CardHeader className="pb-6">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center space-x-2">
-            <Calendar className="h-5 w-5" />
-            <span>Próximos Eventos</span>
-          </CardTitle>
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-gradient-primary rounded-2xl flex items-center justify-center shadow-lg">
+              <Calendar className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-selecta-green to-primary bg-clip-text text-transparent">
+                Próximos Eventos
+              </CardTitle>
+              <p className="text-slate-600 font-medium">Gestión y seguimiento de eventos programados</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-3">
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="bg-white/80 backdrop-blur-sm border-slate-200/60 hover:bg-white hover:shadow-md transition-all duration-200"
+            >
               <Download className="h-4 w-4 mr-2" />
-              Exportar lista
+              Exportar
+            </Button>
+            <Button 
+              size="sm"
+              className="bg-gradient-primary hover:bg-gradient-primary/90 shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Analizar
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        {/* Filtros */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Select value={filtroTiempo} onValueChange={(value) => {
-            setFiltroTiempo(value);
-            cargarDatos();
-          }}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="proximos-3">Próximos 3 días</SelectItem>
-              <SelectItem value="proximos-7">Próximos 7 días</SelectItem>
-              <SelectItem value="proximos-30">Próximos 30 días</SelectItem>
-              <SelectItem value="todos">Todos</SelectItem>
-            </SelectContent>
-          </Select>
 
-          <Select value={filtroEmpleado} onValueChange={setFiltroEmpleado}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filtrar por empleado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos los empleados</SelectItem>
-              {personal.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.nombre_completo} - {p.rol}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <CardContent className="space-y-6">
+        {/* Filtros mejorados */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-200/60 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Período</label>
+              <Select value={filtroTiempo} onValueChange={(value) => {
+                setFiltroTiempo(value);
+                cargarDatos();
+              }}>
+                <SelectTrigger className="bg-white border-slate-200/60 focus:border-selecta-green/50 h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-white/95 backdrop-blur-xl border-slate-200/60">
+                  <SelectItem value="proximos-3">Próximos 3 días</SelectItem>
+                  <SelectItem value="proximos-7">Próximos 7 días</SelectItem>
+                  <SelectItem value="proximos-30">Próximos 30 días</SelectItem>
+                  <SelectItem value="todos">Todos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <Select value={filtroEstado} onValueChange={setFiltroEstado}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filtrar por estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos los estados</SelectItem>
-              <SelectItem value="sin-personal">Solo sin personal</SelectItem>
-              <SelectItem value="sin-horarios">Solo sin horarios</SelectItem>
-              <SelectItem value="completo">Solo completos</SelectItem>
-            </SelectContent>
-          </Select>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Empleado</label>
+              <Select value={filtroEmpleado} onValueChange={setFiltroEmpleado}>
+                <SelectTrigger className="bg-white border-slate-200/60 focus:border-selecta-green/50 h-11">
+                  <SelectValue placeholder="Todos los empleados" />
+                </SelectTrigger>
+                <SelectContent className="bg-white/95 backdrop-blur-xl border-slate-200/60">
+                  <SelectItem value="todos">Todos los empleados</SelectItem>
+                  {personal.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nombre_completo} - {p.rol}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Buscar eventos..."
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              className="pl-10"
-            />
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Estado</label>
+              <Select value={filtroEstado} onValueChange={setFiltroEstado}>
+                <SelectTrigger className="bg-white border-slate-200/60 focus:border-selecta-green/50 h-11">
+                  <SelectValue placeholder="Todos los estados" />
+                </SelectTrigger>
+                <SelectContent className="bg-white/95 backdrop-blur-xl border-slate-200/60">
+                  <SelectItem value="todos">Todos los estados</SelectItem>
+                  <SelectItem value="sin-personal">Solo sin personal</SelectItem>
+                  <SelectItem value="sin-horarios">Solo sin horarios</SelectItem>
+                  <SelectItem value="completo">Solo completos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Buscar</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+                <Input
+                  placeholder="Buscar eventos..."
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  className="pl-10 bg-white border-slate-200/60 focus:border-selecta-green/50 h-11"
+                />
+              </div>
+            </div>
           </div>
+
+          {/* Mostrar botón de cronograma detallado si hay empleado filtrado */}
+          {filtroEmpleado !== "todos" && (
+            <div className="mt-4 pt-4 border-t border-slate-200/60">
+              <Button
+                onClick={() => {
+                  const empleado = personal.find(p => p.id === filtroEmpleado);
+                  if (empleado) {
+                    setEmpleadoSeleccionado(empleado);
+                    setIsModalEmpleadoOpen(true);
+                  }
+                }}
+                variant="outline"
+                className="bg-blue-50/80 hover:bg-blue-100/80 border-blue-200/60 text-blue-700"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Ver cronograma detallado del empleado
+              </Button>
+            </div>
+          )}
         </div>
 
-        {/* Mostrar eventos filtrados por empleado individual */}
-        {filtroEmpleado !== "todos" && (
-          <div className="mb-4">
-            <Button
-              onClick={() => {
-                const empleado = personal.find(p => p.id === filtroEmpleado);
-                if (empleado) {
-                  setEmpleadoSeleccionado(empleado);
-                  setIsModalEmpleadoOpen(true);
-                }
-              }}
-              className="mb-4"
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              Ver cronograma detallado del empleado
-            </Button>
-          </div>
-        )}
-
-        {/* Tabla de eventos */}
+        {/* Contenido principal */}
         {eventosFiltrados.length === 0 ? (
-          <div className="text-center py-8">
-            <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">
+          <div className="text-center py-16">
+            <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Calendar className="h-12 w-12 text-slate-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-slate-800 mb-2">
+              {eventos.length === 0 ? "No hay eventos próximos" : "No se encontraron eventos"}
+            </h3>
+            <p className="text-slate-600 max-w-sm mx-auto">
               {eventos.length === 0 
-                ? "No hay eventos próximos" 
-                : "No se encontraron eventos con los filtros seleccionados"
+                ? "Cuando tengas eventos programados, aparecerán aquí para su gestión." 
+                : "Intenta ajustar los filtros para encontrar los eventos que buscas."
               }
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Evento</TableHead>
-                  <TableHead>Ubicación</TableHead>
-                  <TableHead>Personal</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {eventosFiltrados.map((evento) => {
-                  const estado = getEstadoEvento(evento);
-                  const personalAsignado = evento.personal?.length || 0;
-                  
-                  return (
-                    <TableRow key={evento.id}>
-                      <TableCell>
-                        <div className="font-medium">
-                          {new Date(evento.fecha_evento).toLocaleDateString('es-CO', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: '2-digit'
-                          })}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {new Date(evento.fecha_evento).toLocaleDateString('es-CO', {
-                            weekday: 'long'
-                          })}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{evento.nombre_evento}</div>
-                        {evento.descripcion && (
-                          <div className="text-sm text-muted-foreground">
-                            {evento.descripcion.length > 50 
-                              ? evento.descripcion.substring(0, 50) + '...'
-                              : evento.descripcion
-                            }
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-1">
-                          <MapPin className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm">{evento.ubicacion}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {personalAsignado > 0 ? (
-                            <>
-                              <div className="text-sm font-medium">
-                                {personalAsignado} asignado{personalAsignado > 1 ? 's' : ''}
-                              </div>
-                              <div className="flex flex-wrap gap-1">
-                                {evento.personal?.slice(0, 2).map((p) => (
-                                  <Badge key={p.id} variant="outline" className="text-xs">
-                                    👤 {p.nombre_completo?.split(' ')[0]}
-                                  </Badge>
-                                ))}
-                                {personalAsignado > 2 && (
-                                  <Badge variant="outline" className="text-xs">
-                                    +{personalAsignado - 2} más
-                                  </Badge>
-                                )}
-                              </div>
-                            </>
-                          ) : (
-                            <div className="text-sm text-muted-foreground">
-                              ❌ Sin personal asignado
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-slate-200/60 bg-slate-50/50">
+                    <TableHead className="font-semibold text-slate-700">Fecha</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Evento</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Ubicación</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Personal</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Estado</TableHead>
+                    <TableHead className="text-right font-semibold text-slate-700">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {eventosFiltrados.map((evento) => {
+                    const estado = getEstadoEvento(evento);
+                    const personalAsignado = evento.personal?.length || 0;
+                    
+                    return (
+                      <TableRow key={evento.id} className="border-slate-200/40 hover:bg-slate-50/30 transition-colors">
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="font-semibold text-slate-800">
+                              {new Date(evento.fecha_evento).toLocaleDateString('es-CO', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: '2-digit'
+                              })}
                             </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={estado.color}>
-                          {estado.icono} {estado.texto}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        {estado.tipo === 'sin-personal' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/eventos`)}
-                          >
-                            <UserPlus className="h-4 w-4 mr-1" />
-                            Asignar
-                          </Button>
-                        )}
-                        {estado.tipo === 'sin-horarios' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/eventos`)}
-                          >
-                            <Clock className="h-4 w-4 mr-1" />
-                            Definir horarios
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/eventos`)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {/* Estadísticas del filtro */}
-        {eventosFiltrados.length > 0 && (
-          <div className="mt-4 p-4 bg-muted rounded-lg">
-            <div className="flex flex-wrap gap-4 text-sm">
-              <span>
-                <strong>Total eventos:</strong> {eventosFiltrados.length}
-              </span>
-              <span>
-                <strong>Sin personal:</strong> {eventosFiltrados.filter(e => getEstadoEvento(e).tipo === 'sin-personal').length}
-              </span>
-              <span>
-                <strong>Sin horarios:</strong> {eventosFiltrados.filter(e => getEstadoEvento(e).tipo === 'sin-horarios').length}
-              </span>
-              <span>
-                <strong>Completos:</strong> {eventosFiltrados.filter(e => getEstadoEvento(e).tipo === 'completo').length}
-              </span>
+                            <div className="text-sm text-slate-500 capitalize">
+                              {new Date(evento.fecha_evento).toLocaleDateString('es-CO', {
+                                weekday: 'long'
+                              })}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="font-semibold text-slate-800 max-w-48 truncate">
+                              {evento.nombre_evento}
+                            </div>
+                            {evento.descripcion && (
+                              <div className="text-sm text-slate-500 max-w-48 truncate">
+                                {evento.descripcion}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
+                            <span className="text-sm text-slate-700 max-w-32 truncate">{evento.ubicacion}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-2">
+                            {personalAsignado > 0 ? (
+                              <>
+                                <div className="text-sm font-semibold text-slate-800">
+                                  {personalAsignado} asignado{personalAsignado > 1 ? 's' : ''}
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                  {evento.personal?.slice(0, 2).map((p) => (
+                                    <Badge key={p.id} variant="outline" className="text-xs bg-blue-50/80 border-blue-200/60 text-blue-700">
+                                      👤 {p.nombre_completo?.split(' ')[0]}
+                                    </Badge>
+                                  ))}
+                                  {personalAsignado > 2 && (
+                                    <Badge variant="outline" className="text-xs bg-slate-50/80 border-slate-200/60 text-slate-600">
+                                      +{personalAsignado - 2} más
+                                    </Badge>
+                                  )}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-sm text-red-600 font-medium">
+                                ❌ Sin personal asignado
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={`${estado.color} border font-medium`}>
+                            {estado.icono} {estado.texto}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            {estado.tipo === 'sin-personal' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate(`/eventos`)}
+                                className="bg-red-50/80 hover:bg-red-100/80 border-red-200/60 text-red-700"
+                              >
+                                <UserPlus className="h-4 w-4 mr-1" />
+                                Asignar
+                              </Button>
+                            )}
+                            {estado.tipo === 'sin-horarios' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate(`/eventos`)}
+                                className="bg-orange-50/80 hover:bg-orange-100/80 border-orange-200/60 text-orange-700"
+                              >
+                                <Clock className="h-4 w-4 mr-1" />
+                                Horarios
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/eventos`)}
+                              className="hover:bg-slate-100/80"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
           </div>
         )}
 
-        {/* Modal de cronograma del empleado */}
+        {/* Estadísticas del filtro mejoradas */}
+        {eventosFiltrados.length > 0 && (
+          <div className="bg-gradient-to-r from-slate-50/80 to-blue-50/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-200/60">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-selecta-green">{eventosFiltrados.length}</div>
+                <div className="text-sm font-medium text-slate-600">Total eventos</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">
+                  {eventosFiltrados.filter(e => getEstadoEvento(e).tipo === 'sin-personal').length}
+                </div>
+                <div className="text-sm font-medium text-slate-600">Sin personal</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">
+                  {eventosFiltrados.filter(e => getEstadoEvento(e).tipo === 'sin-horarios').length}
+                </div>
+                <div className="text-sm font-medium text-slate-600">Sin horarios</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {eventosFiltrados.filter(e => getEstadoEvento(e).tipo === 'completo').length}
+                </div>
+                <div className="text-sm font-medium text-slate-600">Completos</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de cronograma del empleado mejorado */}
         <Dialog open={isModalEmpleadoOpen} onOpenChange={setIsModalEmpleadoOpen}>
-          <DialogContent className="sm:max-w-2xl">
+          <DialogContent className="sm:max-w-2xl bg-white/95 backdrop-blur-xl border-slate-200/60">
             <DialogHeader>
-              <DialogTitle>
-                Eventos de {empleadoSeleccionado?.nombre_completo} - {empleadoSeleccionado?.rol}
+              <DialogTitle className="text-xl font-bold bg-gradient-to-r from-selecta-green to-primary bg-clip-text text-transparent">
+                Cronograma de {empleadoSeleccionado?.nombre_completo}
               </DialogTitle>
-              <DialogDescription>
-                Cronograma de próximos 30 días
+              <DialogDescription className="text-slate-600">
+                {empleadoSeleccionado?.rol} • Próximos 30 días
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4">
+            <div className="space-y-6">
               {eventosEmpleado.length === 0 ? (
-                <div className="text-center py-8">
-                  <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No hay eventos asignados en los próximos 30 días</p>
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Calendar className="h-8 w-8 text-slate-400" />
+                  </div>
+                  <h3 className="font-semibold text-slate-800 mb-2">Sin eventos asignados</h3>
+                  <p className="text-slate-600">No hay eventos programados en los próximos 30 días</p>
                 </div>
               ) : (
                 <>
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                  <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
                     {eventosEmpleado.map((evento) => {
                       const personalData = evento.personal?.find(p => p.id === empleadoSeleccionado?.id);
                       const horario = personalData?.hora_inicio && personalData?.hora_fin 
@@ -503,12 +576,15 @@ export function ProximosEventos() {
                         : 'Horario por confirmar';
                       
                       return (
-                        <div key={evento.id} className="border rounded-lg p-3">
+                        <div key={evento.id} className="bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-xl p-4 hover:shadow-md transition-all duration-200">
                           <div className="flex justify-between items-start">
-                            <div>
-                              <div className="font-medium">{evento.nombre_evento}</div>
-                              <div className="text-sm text-muted-foreground">{evento.ubicacion}</div>
-                              <div className="text-sm">
+                            <div className="space-y-1">
+                              <div className="font-semibold text-slate-800">{evento.nombre_evento}</div>
+                              <div className="text-sm text-slate-600 flex items-center space-x-1">
+                                <MapPin className="h-3 w-3" />
+                                <span>{evento.ubicacion}</span>
+                              </div>
+                              <div className="text-sm font-medium text-slate-700 capitalize">
                                 {new Date(evento.fecha_evento).toLocaleDateString('es-CO', {
                                   weekday: 'long',
                                   day: 'numeric',
@@ -517,10 +593,12 @@ export function ProximosEventos() {
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="text-sm font-medium">{horario}</div>
+                              <Badge variant="outline" className="bg-blue-50/80 border-blue-200/60 text-blue-700">
+                                {horario}
+                              </Badge>
                               {personalData?.horas_trabajadas && (
-                                <div className="text-xs text-muted-foreground">
-                                  {personalData.horas_trabajadas}h
+                                <div className="text-xs text-slate-500 mt-1">
+                                  {personalData.horas_trabajadas}h trabajadas
                                 </div>
                               )}
                             </div>
@@ -530,32 +608,34 @@ export function ProximosEventos() {
                     })}
                   </div>
 
-                  <div className="bg-muted p-4 rounded-lg">
-                    <div className="text-sm space-y-1">
+                  <div className="bg-gradient-to-r from-selecta-green/10 to-primary/10 rounded-xl p-4 border border-selecta-green/20">
+                    <div className="grid grid-cols-2 gap-4 text-center">
                       <div>
-                        <strong>Total eventos asignados:</strong> {eventosEmpleado.length}
+                        <div className="text-xl font-bold text-selecta-green">{eventosEmpleado.length}</div>
+                        <div className="text-sm font-medium text-slate-600">Eventos asignados</div>
                       </div>
                       <div>
-                        <strong>Total horas:</strong> {
-                          eventosEmpleado.reduce((sum, evento) => {
+                        <div className="text-xl font-bold text-primary">
+                          {eventosEmpleado.reduce((sum, evento) => {
                             const personalData = evento.personal?.find(p => p.id === empleadoSeleccionado?.id);
                             return sum + (personalData?.horas_trabajadas || 0);
-                          }, 0)
-                        }h
+                          }, 0)}h
+                        </div>
+                        <div className="text-sm font-medium text-slate-600">Total horas</div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-3">
                     <Button
                       variant="outline"
                       onClick={() => {
-                        // TODO: Implementar envío por email
                         toast({
                           title: "Función en desarrollo",
                           description: "El envío por email estará disponible pronto"
                         });
                       }}
+                      className="bg-blue-50/80 hover:bg-blue-100/80 border-blue-200/60 text-blue-700"
                     >
                       <Mail className="h-4 w-4 mr-2" />
                       Enviar por email
@@ -565,32 +645,33 @@ export function ProximosEventos() {
                       onClick={() => {
                         if (empleadoSeleccionado) {
                           generarMensajeWhatsApp(empleadoSeleccionado);
-                        }
-                      }}
-                    >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Copiar para WhatsApp
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        // TODO: Implementar exportación PDF
-                        toast({
-                          title: "Función en desarrollo", 
-                          description: "La exportación PDF estará disponible pronto"
-                        });
-                      }}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Exportar PDF
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
-  );
+                       }
+                     }}
+                     className="bg-green-50/80 hover:bg-green-100/80 border-green-200/60 text-green-700"
+                   >
+                     <MessageSquare className="h-4 w-4 mr-2" />
+                     Copiar para WhatsApp
+                   </Button>
+                   <Button
+                     variant="outline"
+                     onClick={() => {
+                       toast({
+                         title: "Función en desarrollo", 
+                         description: "La exportación PDF estará disponible pronto"
+                       });
+                     }}
+                     className="bg-orange-50/80 hover:bg-orange-100/80 border-orange-200/60 text-orange-700"
+                   >
+                     <FileText className="h-4 w-4 mr-2" />
+                     Exportar PDF
+                   </Button>
+                 </div>
+               </>
+             )}
+           </div>
+         </DialogContent>
+       </Dialog>
+     </CardContent>
+   </Card>
+ );
 }
