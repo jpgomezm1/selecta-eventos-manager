@@ -201,7 +201,7 @@ export function ProximosEventos() {
         const fecha = new Date(evento.fecha_evento).toLocaleDateString('es-CO', { 
           weekday: 'long', day: 'numeric', month: 'long' 
         });
-        const personal = evento.personal?.find(p => p.personal_id === empleado.id);
+        const personal = evento.personal?.find(p => p.id === empleado.id);
         const horario = personal?.hora_inicio && personal?.hora_fin 
           ? `${personal.hora_inicio}-${personal.hora_fin}` 
           : 'Horario por confirmar';
@@ -395,7 +395,7 @@ export function ProximosEventos() {
                               </div>
                               <div className="flex flex-wrap gap-1">
                                 {evento.personal?.slice(0, 2).map((p) => (
-                                  <Badge key={p.personal_id} variant="outline" className="text-xs">
+                                  <Badge key={p.id} variant="outline" className="text-xs">
                                     👤 {p.nombre_completo?.split(' ')[0]}
                                   </Badge>
                                 ))}
