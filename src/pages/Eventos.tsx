@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Calendar, MapPin, Edit, Trash2, Users } from "lucide-react";
+import { Plus, Calendar, MapPin, Edit, Trash2, Users, DollarSign } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { EventoForm } from "@/components/Forms/EventoForm";
+import { LiquidacionDialog } from "@/components/Forms/LiquidacionDialog";
 import { useToast } from "@/hooks/use-toast";
-import { EventoConPersonal, Personal } from "@/types/database";
+import { EventoConPersonal, Personal, PersonalAsignado } from "@/types/database";
 
 export default function EventosPage() {
   const [eventos, setEventos] = useState<EventoConPersonal[]>([]);
@@ -18,6 +19,8 @@ export default function EventosPage() {
   const [loading, setLoading] = useState(true);
   const [selectedEvento, setSelectedEvento] = useState<EventoConPersonal | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [liquidacionEvento, setLiquidacionEvento] = useState<EventoConPersonal | null>(null);
+  const [isLiquidacionOpen, setIsLiquidacionOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -46,6 +49,11 @@ export default function EventosPage() {
         .select(`
           *,
           evento_personal (
+            id,
+            hora_inicio,
+            hora_fin,
+            horas_trabajadas,
+            pago_calculado,
             personal (*)
           )
         `)
@@ -54,11 +62,19 @@ export default function EventosPage() {
       if (error) throw error;
 
       const eventosConPersonal: EventoConPersonal[] = (data || []).map((evento) => {
-        const personalAsignado = evento.evento_personal?.map((ep: any) => ep.personal) || [];
-        const costoTotal = personalAsignado.reduce((sum: number, p: Personal) => sum + Number(p.tarifa_hora), 0);
+        const personalAsignado = evento.evento_personal?.map((ep: any) => ({
+          ...ep.personal,
+          hora_inicio: ep.hora_inicio,
+          hora_fin: ep.hora_fin,
+          horas_trabajadas: ep.horas_trabajadas,
+          pago_calculado: ep.pago_calculado,
+          evento_personal_id: ep.id,
+        })) || [];
+        const costoTotal = personalAsignado.reduce((sum: number, p: PersonalAsignado) => sum + (p.pago_calculado || Number(p.tarifa_hora)), 0);
         
         return {
           ...evento,
+          estado_liquidacion: (evento.estado_liquidacion as 'pendiente' | 'liquidado') || 'pendiente',
           personal: personalAsignado,
           costo_total: costoTotal,
         };
@@ -80,6 +96,58 @@ export default function EventosPage() {
     fetchEventos();
     setIsDialogOpen(false);
     setSelectedEvento(null);
+  };
+
+  const handleLiquidarEvento = async (evento: EventoConPersonal) => {
+    // Verificar si el evento tiene personal con horas definidas
+    const personalSinHoras = evento.personal.filter(p => !p.horas_trabajadas || p.horas_trabajadas <= 0);
+    
+    if (personalSinHoras.length > 0) {
+      toast({
+        title: "Información faltante",
+        description: `${personalSinHoras.length} empleado(s) no tienen horas de trabajo definidas. Complete la información antes de liquidar.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Verificar empleados con más de 12 horas
+    const personalSobrecarga = evento.personal.filter(p => p.horas_trabajadas && p.horas_trabajadas > 12);
+    if (personalSobrecarga.length > 0) {
+      toast({
+        title: "Advertencia",
+        description: `${personalSobrecarga.length} empleado(s) trabajaron más de 12 horas. Verifique la información.`,
+        variant: "destructive",
+      });
+    }
+
+    setLiquidacionEvento(evento);
+    setIsLiquidacionOpen(true);
+  };
+
+  const handleMarcarLiquidado = async (eventoId: string) => {
+    try {
+      const { error } = await supabase
+        .from("eventos")
+        .update({ estado_liquidacion: 'liquidado' })
+        .eq("id", eventoId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Evento liquidado",
+        description: "El evento ha sido marcado como liquidado exitosamente",
+      });
+      
+      fetchEventos();
+      setIsLiquidacionOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al marcar el evento como liquidado",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeleteEvento = async (id: string) => {
@@ -237,16 +305,21 @@ export default function EventosPage() {
               return (
                 <Card key={evento.id} className="hover:shadow-soft transition-shadow">
                   <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg line-clamp-2">
-                          {evento.nombre_evento}
-                        </CardTitle>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge variant={variant}>{status}</Badge>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-lg line-clamp-2">
+                              {evento.nombre_evento}
+                            </CardTitle>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge variant={variant}>{status}</Badge>
+                              {evento.estado_liquidacion === 'liquidado' && (
+                                <Badge variant="default" className="bg-green-100 text-green-800">
+                                  Liquidado
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex items-center text-sm text-muted-foreground">
@@ -276,6 +349,16 @@ export default function EventosPage() {
                     </div>
 
                     <div className="flex justify-end space-x-2 pt-2">
+                      {evento.estado_liquidacion !== 'liquidado' && evento.personal.length > 0 && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleLiquidarEvento(evento)}
+                          className="bg-primary hover:bg-primary/90"
+                        >
+                          <DollarSign className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -319,6 +402,15 @@ export default function EventosPage() {
           </div>
         )}
       </div>
+
+      {/* Dialog de Liquidación */}
+      {liquidacionEvento && (
+        <LiquidacionDialog
+          open={isLiquidacionOpen}
+          onOpenChange={setIsLiquidacionOpen}
+          evento={liquidacionEvento}
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { EventoConPersonal, Personal, EventoFormData } from "@/types/database";
+import { EventoConPersonal, Personal, EventoFormData, PersonalAsignado } from "@/types/database";
 
 interface EventoFormProps {
   evento?: EventoConPersonal | null;
@@ -25,7 +25,7 @@ interface EventoFormProps {
 
 export function EventoForm({ evento, personal, onSubmit, onCancel }: EventoFormProps) {
   const [loading, setLoading] = useState(false);
-  const [selectedPersonal, setSelectedPersonal] = useState<string[]>([]);
+  const [selectedPersonal, setSelectedPersonal] = useState<PersonalAsignado[]>([]);
   const { toast } = useToast();
 
   const form = useForm<EventoFormData>({
@@ -40,33 +40,79 @@ export function EventoForm({ evento, personal, onSubmit, onCancel }: EventoFormP
 
   useEffect(() => {
     if (evento) {
-      const personalIds = evento.personal?.map(p => p.id) || [];
-      setSelectedPersonal(personalIds);
+      const personalAsignado: PersonalAsignado[] = evento.personal?.map(p => ({
+        ...p,
+        hora_inicio: p.hora_inicio || "",
+        hora_fin: p.hora_fin || "",
+        horas_trabajadas: p.horas_trabajadas || 0,
+        pago_calculado: p.pago_calculado || 0,
+        evento_personal_id: p.evento_personal_id || "",
+      })) || [];
+      
+      setSelectedPersonal(personalAsignado);
       form.reset({
         nombre_evento: evento.nombre_evento,
         ubicacion: evento.ubicacion,
         fecha_evento: evento.fecha_evento,
         descripcion: evento.descripcion || "",
-        personal_ids: personalIds,
+        personal_ids: personalAsignado.map(p => p.id),
       });
     }
   }, [evento, form]);
 
   const handlePersonalToggle = (personalId: string, checked: boolean) => {
-    let newSelection;
     if (checked) {
-      newSelection = [...selectedPersonal, personalId];
+      const person = personal.find(p => p.id === personalId);
+      if (person) {
+        const newPersonalAsignado: PersonalAsignado = {
+          ...person,
+          hora_inicio: "",
+          hora_fin: "",
+          horas_trabajadas: 0,
+          pago_calculado: 0,
+          evento_personal_id: "",
+        };
+        setSelectedPersonal([...selectedPersonal, newPersonalAsignado]);
+        form.setValue("personal_ids", [...selectedPersonal.map(p => p.id), personalId]);
+      }
     } else {
-      newSelection = selectedPersonal.filter(id => id !== personalId);
+      const newSelection = selectedPersonal.filter(p => p.id !== personalId);
+      setSelectedPersonal(newSelection);
+      form.setValue("personal_ids", newSelection.map(p => p.id));
     }
-    setSelectedPersonal(newSelection);
-    form.setValue("personal_ids", newSelection);
+  };
+
+  const updatePersonalHours = (personalId: string, field: 'hora_inicio' | 'hora_fin', value: string) => {
+    const updatedPersonal = selectedPersonal.map(person => {
+      if (person.id === personalId) {
+        const updatedPerson = { ...person, [field]: value };
+        
+        // Calcular horas trabajadas si ambos campos están llenos
+        if (updatedPerson.hora_inicio && updatedPerson.hora_fin) {
+          const inicio = new Date(`2000-01-01T${updatedPerson.hora_inicio}`);
+          const fin = new Date(`2000-01-01T${updatedPerson.hora_fin}`);
+          
+          // Manejar casos donde el trabajo cruza medianoche
+          if (fin < inicio) {
+            fin.setDate(fin.getDate() + 1);
+          }
+          
+          const horas = (fin.getTime() - inicio.getTime()) / (1000 * 60 * 60);
+          updatedPerson.horas_trabajadas = Math.round(horas * 10) / 10; // Redondear a 1 decimal
+          updatedPerson.pago_calculado = horas * Number(person.tarifa_hora);
+        }
+        
+        return updatedPerson;
+      }
+      return person;
+    });
+    
+    setSelectedPersonal(updatedPersonal);
   };
 
   const calculateTotalCost = () => {
-    return selectedPersonal.reduce((total, personalId) => {
-      const person = personal.find(p => p.id === personalId);
-      return total + (person ? Number(person.tarifa_hora) : 0);
+    return selectedPersonal.reduce((total, person) => {
+      return total + (person.pago_calculado || Number(person.tarifa_hora));
     }, 0);
   };
 
@@ -113,11 +159,15 @@ export function EventoForm({ evento, personal, onSubmit, onCancel }: EventoFormP
           .delete()
           .eq("evento_id", eventoId);
 
-        // Insert new assignments
+        // Insert new assignments with hours data
         if (selectedPersonal.length > 0) {
-          const assignments = selectedPersonal.map(personalId => ({
+          const assignments = selectedPersonal.map(person => ({
             evento_id: eventoId,
-            personal_id: personalId,
+            personal_id: person.id,
+            hora_inicio: person.hora_inicio || null,
+            hora_fin: person.hora_fin || null,
+            horas_trabajadas: person.horas_trabajadas || null,
+            pago_calculado: person.pago_calculado || null,
           }));
 
           const { error: assignmentError } = await supabase
@@ -267,37 +317,99 @@ export function EventoForm({ evento, personal, onSubmit, onCancel }: EventoFormP
                 No hay personal disponible
               </p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto">
-                {personal.map((person) => (
-                  <div
-                    key={person.id}
-                    className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-                  >
-                    <Checkbox
-                      id={person.id}
-                      checked={selectedPersonal.includes(person.id)}
-                      onCheckedChange={(checked) => 
-                        handlePersonalToggle(person.id, checked as boolean)
-                      }
-                    />
-                    <div className="flex-1 min-w-0">
-                      <label
-                        htmlFor={person.id}
-                        className="text-sm font-medium cursor-pointer block truncate"
-                      >
-                        {person.nombre_completo}
-                      </label>
-                      <div className="flex items-center justify-between mt-1">
-                        <Badge variant="outline" className="text-xs">
-                          {person.rol}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          ${Number(person.tarifa_hora).toLocaleString()}/h
-                        </span>
+              <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
+                {personal.map((person) => {
+                  const isSelected = selectedPersonal.some(p => p.id === person.id);
+                  const selectedPersonData = selectedPersonal.find(p => p.id === person.id);
+                  
+                  return (
+                    <div
+                      key={person.id}
+                      className={cn(
+                        "border rounded-lg p-4 transition-all duration-200",
+                        isSelected ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+                      )}
+                    >
+                      {/* Checkbox y datos básicos */}
+                      <div className="flex items-center space-x-3 mb-3">
+                        <Checkbox
+                          id={person.id}
+                          checked={isSelected}
+                          onCheckedChange={(checked) => 
+                            handlePersonalToggle(person.id, checked as boolean)
+                          }
+                        />
+                        <div className="flex-1 min-w-0">
+                          <label
+                            htmlFor={person.id}
+                            className="text-sm font-medium cursor-pointer block truncate"
+                          >
+                            {person.nombre_completo}
+                          </label>
+                          <div className="flex items-center justify-between mt-1">
+                            <Badge variant="outline" className="text-xs">
+                              {person.rol}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              ${Number(person.tarifa_hora).toLocaleString()}/h
+                            </span>
+                          </div>
+                        </div>
                       </div>
+
+                      {/* Campos de horario si está seleccionado */}
+                      {isSelected && (
+                        <div className="space-y-3 pt-3 border-t border-border">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                                <Clock className="h-3 w-3 inline mr-1" />
+                                Hora Inicio
+                              </label>
+                              <Input
+                                type="time"
+                                value={selectedPersonData?.hora_inicio || ""}
+                                onChange={(e) => updatePersonalHours(person.id, 'hora_inicio', e.target.value)}
+                                className="text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                                <Clock className="h-3 w-3 inline mr-1" />
+                                Hora Fin
+                              </label>
+                              <Input
+                                type="time"
+                                value={selectedPersonData?.hora_fin || ""}
+                                onChange={(e) => updatePersonalHours(person.id, 'hora_fin', e.target.value)}
+                                className="text-sm"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Mostrar cálculos si hay horas definidas */}
+                          {selectedPersonData?.horas_trabajadas && selectedPersonData.horas_trabajadas > 0 && (
+                            <div className="bg-muted/30 p-3 rounded-md">
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">
+                                  Horas trabajadas: <strong>{selectedPersonData.horas_trabajadas}h</strong>
+                                </span>
+                                <span className="font-semibold text-primary">
+                                  ${selectedPersonData.pago_calculado?.toLocaleString() || 0} COP
+                                </span>
+                              </div>
+                              {selectedPersonData.horas_trabajadas > 12 && (
+                                <p className="text-xs text-amber-600 mt-1">
+                                  ⚠️ Más de 12 horas trabajadas
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>

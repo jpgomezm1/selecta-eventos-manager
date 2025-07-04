@@ -13,19 +13,31 @@ export type Database = {
         Row: {
           created_at: string | null
           evento_id: string | null
+          hora_fin: string | null
+          hora_inicio: string | null
+          horas_trabajadas: number | null
           id: string
+          pago_calculado: number | null
           personal_id: string | null
         }
         Insert: {
           created_at?: string | null
           evento_id?: string | null
+          hora_fin?: string | null
+          hora_inicio?: string | null
+          horas_trabajadas?: number | null
           id?: string
+          pago_calculado?: number | null
           personal_id?: string | null
         }
         Update: {
           created_at?: string | null
           evento_id?: string | null
+          hora_fin?: string | null
+          hora_inicio?: string | null
+          horas_trabajadas?: number | null
           id?: string
+          pago_calculado?: number | null
           personal_id?: string | null
         }
         Relationships: [
@@ -49,6 +61,7 @@ export type Database = {
         Row: {
           created_at: string | null
           descripcion: string | null
+          estado_liquidacion: string | null
           fecha_evento: string
           id: string
           nombre_evento: string
@@ -58,6 +71,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           descripcion?: string | null
+          estado_liquidacion?: string | null
           fecha_evento: string
           id?: string
           nombre_evento: string
@@ -67,6 +81,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           descripcion?: string | null
+          estado_liquidacion?: string | null
           fecha_evento?: string
           id?: string
           nombre_evento?: string

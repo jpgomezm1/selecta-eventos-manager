@@ -14,6 +14,7 @@ export interface Evento {
   ubicacion: string;
   fecha_evento: string;
   descripcion?: string;
+  estado_liquidacion?: 'pendiente' | 'liquidado';
   created_at: string;
   updated_at: string;
 }
@@ -22,11 +23,23 @@ export interface EventoPersonal {
   id: string;
   evento_id: string;
   personal_id: string;
+  hora_inicio?: string;
+  hora_fin?: string;
+  horas_trabajadas?: number;
+  pago_calculado?: number;
   created_at: string;
 }
 
+export interface PersonalAsignado extends Personal {
+  hora_inicio?: string;
+  hora_fin?: string;
+  horas_trabajadas?: number;
+  pago_calculado?: number;
+  evento_personal_id?: string;
+}
+
 export interface EventoConPersonal extends Evento {
-  personal: Personal[];
+  personal: PersonalAsignado[];
   costo_total?: number;
 }
 
