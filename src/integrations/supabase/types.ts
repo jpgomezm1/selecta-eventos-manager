@@ -9,7 +9,102 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      evento_personal: {
+        Row: {
+          created_at: string | null
+          evento_id: string | null
+          id: string
+          personal_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          evento_id?: string | null
+          id?: string
+          personal_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          evento_id?: string | null
+          id?: string
+          personal_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evento_personal_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_personal_personal_id_fkey"
+            columns: ["personal_id"]
+            isOneToOne: false
+            referencedRelation: "personal"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      eventos: {
+        Row: {
+          created_at: string | null
+          descripcion: string | null
+          fecha_evento: string
+          id: string
+          nombre_evento: string
+          ubicacion: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          descripcion?: string | null
+          fecha_evento: string
+          id?: string
+          nombre_evento: string
+          ubicacion: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          descripcion?: string | null
+          fecha_evento?: string
+          id?: string
+          nombre_evento?: string
+          ubicacion?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      personal: {
+        Row: {
+          created_at: string | null
+          id: string
+          nombre_completo: string
+          numero_cedula: string
+          rol: string
+          tarifa_hora: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          nombre_completo: string
+          numero_cedula: string
+          rol: string
+          tarifa_hora: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nombre_completo?: string
+          numero_cedula?: string
+          rol?: string
+          tarifa_hora?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

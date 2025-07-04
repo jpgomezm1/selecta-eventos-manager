@@ -61,7 +61,23 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				/* Selecta Eventos Custom Colors */
+				selecta: {
+					green: 'hsl(var(--selecta-green))',
+					'green-secondary': 'hsl(var(--selecta-green-secondary))',
+					blue: 'hsl(var(--selecta-blue))',
+					brown: 'hsl(var(--selecta-brown))',
+					gray: 'hsl(var(--selecta-gray))'
 				}
+			},
+			backgroundImage: {
+				'gradient-primary': 'var(--gradient-primary)',
+				'gradient-hero': 'var(--gradient-hero)'
+			},
+			boxShadow: {
+				'elegant': 'var(--shadow-elegant)',
+				'soft': 'var(--shadow-soft)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

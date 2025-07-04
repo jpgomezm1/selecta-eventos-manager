@@ -17,24 +17,40 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Selecta Eventos Brand Colors */
+    --primary: 74 50% 53%; /* Verde principal #8BC34A */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 122 39% 49%; /* Verde secundario #4CAF50 */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96.1%;
+    --accent: 189 48% 35%; /* Azul elegante #2E7D8A */
+    --accent-foreground: 0 0% 100%;
+
+    --muted: 210 12% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 74 50% 53%;
+
+    /* Custom Selecta Colors */
+    --selecta-green: 74 50% 53%; /* #8BC34A */
+    --selecta-green-secondary: 122 39% 49%; /* #4CAF50 */
+    --selecta-blue: 189 48% 35%; /* #2E7D8A */
+    --selecta-brown: 15 25% 47%; /* #8D6E63 */
+    --selecta-gray: 0 0% 96%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(74 50% 53%), hsl(122 39% 49%));
+    --gradient-hero: linear-gradient(135deg, hsl(74 50% 53% / 0.1), hsl(189 48% 35% / 0.1));
+    
+    /* Shadows */
+    --shadow-elegant: 0 10px 30px -10px hsl(74 50% 53% / 0.2);
+    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.1);
 
     --radius: 0.5rem;
 
