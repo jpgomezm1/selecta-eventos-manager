@@ -406,9 +406,13 @@ export default function EventosPage() {
       {/* Dialog de Liquidación */}
       {liquidacionEvento && (
         <LiquidacionDialog
-          open={isLiquidacionOpen}
-          onOpenChange={setIsLiquidacionOpen}
           evento={liquidacionEvento}
+          isOpen={isLiquidacionOpen}
+          onClose={() => {
+            setIsLiquidacionOpen(false);
+            setLiquidacionEvento(null);
+          }}
+          onLiquidationComplete={fetchEventos}
         />
       )}
     </div>

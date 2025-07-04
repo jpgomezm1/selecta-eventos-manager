@@ -15,6 +15,7 @@ export interface Evento {
   fecha_evento: string;
   descripcion?: string;
   estado_liquidacion?: 'pendiente' | 'liquidado';
+  fecha_liquidacion?: string;
   created_at: string;
   updated_at: string;
 }

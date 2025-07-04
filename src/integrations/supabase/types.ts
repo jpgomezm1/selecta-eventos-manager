@@ -75,6 +75,7 @@ export type Database = {
           descripcion: string | null
           estado_liquidacion: string | null
           fecha_evento: string
+          fecha_liquidacion: string | null
           id: string
           nombre_evento: string
           ubicacion: string
@@ -85,6 +86,7 @@ export type Database = {
           descripcion?: string | null
           estado_liquidacion?: string | null
           fecha_evento: string
+          fecha_liquidacion?: string | null
           id?: string
           nombre_evento: string
           ubicacion: string
@@ -95,6 +97,7 @@ export type Database = {
           descripcion?: string | null
           estado_liquidacion?: string | null
           fecha_evento?: string
+          fecha_liquidacion?: string | null
           id?: string
           nombre_evento?: string
           ubicacion?: string
