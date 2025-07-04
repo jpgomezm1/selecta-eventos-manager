@@ -67,6 +67,34 @@ export interface EventoFormData {
   personal_ids: string[];
 }
 
+export interface RegistroPago {
+  id: string;
+  empleado_id: string;
+  fecha_pago: string;
+  tipo_liquidacion: 'evento' | 'multiple';
+  monto_total: number;
+  metodo_pago: string;
+  notas?: string;
+  usuario_liquidador?: string;
+  numero_comprobante: string;
+  created_at: string;
+}
+
+export interface RegistroPagoEvento {
+  id: string;
+  registro_pago_id: string;
+  evento_id: string;
+  horas_trabajadas: number;
+  monto_evento: number;
+  created_at: string;
+}
+
+export interface RegistroPagoConEventos extends RegistroPago {
+  eventos: (RegistroPagoEvento & {
+    evento: Evento;
+  })[];
+}
+
 export const ROLES_PERSONAL = [
   'Coordinador',
   'Mesero',

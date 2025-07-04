@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, DollarSign, Clock, CheckCircle, AlertCircle, Eye, Filter, Download } from "lucide-react";
+import { ArrowLeft, Calendar, DollarSign, Clock, CheckCircle, AlertCircle, Eye, Filter, Download, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,8 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Personal, EventoPersonal, Evento } from "@/types/database";
+import { RegistroPagos } from "@/components/Forms/RegistroPagos";
 
 interface TrabajoConEvento extends EventoPersonal {
   evento: Evento;
@@ -108,6 +110,7 @@ export default function PersonalDetalle() {
     if (!trabajoSeleccionado) return;
 
     try {
+      // Actualizar el estado del pago
       const { error } = await supabase
         .from("evento_personal")
         .update({
@@ -119,6 +122,39 @@ export default function PersonalDetalle() {
         .eq("id", trabajoSeleccionado.id);
 
       if (error) throw error;
+
+      // Generar número de comprobante
+      const { data: numeroComprobante } = await supabase.rpc('generate_comprobante_number');
+      
+      // Crear registro de pago
+      const { data: registroPago, error: errorRegistro } = await supabase
+        .from("registro_pagos")
+        .insert({
+          empleado_id: id,
+          fecha_pago: formularioPago.fecha_pago,
+          tipo_liquidacion: 'evento',
+          monto_total: trabajoSeleccionado.pago_calculado || 0,
+          metodo_pago: formularioPago.metodo_pago,
+          notas: formularioPago.notas_pago || null,
+          usuario_liquidador: 'Sistema',
+          numero_comprobante: numeroComprobante
+        })
+        .select()
+        .single();
+
+      if (errorRegistro) throw errorRegistro;
+
+      // Crear relación con el evento
+      const { error: errorRelacion } = await supabase
+        .from("registro_pago_eventos")
+        .insert({
+          registro_pago_id: registroPago.id,
+          evento_id: trabajoSeleccionado.evento_id,
+          horas_trabajadas: trabajoSeleccionado.horas_trabajadas || 0,
+          monto_evento: trabajoSeleccionado.pago_calculado || 0
+        });
+
+      if (errorRelacion) throw errorRelacion;
 
       toast({
         title: "Pago registrado",
@@ -372,248 +408,290 @@ export default function PersonalDetalle() {
         </Card>
       </div>
 
-      {/* Historial de Trabajos */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Historial de Trabajos</CardTitle>
-              <CardDescription>
-                Registro completo de eventos trabajados
-              </CardDescription>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Select value={filtroEstado} onValueChange={setFiltroEstado}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Filtrar por estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="pendiente">Pendientes</SelectItem>
-                  <SelectItem value="pagado">Pagados</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Exportar
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {trabajosFiltrados.length === 0 ? (
-            <div className="text-center py-8">
-              <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">
-                {trabajos.length === 0 
-                  ? "No hay trabajos registrados" 
-                  : "No se encontraron trabajos con los filtros seleccionados"
-                }
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* Selección múltiple para eventos pendientes */}
-              {eventosPendientes.length > 0 && (
-                <div className="mb-4 space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="seleccionar-todos"
-                      checked={eventosPendientes.length > 0 && eventosPendientes.every(t => eventosSeleccionados.has(t.id))}
-                      onCheckedChange={handleSeleccionarTodos}
-                    />
-                    <Label htmlFor="seleccionar-todos" className="text-sm font-medium">
-                      Seleccionar todos los pendientes ({eventosPendientes.length})
-                    </Label>
-                  </div>
-                  
-                  {eventosSeleccionados.size > 0 && (
-                    <div className="flex items-center justify-between bg-muted p-3 rounded-lg">
-                      <div className="text-sm">
-                        <span className="font-medium">SELECCIONADOS:</span> {totalEventosSeleccionados} eventos | 
-                        <span className="font-medium"> TOTAL A PAGAR:</span> ${totalPagoSeleccionado.toLocaleString()}
+      {/* Contenido con pestañas */}
+      <Tabs defaultValue="historial" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="historial" className="flex items-center space-x-2">
+            <Calendar className="h-4 w-4" />
+            <span>Historial</span>
+          </TabsTrigger>
+          <TabsTrigger value="pagos" className="flex items-center space-x-2">
+            <DollarSign className="h-4 w-4" />
+            <span>Registro de Pagos</span>
+          </TabsTrigger>
+          <TabsTrigger value="estadisticas" className="flex items-center space-x-2">
+            <BarChart3 className="h-4 w-4" />
+            <span>Estadísticas</span>
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Pestaña de Historial */}
+        <TabsContent value="historial" className="space-y-4">
+          {/* Historial de Trabajos */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Historial de Trabajos</CardTitle>
+                  <CardDescription>
+                    Registro completo de eventos trabajados
+                  </CardDescription>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Select value={filtroEstado} onValueChange={setFiltroEstado}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Filtrar por estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="pendiente">Pendientes</SelectItem>
+                      <SelectItem value="pagado">Pagados</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Exportar
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {trabajosFiltrados.length === 0 ? (
+                <div className="text-center py-8">
+                  <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    {trabajos.length === 0 
+                      ? "No hay trabajos registrados" 
+                      : "No se encontraron trabajos con los filtros seleccionados"
+                    }
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Selección múltiple para eventos pendientes */}
+                  {eventosPendientes.length > 0 && (
+                    <div className="mb-4 space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="seleccionar-todos"
+                          checked={eventosPendientes.length > 0 && eventosPendientes.every(t => eventosSeleccionados.has(t.id))}
+                          onCheckedChange={handleSeleccionarTodos}
+                        />
+                        <Label htmlFor="seleccionar-todos" className="text-sm font-medium">
+                          Seleccionar todos los pendientes ({eventosPendientes.length})
+                        </Label>
                       </div>
-                      <Button 
-                        onClick={() => setIsLiquidacionMasivaOpen(true)}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <DollarSign className="h-4 w-4 mr-2" />
-                        Liquidar Eventos Seleccionados
-                      </Button>
+                      
+                      {eventosSeleccionados.size > 0 && (
+                        <div className="flex items-center justify-between bg-muted p-3 rounded-lg">
+                          <div className="text-sm">
+                            <span className="font-medium">SELECCIONADOS:</span> {totalEventosSeleccionados} eventos | 
+                            <span className="font-medium"> TOTAL A PAGAR:</span> ${totalPagoSeleccionado.toLocaleString()}
+                          </div>
+                          <Button 
+                            onClick={() => setIsLiquidacionMasivaOpen(true)}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <DollarSign className="h-4 w-4 mr-2" />
+                            Liquidar Eventos Seleccionados
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-              )}
-              
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {eventosPendientes.length > 0 && <TableHead className="w-12"></TableHead>}
-                      <TableHead>Fecha</TableHead>
-                      <TableHead>Evento</TableHead>
-                      <TableHead>Horas</TableHead>
-                      <TableHead>Pago</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {trabajosFiltrados.map((trabajo) => (
-                      <TableRow 
-                        key={trabajo.id}
-                        className={getRowClassName(trabajo.estado_pago, trabajo.evento.fecha_evento)}
-                      >
-                        {eventosPendientes.length > 0 && (
-                          <TableCell>
-                            {trabajo.estado_pago === 'pendiente' ? (
-                              <Checkbox
-                                checked={eventosSeleccionados.has(trabajo.id)}
-                                onCheckedChange={(checked) => handleSeleccionarEvento(trabajo.id, checked as boolean)}
-                              />
-                            ) : (
-                              <div className="h-4 w-4" />
-                            )}
-                          </TableCell>
-                        )}
-                        <TableCell>
-                          {new Date(trabajo.evento.fecha_evento).toLocaleDateString('es-CO')}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="link"
-                            className="p-0 h-auto text-left font-medium"
-                            onClick={() => navigate(`/eventos`)}
+                  
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          {eventosPendientes.length > 0 && <TableHead className="w-12"></TableHead>}
+                          <TableHead>Fecha</TableHead>
+                          <TableHead>Evento</TableHead>
+                          <TableHead>Horas</TableHead>
+                          <TableHead>Pago</TableHead>
+                          <TableHead>Estado</TableHead>
+                          <TableHead className="text-right">Acciones</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {trabajosFiltrados.map((trabajo) => (
+                          <TableRow 
+                            key={trabajo.id}
+                            className={getRowClassName(trabajo.estado_pago, trabajo.evento.fecha_evento)}
                           >
-                            {trabajo.evento.nombre_evento}
-                          </Button>
-                        </TableCell>
-                        <TableCell>
-                          {trabajo.horas_trabajadas ? `${trabajo.horas_trabajadas}h` : '-'}
-                        </TableCell>
-                        <TableCell>
-                          ${Number(trabajo.pago_calculado || 0).toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          {getEstadoBadge(trabajo.estado_pago, trabajo.evento.fecha_evento)}
-                        </TableCell>
-                        <TableCell className="text-right space-x-2">
-                          {trabajo.estado_pago === 'pendiente' && !eventosSeleccionados.has(trabajo.id) && (
-                            <Dialog open={isDialogOpen && trabajoSeleccionado?.id === trabajo.id} onOpenChange={(open) => {
-                              if (!open) {
-                                setIsDialogOpen(false);
-                                resetFormulario();
-                              }
-                            }}>
-                              <DialogTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setTrabajoSeleccionado(trabajo);
-                                    setIsDialogOpen(true);
-                                  }}
-                                >
-                                  <CheckCircle className="h-4 w-4 mr-1" />
-                                  Marcar Pagado
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="sm:max-w-md">
-                                <DialogHeader>
-                                  <DialogTitle>Registrar Pago</DialogTitle>
-                                  <DialogDescription>
-                                    Marca este trabajo como pagado
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-4">
-                                  <div className="bg-muted p-4 rounded-lg">
-                                    <p><strong>Empleado:</strong> {personal.nombre_completo}</p>
-                                    <p><strong>Evento:</strong> {trabajo.evento.nombre_evento}</p>
-                                    <p><strong>Horas trabajadas:</strong> {trabajo.horas_trabajadas}h</p>
-                                    <p><strong>Monto a pagar:</strong> ${Number(trabajo.pago_calculado || 0).toLocaleString()}</p>
-                                  </div>
-                                  
-                                  <div className="space-y-2">
-                                    <Label htmlFor="fecha_pago">Fecha de pago</Label>
-                                    <Input
-                                      id="fecha_pago"
-                                      type="date"
-                                      value={formularioPago.fecha_pago}
-                                      onChange={(e) => setFormularioPago(prev => ({
-                                        ...prev,
-                                        fecha_pago: e.target.value
-                                      }))}
-                                    />
-                                  </div>
-
-                                  <div className="space-y-2">
-                                    <Label htmlFor="metodo_pago">Método de pago</Label>
-                                    <Select 
-                                      value={formularioPago.metodo_pago} 
-                                      onValueChange={(value: 'efectivo' | 'transferencia' | 'nomina' | 'otro') => 
-                                        setFormularioPago(prev => ({ ...prev, metodo_pago: value }))
-                                      }
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="efectivo">Efectivo</SelectItem>
-                                        <SelectItem value="transferencia">Transferencia</SelectItem>
-                                        <SelectItem value="nomina">Nómina</SelectItem>
-                                        <SelectItem value="otro">Otro</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-
-                                  <div className="space-y-2">
-                                    <Label htmlFor="notas_pago">Notas (opcional)</Label>
-                                    <Textarea
-                                      id="notas_pago"
-                                      placeholder="Observaciones adicionales..."
-                                      value={formularioPago.notas_pago}
-                                      onChange={(e) => setFormularioPago(prev => ({
-                                        ...prev,
-                                        notas_pago: e.target.value
-                                      }))}
-                                    />
-                                  </div>
-
-                                  <div className="flex justify-end space-x-2 pt-4">
-                                    <Button 
-                                      variant="outline" 
+                            {eventosPendientes.length > 0 && (
+                              <TableCell>
+                                {trabajo.estado_pago === 'pendiente' ? (
+                                  <Checkbox
+                                    checked={eventosSeleccionados.has(trabajo.id)}
+                                    onCheckedChange={(checked) => handleSeleccionarEvento(trabajo.id, checked as boolean)}
+                                  />
+                                ) : (
+                                  <div className="h-4 w-4" />
+                                )}
+                              </TableCell>
+                            )}
+                            <TableCell>
+                              {new Date(trabajo.evento.fecha_evento).toLocaleDateString('es-CO')}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="link"
+                                className="p-0 h-auto text-left font-medium"
+                                onClick={() => navigate(`/eventos`)}
+                              >
+                                {trabajo.evento.nombre_evento}
+                              </Button>
+                            </TableCell>
+                            <TableCell>
+                              {trabajo.horas_trabajadas ? `${trabajo.horas_trabajadas}h` : '-'}
+                            </TableCell>
+                            <TableCell>
+                              ${Number(trabajo.pago_calculado || 0).toLocaleString()}
+                            </TableCell>
+                            <TableCell>
+                              {getEstadoBadge(trabajo.estado_pago, trabajo.evento.fecha_evento)}
+                            </TableCell>
+                            <TableCell className="text-right space-x-2">
+                              {trabajo.estado_pago === 'pendiente' && !eventosSeleccionados.has(trabajo.id) && (
+                                <Dialog open={isDialogOpen && trabajoSeleccionado?.id === trabajo.id} onOpenChange={(open) => {
+                                  if (!open) {
+                                    setIsDialogOpen(false);
+                                    resetFormulario();
+                                  }
+                                }}>
+                                  <DialogTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
                                       onClick={() => {
-                                        setIsDialogOpen(false);
-                                        resetFormulario();
+                                        setTrabajoSeleccionado(trabajo);
+                                        setIsDialogOpen(true);
                                       }}
                                     >
-                                      Cancelar
+                                      <CheckCircle className="h-4 w-4 mr-1" />
+                                      Marcar Pagado
                                     </Button>
-                                    <Button onClick={handleMarcarPagado}>
-                                      Confirmar Pago
-                                    </Button>
-                                  </div>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/eventos`)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                                  </DialogTrigger>
+                                  <DialogContent className="sm:max-w-md">
+                                    <DialogHeader>
+                                      <DialogTitle>Registrar Pago</DialogTitle>
+                                      <DialogDescription>
+                                        Marca este trabajo como pagado
+                                      </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="space-y-4">
+                                      <div className="bg-muted p-4 rounded-lg">
+                                        <p><strong>Empleado:</strong> {personal.nombre_completo}</p>
+                                        <p><strong>Evento:</strong> {trabajo.evento.nombre_evento}</p>
+                                        <p><strong>Horas trabajadas:</strong> {trabajo.horas_trabajadas}h</p>
+                                        <p><strong>Monto a pagar:</strong> ${Number(trabajo.pago_calculado || 0).toLocaleString()}</p>
+                                      </div>
+                                      
+                                      <div className="space-y-2">
+                                        <Label htmlFor="fecha_pago">Fecha de pago</Label>
+                                        <Input
+                                          id="fecha_pago"
+                                          type="date"
+                                          value={formularioPago.fecha_pago}
+                                          onChange={(e) => setFormularioPago(prev => ({
+                                            ...prev,
+                                            fecha_pago: e.target.value
+                                          }))}
+                                        />
+                                      </div>
+
+                                      <div className="space-y-2">
+                                        <Label htmlFor="metodo_pago">Método de pago</Label>
+                                        <Select 
+                                          value={formularioPago.metodo_pago} 
+                                          onValueChange={(value: 'efectivo' | 'transferencia' | 'nomina' | 'otro') => 
+                                            setFormularioPago(prev => ({ ...prev, metodo_pago: value }))
+                                          }
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="efectivo">Efectivo</SelectItem>
+                                            <SelectItem value="transferencia">Transferencia</SelectItem>
+                                            <SelectItem value="nomina">Nómina</SelectItem>
+                                            <SelectItem value="otro">Otro</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+
+                                      <div className="space-y-2">
+                                        <Label htmlFor="notas_pago">Notas (opcional)</Label>
+                                        <Textarea
+                                          id="notas_pago"
+                                          placeholder="Observaciones adicionales..."
+                                          value={formularioPago.notas_pago}
+                                          onChange={(e) => setFormularioPago(prev => ({
+                                            ...prev,
+                                            notas_pago: e.target.value
+                                          }))}
+                                        />
+                                      </div>
+
+                                      <div className="flex justify-end space-x-2 pt-4">
+                                        <Button 
+                                          variant="outline" 
+                                          onClick={() => {
+                                            setIsDialogOpen(false);
+                                            resetFormulario();
+                                          }}
+                                        >
+                                          Cancelar
+                                        </Button>
+                                        <Button onClick={handleMarcarPagado}>
+                                          Confirmar Pago
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(`/eventos`)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Pestaña de Registro de Pagos */}
+        <TabsContent value="pagos">
+          <RegistroPagos empleadoId={id!} empleadoNombre={personal.nombre_completo} />
+        </TabsContent>
+
+        {/* Pestaña de Estadísticas */}
+        <TabsContent value="estadisticas">
+          <Card>
+            <CardHeader>
+              <CardTitle>Estadísticas del Empleado</CardTitle>
+              <CardDescription>Análisis de rendimiento y pagos</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">Estadísticas próximamente disponibles</p>
               </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
       
       {/* Dialog de Liquidación Consolidada */}
       <Dialog open={isLiquidacionMasivaOpen} onOpenChange={setIsLiquidacionMasivaOpen}>

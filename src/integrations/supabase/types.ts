@@ -135,12 +135,104 @@ export type Database = {
         }
         Relationships: []
       }
+      registro_pago_eventos: {
+        Row: {
+          created_at: string
+          evento_id: string
+          horas_trabajadas: number
+          id: string
+          monto_evento: number
+          registro_pago_id: string
+        }
+        Insert: {
+          created_at?: string
+          evento_id: string
+          horas_trabajadas: number
+          id?: string
+          monto_evento: number
+          registro_pago_id: string
+        }
+        Update: {
+          created_at?: string
+          evento_id?: string
+          horas_trabajadas?: number
+          id?: string
+          monto_evento?: number
+          registro_pago_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registro_pago_eventos_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registro_pago_eventos_registro_pago_id_fkey"
+            columns: ["registro_pago_id"]
+            isOneToOne: false
+            referencedRelation: "registro_pagos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registro_pagos: {
+        Row: {
+          created_at: string
+          empleado_id: string
+          fecha_pago: string
+          id: string
+          metodo_pago: string
+          monto_total: number
+          notas: string | null
+          numero_comprobante: string
+          tipo_liquidacion: string
+          usuario_liquidador: string | null
+        }
+        Insert: {
+          created_at?: string
+          empleado_id: string
+          fecha_pago: string
+          id?: string
+          metodo_pago: string
+          monto_total: number
+          notas?: string | null
+          numero_comprobante: string
+          tipo_liquidacion: string
+          usuario_liquidador?: string | null
+        }
+        Update: {
+          created_at?: string
+          empleado_id?: string
+          fecha_pago?: string
+          id?: string
+          metodo_pago?: string
+          monto_total?: number
+          notas?: string | null
+          numero_comprobante?: string
+          tipo_liquidacion?: string
+          usuario_liquidador?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registro_pagos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "personal"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_comprobante_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
