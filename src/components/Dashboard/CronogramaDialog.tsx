@@ -75,44 +75,76 @@ export function CronogramaDialog({ isOpen, onClose }: CronogramaDialogProps) {
     setLoading(true);
     try {
       // Calcular fecha límite (próximos 15 días)
+      const hoy = new Date();
       const fechaLimite = new Date();
       fechaLimite.setDate(fechaLimite.getDate() + 15);
 
-      const { data, error } = await supabase
-        .from("evento_personal")
+      console.log('Cargando eventos para empleado:', empleadoSeleccionado);
+      console.log('Rango de fechas:', hoy.toISOString().split('T')[0], 'a', fechaLimite.toISOString().split('T')[0]);
+
+      // Consulta corregida: primero obtener eventos en el rango de fechas
+      const { data: eventosData, error: eventosError } = await supabase
+        .from("eventos")
         .select(`
-          hora_inicio,
-          hora_fin,
-          evento:eventos(
-            nombre_evento,
-            ubicacion,
-            fecha_evento
+          id,
+          nombre_evento,
+          ubicacion,
+          fecha_evento,
+          evento_personal!inner(
+            hora_inicio,
+            hora_fin,
+            personal_id
           )
         `)
-        .eq("personal_id", empleadoSeleccionado)
-        .gte("evento.fecha_evento", new Date().toISOString().split('T')[0])
-        .lte("evento.fecha_evento", fechaLimite.toISOString().split('T')[0])
-        .order("evento.fecha_evento", { ascending: true });
+        .eq("evento_personal.personal_id", empleadoSeleccionado)
+        .gte("fecha_evento", hoy.toISOString().split('T')[0])
+        .lte("fecha_evento", fechaLimite.toISOString().split('T')[0])
+        .order("fecha_evento", { ascending: true });
 
-      if (error) throw error;
+      if (eventosError) {
+        console.error('Error en consulta de eventos:', eventosError);
+        throw eventosError;
+      }
 
-      // Transformar datos
-      const eventosTransformados = data?.map(item => ({
-        nombre_evento: item.evento.nombre_evento,
-        ubicacion: item.evento.ubicacion,
-        fecha_evento: item.evento.fecha_evento,
-        hora_inicio: item.hora_inicio,
-        hora_fin: item.hora_fin
-      })) || [];
+      console.log('Eventos obtenidos:', eventosData);
+
+      // Transformar datos para el formato esperado
+      const eventosTransformados = eventosData?.map(evento => {
+        const eventoPersonal = evento.evento_personal?.[0]; // Tomar el primer registro (debería ser único por empleado)
+        return {
+          nombre_evento: evento.nombre_evento,
+          ubicacion: evento.ubicacion,
+          fecha_evento: evento.fecha_evento,
+          hora_inicio: eventoPersonal?.hora_inicio,
+          hora_fin: eventoPersonal?.hora_fin
+        };
+      }) || [];
+
+      console.log('Eventos transformados:', eventosTransformados);
 
       setEventos(eventosTransformados);
       generarMensaje(eventosTransformados);
     } catch (error) {
       console.error("Error cargando eventos:", error);
+      
+      // En lugar de mostrar error, mostrar mensaje amigable
+      const empleado = empleados.find(e => e.id === empleadoSeleccionado);
+      const nombreEmpleado = empleado?.nombre_completo.split(' ')[0] || 'empleado';
+      
+      const mensajeError = `⚠️ No se pudieron cargar los eventos en este momento.
+
+Por favor intenta de nuevo en unos segundos.
+
+Si el problema persiste, contacta al administrador.`;
+
+      setMensajeCronograma(mensajeError);
+      setEventos([]);
+      
+      // Mostrar toast informativo en lugar de error
       toast({
-        title: "Error",
-        description: "Error al cargar eventos del empleado",
-        variant: "destructive"
+        title: "Información",
+        description: `No se pudieron cargar los eventos de ${empleado?.nombre_completo || 'este empleado'}. Intenta de nuevo.`,
+        variant: "default"
       });
     } finally {
       setLoading(false);
@@ -121,14 +153,17 @@ export function CronogramaDialog({ isOpen, onClose }: CronogramaDialogProps) {
 
   const generarMensaje = (eventosData: EventoEmpleado[]) => {
     const empleado = empleados.find(e => e.id === empleadoSeleccionado);
-    if (!empleado) return;
+    if (!empleado) {
+      setMensajeCronograma("Selecciona un empleado para ver su cronograma");
+      return;
+    }
 
     const nombreEmpleado = empleado.nombre_completo.split(' ')[0]; // Solo primer nombre
 
     if (eventosData.length === 0) {
       const mensaje = `📅 Hola ${nombreEmpleado}! 
 
-No tienes eventos programados para los próximos días. 
+No tienes eventos programados para los próximos 15 días.
 
 ¡Disfruta tu tiempo libre! 😊`;
       setMensajeCronograma(mensaje);
@@ -138,6 +173,7 @@ No tienes eventos programados para los próximos días.
     let mensaje = `📅 Hola ${nombreEmpleado}! Tu cronograma para los próximos días:\n\n`;
 
     let totalHoras = 0;
+    let eventosConHorario = 0;
 
     eventosData.forEach(evento => {
       // Formatear fecha
@@ -156,20 +192,32 @@ No tienes eventos programados para los próximos días.
         horario = `${horaInicio} - ${horaFin}`;
 
         // Calcular horas trabajadas
-        const inicio = new Date(`2000-01-01T${evento.hora_inicio}`);
-        const fin = new Date(`2000-01-01T${evento.hora_fin}`);
-        const horasTrabajadas = (fin.getTime() - inicio.getTime()) / (1000 * 60 * 60);
-        totalHoras += horasTrabajadas;
+        try {
+          const inicio = new Date(`2000-01-01T${evento.hora_inicio}`);
+          const fin = new Date(`2000-01-01T${evento.hora_fin}`);
+          const horasTrabajadas = (fin.getTime() - inicio.getTime()) / (1000 * 60 * 60);
+          if (horasTrabajadas > 0) {
+            totalHoras += horasTrabajadas;
+            eventosConHorario++;
+          }
+        } catch (error) {
+          console.warn('Error calculando horas para evento:', evento.nombre_evento);
+        }
       }
 
       mensaje += `• ${fechaFormateada.charAt(0).toUpperCase() + fechaFormateada.slice(1)} - ${evento.nombre_evento}\n`;
       mensaje += `  📍 ${evento.ubicacion} | ⏰ ${horario}\n\n`;
     });
 
+    // Resumen final
     mensaje += `Total eventos: ${eventosData.length}`;
+    
     if (totalHoras > 0) {
-      mensaje += ` | Total horas: ${totalHoras.toFixed(0)}h`;
+      mensaje += ` | Total horas: ${Math.round(totalHoras)}h`;
+    } else if (eventosConHorario === 0) {
+      mensaje += ` | Horas por definir`;
     }
+    
     mensaje += `\n\n¡Nos vemos! 👋`;
 
     setMensajeCronograma(mensaje);
@@ -274,11 +322,16 @@ No tienes eventos programados para los próximos días.
           </Button>
           <Button 
             variant="outline"
-            onClick={() => empleadoSeleccionado && cargarEventosEmpleado()}
+            onClick={() => {
+              if (empleadoSeleccionado) {
+                console.log('Reintentando cargar eventos para:', empleadoSeleccionado);
+                cargarEventosEmpleado();
+              }
+            }}
             disabled={!empleadoSeleccionado || loading}
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Actualizar
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Cargando...' : 'Actualizar'}
           </Button>
           <Button 
             onClick={copiarAlPortapapeles}
