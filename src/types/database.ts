@@ -27,6 +27,10 @@ export interface EventoPersonal {
   hora_fin?: string;
   horas_trabajadas?: number;
   pago_calculado?: number;
+  estado_pago: 'pendiente' | 'pagado';
+  fecha_pago?: string;
+  metodo_pago?: 'efectivo' | 'transferencia' | 'nomina' | 'otro';
+  notas_pago?: string;
   created_at: string;
 }
 
@@ -35,6 +39,10 @@ export interface PersonalAsignado extends Personal {
   hora_fin?: string;
   horas_trabajadas?: number;
   pago_calculado?: number;
+  estado_pago?: 'pendiente' | 'pagado';
+  fecha_pago?: string;
+  metodo_pago?: 'efectivo' | 'transferencia' | 'nomina' | 'otro';
+  notas_pago?: string;
   evento_personal_id?: string;
 }
 

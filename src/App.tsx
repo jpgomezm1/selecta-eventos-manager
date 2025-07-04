@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppLayout } from "@/components/Layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Personal from "./pages/Personal";
+import PersonalDetalle from "./pages/PersonalDetalle";
 import Eventos from "./pages/Eventos";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -48,6 +49,11 @@ const App = () => (
             <Route path="/personal" element={
               <ProtectedRoute>
                 <Personal />
+              </ProtectedRoute>
+            } />
+            <Route path="/personal/:id" element={
+              <ProtectedRoute>
+                <PersonalDetalle />
               </ProtectedRoute>
             } />
             <Route path="/eventos" element={

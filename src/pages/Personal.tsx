@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Plus, Search, Edit, Trash2, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, Search, Edit, Trash2, Users, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Personal, ROLES_PERSONAL } from "@/types/database";
 
 export default function PersonalPage() {
+  const navigate = useNavigate();
   const [personal, setPersonal] = useState<Personal[]>([]);
   const [filteredPersonal, setFilteredPersonal] = useState<Personal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -286,6 +288,13 @@ export default function PersonalPage() {
                         ${Number(person.tarifa_hora).toLocaleString()} COP
                       </TableCell>
                       <TableCell className="text-right space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/personal/${person.id}`)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"

@@ -12,31 +12,43 @@ export type Database = {
       evento_personal: {
         Row: {
           created_at: string | null
+          estado_pago: string | null
           evento_id: string | null
+          fecha_pago: string | null
           hora_fin: string | null
           hora_inicio: string | null
           horas_trabajadas: number | null
           id: string
+          metodo_pago: string | null
+          notas_pago: string | null
           pago_calculado: number | null
           personal_id: string | null
         }
         Insert: {
           created_at?: string | null
+          estado_pago?: string | null
           evento_id?: string | null
+          fecha_pago?: string | null
           hora_fin?: string | null
           hora_inicio?: string | null
           horas_trabajadas?: number | null
           id?: string
+          metodo_pago?: string | null
+          notas_pago?: string | null
           pago_calculado?: number | null
           personal_id?: string | null
         }
         Update: {
           created_at?: string | null
+          estado_pago?: string | null
           evento_id?: string | null
+          fecha_pago?: string | null
           hora_fin?: string | null
           hora_inicio?: string | null
           horas_trabajadas?: number | null
           id?: string
+          metodo_pago?: string | null
+          notas_pago?: string | null
           pago_calculado?: number | null
           personal_id?: string | null
         }
