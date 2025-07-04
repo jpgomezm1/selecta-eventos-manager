@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { CronogramaDialog } from "./CronogramaDialog";
 
 export function AccionesRapidas() {
   const [stats, setStats] = useState({
@@ -26,6 +27,7 @@ export function AccionesRapidas() {
     conflictos: 0,
     totalEventosProximos: 0
   });
+  const [isCronogramaDialogOpen, setIsCronogramaDialogOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -220,10 +222,7 @@ export function AccionesRapidas() {
             <Button 
               variant="outline" 
               className="h-auto py-3 flex flex-col items-center space-y-1"
-              onClick={() => {
-                // TODO: Implementar envío de cronogramas
-                alert("Función de envío por email próximamente");
-              }}
+              onClick={() => setIsCronogramaDialogOpen(true)}
             >
               <Mail className="h-4 w-4" />
               <span className="text-xs">Enviar Cronogramas</span>
@@ -277,6 +276,12 @@ export function AccionesRapidas() {
             </div>
           </div>
         </div>
+
+        {/* Dialog de Cronogramas */}
+        <CronogramaDialog
+          isOpen={isCronogramaDialogOpen}
+          onClose={() => setIsCronogramaDialogOpen(false)}
+        />
       </CardContent>
     </Card>
   );
