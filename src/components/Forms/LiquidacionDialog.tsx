@@ -37,11 +37,13 @@ export function LiquidacionDialog({ evento, isOpen, onClose, onLiquidationComple
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const handleLiquidacionCompleta = async () => {
-    if (!evento) return;
+    if (!evento || empleadosPendientes.length === 0) return;
     
     setLoading(true);
     try {
-      // Actualizar todos los registros de evento_personal
+      // Solo actualizar empleados pendientes de pago
+      const empleadosPendientesIds = empleadosPendientes.map(p => p.evento_personal_id).filter(Boolean);
+      
       const { error: eventoPersonalError } = await supabase
         .from("evento_personal")
         .update({
@@ -50,27 +52,36 @@ export function LiquidacionDialog({ evento, isOpen, onClose, onLiquidationComple
           metodo_pago: formulario.metodo_pago,
           notas_pago: formulario.notas_pago
         })
-        .eq("evento_id", evento.id);
+        .in("id", empleadosPendientesIds);
 
       if (eventoPersonalError) throw eventoPersonalError;
 
-      // Actualizar el estado del evento
-      const { error: eventoError } = await supabase
-        .from("eventos")
-        .update({
-          estado_liquidacion: 'liquidado',
-          fecha_liquidacion: formulario.fecha_pago
-        })
-        .eq("id", evento.id);
+      // Verificar si todos los empleados del evento están pagados
+      const { data: todosLosEmpleados, error: checkError } = await supabase
+        .from("evento_personal")
+        .select("estado_pago")
+        .eq("evento_id", evento.id);
 
-      if (eventoError) throw eventoError;
+      if (checkError) throw checkError;
 
-      const totalEmpleados = evento.personal.length;
-      const totalMonto = evento.costo_total || 0;
+      const todosLiquidados = todosLosEmpleados?.every(emp => emp.estado_pago === 'pagado');
+
+      // Solo actualizar estado del evento si todos están liquidados
+      if (todosLiquidados) {
+        const { error: eventoError } = await supabase
+          .from("eventos")
+          .update({
+            estado_liquidacion: 'liquidado',
+            fecha_liquidacion: formulario.fecha_pago
+          })
+          .eq("id", evento.id);
+
+        if (eventoError) throw eventoError;
+      }
 
       toast({
         title: "✅ Liquidación confirmada",
-        description: `Liquidación confirmada para ${totalEmpleados} empleados ($${totalMonto.toLocaleString()})`,
+        description: `Liquidación confirmada para ${empleadosPendientes.length} empleados ($${totalPendientes.toLocaleString()})`,
       });
 
       setShowConfirmDialog(false);
@@ -79,7 +90,7 @@ export function LiquidacionDialog({ evento, isOpen, onClose, onLiquidationComple
     } catch (error) {
       toast({
         title: "Error",
-        description: "Error al procesar la liquidación masiva",
+        description: "Error al procesar la liquidación",
         variant: "destructive",
       });
     } finally {
@@ -102,9 +113,17 @@ export function LiquidacionDialog({ evento, isOpen, onClose, onLiquidationComple
     }
   }, [isOpen]);
 
-  // Verificar si hay empleados sin horas definidas
-  const empleadosSinHoras = evento?.personal.filter(p => !p.horas_trabajadas || p.horas_trabajadas === 0) || [];
-  const puedeLiberar = empleadosSinHoras.length === 0;
+  // Separar empleados por estado de pago
+  const empleadosPendientes = evento?.personal.filter(p => p.estado_pago !== 'pagado') || [];
+  const empleadosPagados = evento?.personal.filter(p => p.estado_pago === 'pagado') || [];
+  
+  // Verificar si hay empleados pendientes sin horas definidas
+  const empleadosSinHoras = empleadosPendientes.filter(p => !p.horas_trabajadas || p.horas_trabajadas === 0);
+  const puedeLiberar = empleadosSinHoras.length === 0 && empleadosPendientes.length > 0;
+  
+  // Calcular totales
+  const totalPendientes = empleadosPendientes.reduce((sum, p) => sum + (p.pago_calculado || 0), 0);
+  const totalPagados = empleadosPagados.reduce((sum, p) => sum + (p.pago_calculado || 0), 0);
 
   if (!evento) return null;
 
@@ -154,97 +173,180 @@ export function LiquidacionDialog({ evento, isOpen, onClose, onLiquidationComple
                     <th className="px-4 py-3 text-center text-sm font-medium text-gray-900">Horas</th>
                     <th className="px-4 py-3 text-right text-sm font-medium text-gray-900">Tarifa</th>
                     <th className="px-4 py-3 text-right text-sm font-medium text-gray-900">Total</th>
+                    <th className="px-4 py-3 text-center text-sm font-medium text-gray-900">Estado</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {evento.personal.map((person) => (
-                    <tr key={person.id} className={!person.horas_trabajadas ? "bg-red-50" : ""}>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                        {person.nombre_completo}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {person.rol}
-                      </td>
-                      <td className="px-4 py-3 text-center text-sm text-gray-600">
-                        {person.horas_trabajadas ? `${person.horas_trabajadas}h` : 
-                          <span className="text-red-500 font-medium">Sin definir</span>
-                        }
-                      </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-600">
-                        ${Number(person.tarifa_hora).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">
-                        ${Number(person.pago_calculado || 0).toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
+                  {/* Empleados pendientes */}
+                  {empleadosPendientes.length > 0 && (
+                    <>
+                      <tr className="bg-blue-50">
+                        <td colSpan={6} className="px-4 py-2 text-sm font-semibold text-blue-900">
+                          EMPLEADOS PENDIENTES DE PAGO ({empleadosPendientes.length})
+                        </td>
+                      </tr>
+                      {empleadosPendientes.map((person) => (
+                        <tr key={person.id} className={!person.horas_trabajadas ? "bg-red-50" : ""}>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                            {person.nombre_completo}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {person.rol}
+                          </td>
+                          <td className="px-4 py-3 text-center text-sm text-gray-600">
+                            {person.horas_trabajadas ? `${person.horas_trabajadas}h` : 
+                              <span className="text-red-500 font-medium">Sin definir</span>
+                            }
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm text-gray-600">
+                            ${Number(person.tarifa_hora).toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">
+                            ${Number(person.pago_calculado || 0).toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <Badge variant="secondary">⏳ Pendiente</Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </>
+                  )}
+                  
+                  {/* Empleados ya pagados */}
+                  {empleadosPagados.length > 0 && (
+                    <>
+                      <tr className="bg-green-50">
+                        <td colSpan={6} className="px-4 py-2 text-sm font-semibold text-green-900">
+                          EMPLEADOS YA PAGADOS ({empleadosPagados.length})
+                        </td>
+                      </tr>
+                      {empleadosPagados.map((person) => (
+                        <tr key={person.id} className="bg-green-50 opacity-75">
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                            {person.nombre_completo}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {person.rol}
+                          </td>
+                          <td className="px-4 py-3 text-center text-sm text-gray-600">
+                            {person.horas_trabajadas}h
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm text-gray-600">
+                            ${Number(person.tarifa_hora).toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">
+                            ${Number(person.pago_calculado || 0).toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <Badge variant="default" className="bg-green-100 text-green-800">
+                              ✅ Pagado
+                              {person.fecha_pago && (
+                                <div className="text-xs text-green-600 mt-1">
+                                  {new Date(person.fecha_pago).toLocaleDateString('es-CO')}
+                                </div>
+                              )}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </>
+                  )}
                 </tbody>
                 <tfoot className="bg-gray-50">
                   <tr>
                     <td colSpan={4} className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
-                      TOTAL:
+                      TOTAL A LIQUIDAR:
                     </td>
                     <td className="px-4 py-3 text-right text-lg font-bold text-primary">
-                      ${Number(evento.costo_total || 0).toLocaleString()}
+                      ${totalPendientes.toLocaleString()}
                     </td>
+                    <td className="px-4 py-3"></td>
                   </tr>
+                  {totalPagados > 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-3 text-right text-sm font-semibold text-green-700">
+                        TOTAL YA PAGADO:
+                      </td>
+                      <td className="px-4 py-3 text-right text-lg font-bold text-green-700">
+                        ${totalPagados.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3"></td>
+                    </tr>
+                  )}
                 </tfoot>
               </table>
             </div>
           </div>
 
           {/* Formulario de liquidación */}
-          <div className="border rounded-lg p-4 bg-gray-50">
-            <h4 className="font-medium mb-4">Datos de liquidación</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="metodo_pago">Método de pago</Label>
-                <Select 
-                  value={formulario.metodo_pago} 
-                  onValueChange={(value: 'efectivo' | 'transferencia' | 'nomina' | 'otro') => 
-                    setFormulario(prev => ({ ...prev, metodo_pago: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="efectivo">Efectivo</SelectItem>
-                    <SelectItem value="transferencia">Transferencia</SelectItem>
-                    <SelectItem value="nomina">Nómina</SelectItem>
-                    <SelectItem value="otro">Otro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          {empleadosPendientes.length > 0 ? (
+            <div className="border rounded-lg p-4 bg-gray-50">
+              <h4 className="font-medium mb-4">Datos de liquidación</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="metodo_pago">Método de pago</Label>
+                  <Select 
+                    value={formulario.metodo_pago} 
+                    onValueChange={(value: 'efectivo' | 'transferencia' | 'nomina' | 'otro') => 
+                      setFormulario(prev => ({ ...prev, metodo_pago: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="efectivo">Efectivo</SelectItem>
+                      <SelectItem value="transferencia">Transferencia</SelectItem>
+                      <SelectItem value="nomina">Nómina</SelectItem>
+                      <SelectItem value="otro">Otro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="fecha_pago">Fecha de pago</Label>
-                <Input
-                  id="fecha_pago"
-                  type="date"
-                  value={formulario.fecha_pago}
-                  onChange={(e) => setFormulario(prev => ({
-                    ...prev,
-                    fecha_pago: e.target.value
-                  }))}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fecha_pago">Fecha de pago</Label>
+                  <Input
+                    id="fecha_pago"
+                    type="date"
+                    value={formulario.fecha_pago}
+                    onChange={(e) => setFormulario(prev => ({
+                      ...prev,
+                      fecha_pago: e.target.value
+                    }))}
+                  />
+                </div>
 
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="notas_pago">Notas</Label>
-                <Textarea
-                  id="notas_pago"
-                  placeholder="Observaciones sobre la liquidación..."
-                  value={formulario.notas_pago}
-                  onChange={(e) => setFormulario(prev => ({
-                    ...prev,
-                    notas_pago: e.target.value
-                  }))}
-                  rows={3}
-                />
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="notas_pago">Notas</Label>
+                  <Textarea
+                    id="notas_pago"
+                    placeholder="Observaciones sobre la liquidación..."
+                    value={formulario.notas_pago}
+                    onChange={(e) => setFormulario(prev => ({
+                      ...prev,
+                      notas_pago: e.target.value
+                    }))}
+                    rows={3}
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="h-5 w-5 text-blue-600" />
+                <h4 className="font-medium text-blue-800">Evento Completamente Liquidado</h4>
+              </div>
+              <p className="text-sm text-blue-700 mt-2">
+                Todos los empleados de este evento ya han sido pagados. No hay liquidaciones pendientes.
+              </p>
+              {empleadosPagados.length > 0 && empleadosPagados[0].fecha_pago && (
+                <p className="text-sm text-blue-700 mt-1">
+                  Última liquidación: {new Date(empleadosPagados[0].fecha_pago).toLocaleDateString('es-CO')}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Botones de acción */}
           <div className="flex justify-between items-center pt-4">
@@ -261,11 +363,15 @@ export function LiquidacionDialog({ evento, isOpen, onClose, onLiquidationComple
             <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
               <AlertDialogTrigger asChild>
                 <Button 
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className={empleadosPendientes.length > 0 ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                  variant={empleadosPendientes.length > 0 ? "default" : "outline"}
                   disabled={!puedeLiberar || loading}
                 >
                   <DollarSign className="h-4 w-4 mr-2" />
-                  💰 Confirmar Liquidación Completa
+                  {empleadosPendientes.length > 0 
+                    ? `💰 Liquidar Empleados Pendientes (${empleadosPendientes.length})`
+                    : "✅ Evento Completamente Liquidado"
+                  }
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -276,13 +382,13 @@ export function LiquidacionDialog({ evento, isOpen, onClose, onLiquidationComple
                   </AlertDialogTitle>
                   <AlertDialogDescription asChild>
                     <div className="space-y-3">
-                      <p>¿Estás seguro de que deseas confirmar el pago completo de todos los empleados de este evento?</p>
+                      <p>¿Estás seguro de que deseas confirmar el pago de los empleados pendientes de este evento?</p>
                       
                       <div className="bg-gray-50 p-3 rounded-lg space-y-2">
                         <p className="font-medium">Esta acción:</p>
                         <ul className="text-sm space-y-1">
-                          <li>• Marcará como PAGADO a {evento.personal.length} empleados</li>
-                          <li>• Total a liquidar: ${Number(evento.costo_total || 0).toLocaleString()}</li>
+                          <li>• Marcará como PAGADO a {empleadosPendientes.length} empleados</li>
+                          <li>• Total a liquidar: ${totalPendientes.toLocaleString()}</li>
                           <li>• Fecha de pago: {new Date(formulario.fecha_pago).toLocaleDateString('es-CO')}</li>
                           <li>• Método: {formulario.metodo_pago.charAt(0).toUpperCase() + formulario.metodo_pago.slice(1)}</li>
                         </ul>

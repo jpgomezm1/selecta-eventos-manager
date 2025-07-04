@@ -54,6 +54,10 @@ export default function EventosPage() {
             hora_fin,
             horas_trabajadas,
             pago_calculado,
+            estado_pago,
+            fecha_pago,
+            metodo_pago,
+            notas_pago,
             personal (*)
           )
         `)
@@ -68,6 +72,10 @@ export default function EventosPage() {
           hora_fin: ep.hora_fin,
           horas_trabajadas: ep.horas_trabajadas,
           pago_calculado: ep.pago_calculado,
+          estado_pago: ep.estado_pago,
+          fecha_pago: ep.fecha_pago,
+          metodo_pago: ep.metodo_pago,
+          notas_pago: ep.notas_pago,
           evento_personal_id: ep.id,
         })) || [];
         const costoTotal = personalAsignado.reduce((sum: number, p: PersonalAsignado) => sum + (p.pago_calculado || Number(p.tarifa_hora)), 0);
