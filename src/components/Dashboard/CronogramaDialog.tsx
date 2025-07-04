@@ -3,9 +3,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Copy, RefreshCw, X, Calendar, MapPin, Clock } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Copy, RefreshCw, X, Calendar as CalendarIcon, MapPin, Clock } from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface CronogramaDialogProps {
   isOpen: boolean;
@@ -31,6 +36,16 @@ export function CronogramaDialog({ isOpen, onClose }: CronogramaDialogProps) {
   const [eventos, setEventos] = useState<EventoEmpleado[]>([]);
   const [loading, setLoading] = useState(false);
   const [mensajeCronograma, setMensajeCronograma] = useState("");
+  
+  // Estados para filtros de fecha
+  const [fechaDesde, setFechaDesde] = useState<Date>(new Date());
+  const [fechaHasta, setFechaHasta] = useState<Date>(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 15);
+    return date;
+  });
+  const [presetActivo, setPresetActivo] = useState<string>('proximos-15');
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -43,7 +58,7 @@ export function CronogramaDialog({ isOpen, onClose }: CronogramaDialogProps) {
     if (empleadoSeleccionado) {
       cargarEventosEmpleado();
     }
-  }, [empleadoSeleccionado]);
+  }, [empleadoSeleccionado, fechaDesde, fechaHasta]);
 
   const cargarEmpleados = async () => {
     try {
@@ -74,15 +89,10 @@ export function CronogramaDialog({ isOpen, onClose }: CronogramaDialogProps) {
 
     setLoading(true);
     try {
-      // Calcular fecha límite (próximos 15 días)
-      const hoy = new Date();
-      const fechaLimite = new Date();
-      fechaLimite.setDate(fechaLimite.getDate() + 15);
-
       console.log('Cargando eventos para empleado:', empleadoSeleccionado);
-      console.log('Rango de fechas:', hoy.toISOString().split('T')[0], 'a', fechaLimite.toISOString().split('T')[0]);
+      console.log('Rango de fechas:', fechaDesde.toISOString().split('T')[0], 'a', fechaHasta.toISOString().split('T')[0]);
 
-      // Consulta corregida: primero obtener eventos en el rango de fechas
+      // Consulta con filtros de fecha personalizados
       const { data: eventosData, error: eventosError } = await supabase
         .from("eventos")
         .select(`
@@ -97,8 +107,8 @@ export function CronogramaDialog({ isOpen, onClose }: CronogramaDialogProps) {
           )
         `)
         .eq("evento_personal.personal_id", empleadoSeleccionado)
-        .gte("fecha_evento", hoy.toISOString().split('T')[0])
-        .lte("fecha_evento", fechaLimite.toISOString().split('T')[0])
+        .gte("fecha_evento", fechaDesde.toISOString().split('T')[0])
+        .lte("fecha_evento", fechaHasta.toISOString().split('T')[0])
         .order("fecha_evento", { ascending: true });
 
       if (eventosError) {
@@ -159,18 +169,20 @@ Si el problema persiste, contacta al administrador.`;
     }
 
     const nombreEmpleado = empleado.nombre_completo.split(' ')[0]; // Solo primer nombre
+    const fechaDesdeFormateada = format(fechaDesde, "dd/MM", { locale: es });
+    const fechaHastaFormateada = format(fechaHasta, "dd/MM", { locale: es });
 
     if (eventosData.length === 0) {
-      const mensaje = `📅 Hola ${nombreEmpleado}! 
+      const mensaje = `📅 Hola ${nombreEmpleado}!
 
-No tienes eventos programados para los próximos 15 días.
+No tienes eventos programados del ${fechaDesdeFormateada} al ${fechaHastaFormateada}.
 
 ¡Disfruta tu tiempo libre! 😊`;
       setMensajeCronograma(mensaje);
       return;
     }
 
-    let mensaje = `📅 Hola ${nombreEmpleado}! Tu cronograma para los próximos días:\n\n`;
+    let mensaje = `📅 Hola ${nombreEmpleado}! Tu cronograma del ${fechaDesdeFormateada} al ${fechaHastaFormateada}:\n\n`;
 
     let totalHoras = 0;
     let eventosConHorario = 0;
@@ -262,12 +274,56 @@ No tienes eventos programados para los próximos 15 días.
     }
   };
 
+  const handlePresetClick = (preset: string) => {
+    const hoy = new Date();
+    let nuevaFechaDesde = new Date(hoy);
+    let nuevaFechaHasta = new Date(hoy);
+
+    switch (preset) {
+      case 'esta-semana':
+        const inicioSemana = new Date(hoy);
+        inicioSemana.setDate(hoy.getDate() - hoy.getDay() + 1); // Lunes
+        const finSemana = new Date(inicioSemana);
+        finSemana.setDate(inicioSemana.getDate() + 6); // Domingo
+        nuevaFechaDesde = inicioSemana;
+        nuevaFechaHasta = finSemana;
+        break;
+      case 'proximos-7':
+        nuevaFechaHasta.setDate(hoy.getDate() + 7);
+        break;
+      case 'proximos-15':
+        nuevaFechaHasta.setDate(hoy.getDate() + 15);
+        break;
+      case 'este-mes':
+        nuevaFechaDesde = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        nuevaFechaHasta = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+        break;
+    }
+
+    setFechaDesde(nuevaFechaDesde);
+    setFechaHasta(nuevaFechaHasta);
+    setPresetActivo(preset);
+  };
+
+  const validarFechas = (): string | null => {
+    if (fechaHasta <= fechaDesde) {
+      return "La fecha 'hasta' debe ser posterior a la fecha 'desde'";
+    }
+    
+    const diffDays = Math.ceil((fechaHasta.getTime() - fechaDesde.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays > 90) {
+      return "El rango seleccionado es muy amplio (>90 días)";
+    }
+    
+    return null;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
-            <Calendar className="h-5 w-5" />
+            <CalendarIcon className="h-5 w-5" />
             <span>📧 Enviar Cronogramas</span>
           </DialogTitle>
           <DialogDescription>
@@ -293,6 +349,114 @@ No tienes eventos programados para los próximos 15 días.
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Filtros de fecha */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium block">
+              Período de eventos:
+            </label>
+            
+            {/* Date pickers */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Desde:</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !fechaDesde && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {fechaDesde ? format(fechaDesde, "dd/MM/yyyy", { locale: es }) : <span>Seleccionar fecha</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={fechaDesde}
+                      onSelect={(date) => date && setFechaDesde(date)}
+                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Hasta:</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !fechaHasta && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {fechaHasta ? format(fechaHasta, "dd/MM/yyyy", { locale: es }) : <span>Seleccionar fecha</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={fechaHasta}
+                      onSelect={(date) => date && setFechaHasta(date)}
+                      disabled={(date) => date <= fechaDesde}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            {/* Validación de fechas */}
+            {validarFechas() && (
+              <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                ⚠️ {validarFechas()}
+              </div>
+            )}
+
+            {/* Presets rápidos */}
+            <div>
+              <label className="text-xs text-muted-foreground mb-2 block">Presets rápidos:</label>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={presetActivo === 'esta-semana' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handlePresetClick('esta-semana')}
+                >
+                  Esta semana
+                </Button>
+                <Button
+                  variant={presetActivo === 'proximos-7' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handlePresetClick('proximos-7')}
+                >
+                  Próximos 7 días
+                </Button>
+                <Button
+                  variant={presetActivo === 'proximos-15' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handlePresetClick('proximos-15')}
+                >
+                  Próximos 15 días
+                </Button>
+                <Button
+                  variant={presetActivo === 'este-mes' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handlePresetClick('este-mes')}
+                >
+                  Este mes
+                </Button>
+              </div>
+            </div>
           </div>
 
           {/* Vista previa del mensaje */}
@@ -323,19 +487,19 @@ No tienes eventos programados para los próximos 15 días.
           <Button 
             variant="outline"
             onClick={() => {
-              if (empleadoSeleccionado) {
+              if (empleadoSeleccionado && !validarFechas()) {
                 console.log('Reintentando cargar eventos para:', empleadoSeleccionado);
                 cargarEventosEmpleado();
               }
             }}
-            disabled={!empleadoSeleccionado || loading}
+            disabled={!empleadoSeleccionado || loading || !!validarFechas()}
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             {loading ? 'Cargando...' : 'Actualizar'}
           </Button>
           <Button 
             onClick={copiarAlPortapapeles}
-            disabled={!mensajeCronograma || loading}
+            disabled={!mensajeCronograma || loading || !!validarFechas()}
             className="bg-green-600 hover:bg-green-700"
           >
             <Copy className="h-4 w-4 mr-2" />
