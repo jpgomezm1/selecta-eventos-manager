@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Personal, PersonalFormData, ROLES_PERSONAL } from "@/types/database";
+import { User, IdCard, Briefcase, DollarSign } from "lucide-react";
 
 interface PersonalFormProps {
   personal?: Personal | null;
@@ -102,105 +103,144 @@ export function PersonalForm({ personal, onSubmit, onCancel }: PersonalFormProps
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="nombre_completo"
-          rules={{ required: "El nombre completo es requerido" }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nombre Completo</FormLabel>
-              <FormControl>
-                <Input placeholder="Ej: Juan Pérez García" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="numero_cedula"
-          rules={{ 
-            required: "El número de cédula es requerido",
-            pattern: {
-              value: /^\d+$/,
-              message: "El número de cédula debe contener solo números"
-            }
-          }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Número de Cédula</FormLabel>
-              <FormControl>
-                <Input placeholder="Ej: 12345678" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="rol"
-          rules={{ required: "El rol es requerido" }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Rol</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
+    <div className="space-y-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          <FormField
+            control={form.control}
+            name="nombre_completo"
+            rules={{ required: "El nombre completo es requerido" }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-slate-700 font-semibold flex items-center space-x-2">
+                  <User className="h-4 w-4 text-selecta-green" />
+                  <span>Nombre Completo</span>
+                </FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un rol" />
-                  </SelectTrigger>
+                  <Input 
+                    placeholder="Ej: Juan Pérez García" 
+                    {...field} 
+                    className="bg-white/80 border-slate-200/60 rounded-xl focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green"
+                  />
                 </FormControl>
-                <SelectContent>
-                  {ROLES_PERSONAL.map((rol) => (
-                    <SelectItem key={rol} value={rol}>
-                      {rol}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="tarifa_hora"
-          rules={{ 
-            required: "La tarifa por hora es requerida",
-            min: {
-              value: 1,
-              message: "La tarifa debe ser mayor a 0"
-            }
-          }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tarifa por Hora (COP)</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="Ej: 25000"
-                  {...field}
-                  onChange={(e) => field.onChange(Number(e.target.value))}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="numero_cedula"
+            rules={{ 
+              required: "El número de cédula es requerido",
+              pattern: {
+                value: /^\d+$/,
+                message: "El número de cédula debe contener solo números"
+              }
+            }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-slate-700 font-semibold flex items-center space-x-2">
+                  <IdCard className="h-4 w-4 text-selecta-green" />
+                  <span>Número de Cédula</span>
+                </FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Ej: 12345678" 
+                    {...field} 
+                    className="bg-white/80 border-slate-200/60 rounded-xl focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <div className="flex justify-end space-x-2 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={loading} className="bg-primary hover:bg-primary/90">
-            {loading ? "Guardando..." : personal ? "Actualizar" : "Crear"}
-          </Button>
-        </div>
-      </form>
-    </Form>
-  );
+          <FormField
+            control={form.control}
+            name="rol"
+            rules={{ required: "El rol es requerido" }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-slate-700 font-semibold flex items-center space-x-2">
+                  <Briefcase className="h-4 w-4 text-selecta-green" />
+                  <span>Rol</span>
+                </FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger className="bg-white/80 border-slate-200/60 rounded-xl focus:ring-2 focus:ring-selecta-green/20">
+                      <SelectValue placeholder="Selecciona un rol" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="bg-white/95 backdrop-blur-xl border-white/20 rounded-2xl">
+                    {ROLES_PERSONAL.map((rol) => (
+                      <SelectItem key={rol} value={rol} className="rounded-lg">
+                        {rol}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="tarifa_hora"
+            rules={{ 
+              required: "La tarifa por hora es requerida",
+              min: {
+                value: 1,
+                message: "La tarifa debe ser mayor a 0"
+              }
+            }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-slate-700 font-semibold flex items-center space-x-2">
+                 <DollarSign className="h-4 w-4 text-selecta-green" />
+                 <span>Tarifa por Hora (COP)</span>
+               </FormLabel>
+               <FormControl>
+                 <Input
+                   type="number"
+                   placeholder="Ej: 25000"
+                   {...field}
+                   onChange={(e) => field.onChange(Number(e.target.value))}
+                   className="bg-white/80 border-slate-200/60 rounded-xl focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green"
+                 />
+               </FormControl>
+               <FormMessage />
+             </FormItem>
+           )}
+         />
+
+         <div className="flex justify-end space-x-3 pt-6 border-t border-slate-200/60">
+           <Button 
+             type="button" 
+             variant="outline" 
+             onClick={onCancel}
+             className="rounded-xl border-slate-200/60 hover:bg-slate-50"
+           >
+             Cancelar
+           </Button>
+           <Button 
+             type="submit" 
+             disabled={loading} 
+             className="bg-gradient-to-r from-selecta-green to-primary hover:shadow-lg hover:scale-105 transition-all duration-200 rounded-xl px-6"
+           >
+             {loading ? (
+               <div className="flex items-center space-x-2">
+                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                 <span>Guardando...</span>
+               </div>
+             ) : (
+               personal ? "Actualizar Personal" : "Crear Personal"
+             )}
+           </Button>
+         </div>
+       </form>
+     </Form>
+   </div>
+ );
 }
