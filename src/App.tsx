@@ -41,11 +41,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
+            <Route path="/" element={<Navigate to="/personal" replace />} />
             <Route path="/personal" element={
               <ProtectedRoute>
                 <Personal />

@@ -9,7 +9,6 @@ import { useSidebar } from "@/hooks/useSidebar";
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Personal", url: "/personal", icon: Users },
   { title: "Eventos", url: "/eventos", icon: Calendar },
 ];
@@ -189,8 +188,36 @@ export function AppSidebar() {
         </div>
       </div>
 
-      {/* Footer mejorado - SIEMPRE VISIBLE */}
-      <div className={cn("border-t border-slate-200/60 relative z-10", isCollapsed ? "p-3" : "p-5")}>
+      {/* Footer mejorado con Developed by */}
+      <div className={cn("border-t border-slate-200/60 relative z-10", isCollapsed ? "p-2" : "p-4")}>
+        {/* Developed by Irrelevant */}
+        {!isCollapsed && (
+          <div className="mb-3 p-3 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 backdrop-blur-sm border border-slate-700/50 hover:shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all duration-300 group">
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-xs text-slate-300 font-medium">Developed by</span>
+              <div className="flex items-center gap-1.5 group-hover:scale-105 transition-transform duration-300">
+                <img 
+                  src="https://storage.googleapis.com/cluvi/nuevo_irre-removebg-preview.png" 
+                  alt="Irrelevant Logo" 
+                  className="w-16 h-auto object-contain group-hover:brightness-110 transition-all duration-300"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Collapsed version */}
+        {isCollapsed && (
+          <div className="mb-2 p-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-900 backdrop-blur-sm border border-slate-700/50 hover:shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all duration-300 group flex justify-center">
+            <img 
+              src="https://storage.googleapis.com/cluvi/nuevo_irre-removebg-preview.png" 
+              alt="Irrelevant Logo" 
+              className="w-8 h-auto object-contain group-hover:scale-110 group-hover:brightness-110 transition-all duration-300"
+            />
+          </div>
+        )}
+
+        {/* Logout Button */}
         <TooltipProvider>
           <Tooltip delayDuration={300}>
             <TooltipTrigger asChild>
@@ -198,7 +225,7 @@ export function AppSidebar() {
                 variant="ghost"
                 onClick={handleLogout}
                 className={cn(
-                  "w-full text-slate-600 hover:text-red-600 hover:bg-red-50/80 transition-all duration-300 rounded-xl font-semibold",
+                  "w-full text-slate-600 hover:text-red-600 hover:bg-red-50/80 transition-all duration-300 rounded-xl font-semibold mb-3",
                   isCollapsed ? "justify-center p-3" : "justify-start py-3"
                 )}
               >
@@ -223,7 +250,7 @@ export function AppSidebar() {
         
         {/* Shortcut hint cuando no está colapsado */}
         {!isCollapsed && (
-          <div className="mt-4 pt-4 border-t border-slate-200/60">
+          <div className="pt-3 border-t border-slate-200/60">
             <p className="text-xs text-slate-400 text-center">
               <kbd className="px-2 py-1 bg-slate-100 rounded text-xs font-mono">Ctrl</kbd> + 
               <kbd className="px-2 py-1 bg-slate-100 rounded text-xs font-mono ml-1">B</kbd>
