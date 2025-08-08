@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Calculator,
   FileText,
+  Boxes,
 } from "lucide-react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ const navigation = [
   { title: "Eventos", url: "/eventos", icon: Calendar },
   { title: "Cotizaciones", url: "/cotizaciones", icon: FileText },
   { title: "Nueva Cotización", url: "/cotizador/nueva", icon: Calculator },
+  { title: "Bodega", url: "/bodega", icon: Boxes },
 ];
 
 export function AppSidebar() {

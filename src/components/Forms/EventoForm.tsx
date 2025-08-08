@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
-import { CalendarIcon, Clock, MapPin, FileText, Users, Calculator, DollarSign } from "lucide-react";
+import { CalendarIcon, Clock, MapPin, FileText, Users, Calculator, DollarSign, Save, AlertTriangle, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -118,14 +118,14 @@ export function EventoForm({ evento, personal, onSubmit, onCancel }: EventoFormP
 
   const getRoleBadgeVariant = (rol: string) => {
     const variants: Record<string, string> = {
-      "Coordinador": "bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 border-purple-200/60",
-      "Chef": "bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 border-orange-200/60",
-      "Mesero": "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border-blue-200/60",
-      "Bartender": "bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800 border-emerald-200/60",
-      "Decorador": "bg-gradient-to-r from-pink-100 to-pink-200 text-pink-800 border-pink-200/60",
-      "Técnico de Sonido": "bg-gradient-to-r from-indigo-100 to-indigo-200 text-indigo-800 border-indigo-200/60",
-      "Fotógrafo": "bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border-yellow-200/60",
-      "Otro": "bg-gradient-to-r from-slate-100 to-slate-200 text-slate-800 border-slate-200/60"
+      "Coordinador": "bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 border-purple-200",
+      "Chef": "bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 border-orange-200",
+      "Mesero": "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-200",
+      "Bartender": "bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-200",
+      "Decorador": "bg-gradient-to-r from-pink-50 to-pink-100 text-pink-700 border-pink-200",
+      "Técnico de Sonido": "bg-gradient-to-r from-indigo-50 to-indigo-100 text-indigo-700 border-indigo-200",
+      "Fotógrafo": "bg-gradient-to-r from-yellow-50 to-yellow-100 text-yellow-700 border-yellow-200",
+      "Otro": "bg-gradient-to-r from-slate-50 to-slate-100 text-slate-700 border-slate-200"
     };
     return variants[rol] || variants["Otro"];
   };
@@ -212,301 +212,363 @@ export function EventoForm({ evento, personal, onSubmit, onCancel }: EventoFormP
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Header del formulario */}
+      <div className="text-center pb-6 border-b border-slate-200/50">
+        <div className="w-16 h-16 bg-gradient-to-r from-selecta-green to-primary rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl">
+          <CalendarIcon className="h-8 w-8 text-white" />
+        </div>
+        <p className="text-slate-600 text-sm">
+          {evento ? "Modifica la información del evento" : "Completa los datos del nuevo evento"}
+        </p>
+      </div>
+
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          {/* Información básica del evento */}
-          <div className="bg-slate-50/80 rounded-2xl p-6 border border-slate-200/40">
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-selecta-green to-primary rounded-xl flex items-center justify-center">
-                <CalendarIcon className="h-4 w-4 text-white" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-800">Información del Evento</h3>
-            </div>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+          {/* Información básica del evento premium */}
+          <Card className="bg-gradient-to-r from-slate-50/80 to-white/80 backdrop-blur-sm shadow-xl border-white/30 rounded-3xl overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-selecta-green/10 to-primary/10 border-b border-slate-200/30">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-selecta-green to-primary rounded-2xl flex items-center justify-center shadow-lg">
+                 <CalendarIcon className="h-5 w-5 text-white" />
+               </div>
+               <CardTitle className="text-xl font-bold text-slate-800">Información del Evento</CardTitle>
+             </div>
+           </CardHeader>
+           <CardContent className="p-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <FormField
+                 control={form.control}
+                 name="nombre_evento"
+                 rules={{ required: "El nombre del evento es requerido" }}
+                 render={({ field }) => (
+                   <FormItem className="group">
+                     <FormLabel className="text-slate-700 font-bold flex items-center space-x-3 text-base mb-3">
+                       <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
+                         <FileText className="h-4 w-4 text-white" />
+                       </div>
+                       <span>Nombre del Evento</span>
+                     </FormLabel>
+                     <FormControl>
+                       <div className="relative">
+                         <Input 
+                           placeholder="Ej: Boda de María y Juan" 
+                           {...field} 
+                           className="bg-white/90 border-slate-200/50 rounded-2xl h-14 pl-4 text-base focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green shadow-sm hover:shadow-md transition-all group-hover:border-blue-300"
+                         />
+                         <div className="absolute inset-0 bg-gradient-to-r from-selecta-green/5 to-primary/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                       </div>
+                     </FormControl>
+                     <FormMessage className="text-red-500 text-sm mt-2" />
+                   </FormItem>
+                 )}
+               />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="nombre_evento"
-                rules={{ required: "El nombre del evento es requerido" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-slate-700 font-semibold flex items-center space-x-2">
-                      <FileText className="h-4 w-4 text-selecta-green" />
-                      <span>Nombre del Evento</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Ej: Boda de María y Juan" 
-                        {...field} 
-                        className="bg-white/80 border-slate-200/60 rounded-xl focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+               <FormField
+                 control={form.control}
+                 name="ubicacion"
+                 rules={{ required: "La ubicación es requerida" }}
+                 render={({ field }) => (
+                   <FormItem className="group">
+                     <FormLabel className="text-slate-700 font-bold flex items-center space-x-3 text-base mb-3">
+                       <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
+                         <MapPin className="h-4 w-4 text-white" />
+                       </div>
+                       <span>Ubicación</span>
+                     </FormLabel>
+                     <FormControl>
+                       <div className="relative">
+                         <Input 
+                           placeholder="Ej: Salón Los Rosales, Bogotá" 
+                           {...field} 
+                           className="bg-white/90 border-slate-200/50 rounded-2xl h-14 pl-4 text-base focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green shadow-sm hover:shadow-md transition-all group-hover:border-green-300"
+                         />
+                         <div className="absolute inset-0 bg-gradient-to-r from-selecta-green/5 to-primary/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                       </div>
+                     </FormControl>
+                     <FormMessage className="text-red-500 text-sm mt-2" />
+                   </FormItem>
+                 )}
+               />
+             </div>
 
-              <FormField
-                control={form.control}
-                name="ubicacion"
-                rules={{ required: "La ubicación es requerida" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-slate-700 font-semibold flex items-center space-x-2">
-                      <MapPin className="h-4 w-4 text-selecta-green" />
-                      <span>Ubicación</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Ej: Salón Los Rosales, Bogotá" 
-                        {...field} 
-                        className="bg-white/80 border-slate-200/60 rounded-xl focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+             <div className="mt-6">
+               <FormField
+                 control={form.control}
+                 name="fecha_evento"
+                 rules={{ required: "La fecha del evento es requerida" }}
+                 render={({ field }) => (
+                   <FormItem className="flex flex-col group">
+                     <FormLabel className="text-slate-700 font-bold flex items-center space-x-3 text-base mb-3">
+                       <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
+                         <CalendarIcon className="h-4 w-4 text-white" />
+                       </div>
+                       <span>Fecha del Evento</span>
+                     </FormLabel>
+                     <Popover>
+                       <PopoverTrigger asChild>
+                         <FormControl>
+                           <Button
+                             variant="outline"
+                             className={cn(
+                               "w-full h-14 pl-4 text-left font-normal bg-white/90 border-slate-200/50 rounded-2xl hover:bg-white shadow-sm hover:shadow-md transition-all group-hover:border-purple-300",
+                               !field.value && "text-muted-foreground"
+                             )}
+                           >
+                             {field.value ? (
+                               format(new Date(field.value), "PPP")
+                             ) : (
+                               <span>Selecciona una fecha</span>
+                             )}
+                             <CalendarIcon className="ml-auto h-5 w-5 opacity-50" />
+                           </Button>
+                         </FormControl>
+                       </PopoverTrigger>
+                       <PopoverContent className="w-auto p-0 bg-white/95 backdrop-blur-2xl border-white/20 rounded-3xl shadow-2xl" align="start">
+                         <Calendar
+                           mode="single"
+                           selected={field.value ? new Date(field.value) : undefined}
+                           onSelect={(date) => {
+                             if (date) {
+                               field.onChange(format(date, "yyyy-MM-dd"));
+                             }
+                           }}
+                           disabled={(date) => date < new Date()}
+                           initialFocus
+                           className="p-4 pointer-events-auto"
+                         />
+                       </PopoverContent>
+                     </Popover>
+                     <FormMessage className="text-red-500 text-sm mt-2" />
+                   </FormItem>
+                 )}
+               />
+             </div>
 
-            <div className="mt-4">
-              <FormField
-                control={form.control}
-                name="fecha_evento"
-                rules={{ required: "La fecha del evento es requerida" }}
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel className="text-slate-700 font-semibold flex items-center space-x-2">
-                      <CalendarIcon className="h-4 w-4 text-selecta-green" />
-                      <span>Fecha del Evento</span>
-                    </FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full pl-3 text-left font-normal bg-white/80 border-slate-200/60 rounded-xl hover:bg-white",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(new Date(field.value), "PPP")
-                            ) : (
-                              <span>Selecciona una fecha</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 bg-white/95 backdrop-blur-xl border-white/20 rounded-2xl shadow-2xl" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value ? new Date(field.value) : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              field.onChange(format(date, "yyyy-MM-dd"));
-                            }
-                          }}
-                          disabled={(date) => date < new Date()}
-                          initialFocus
-                          className="p-3 pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+             <div className="mt-6">
+               <FormField
+                 control={form.control}
+                 name="descripcion"
+                 render={({ field }) => (
+                   <FormItem className="group">
+                     <FormLabel className="text-slate-700 font-bold flex items-center space-x-3 text-base mb-3">
+                       <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
+                         <FileText className="h-4 w-4 text-white" />
+                       </div>
+                       <span>Descripción (Opcional)</span>
+                     </FormLabel>
+                     <FormControl>
+                       <Textarea
+                         placeholder="Describe los detalles especiales del evento..."
+                         className="resize-none bg-white/90 border-slate-200/50 rounded-2xl focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green min-h-[120px] shadow-sm hover:shadow-md transition-all group-hover:border-orange-300"
+                         {...field}
+                       />
+                     </FormControl>
+                     <FormMessage className="text-red-500 text-sm mt-2" />
+                   </FormItem>
+                 )}
+               />
+             </div>
+           </CardContent>
+         </Card>
 
-            <div className="mt-4">
-              <FormField
-                control={form.control}
-                name="descripcion"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-slate-700 font-semibold flex items-center space-x-2">
-                      <FileText className="h-4 w-4 text-selecta-green" />
-                      <span>Descripción (Opcional)</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Describe los detalles del evento..."
-                        className="resize-none bg-white/80 border-slate-200/60 rounded-xl focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
+         {/* Personal Selection Premium */}
+         <Card className="bg-white/70 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl overflow-hidden">
+           <CardHeader className="bg-gradient-to-r from-blue-50/50 to-blue-100/50 backdrop-blur-sm border-b border-slate-200/30">
+             <div className="flex justify-between items-center">
+               <div className="flex items-center space-x-3">
+                 <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                   <Users className="h-5 w-5 text-white" />
+                 </div>
+                 <CardTitle className="text-xl font-bold text-slate-800">Personal Asignado</CardTitle>
+               </div>
+               <div className="flex items-center gap-3">
+                 <Badge className="bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-200/60 font-semibold px-4 py-2 shadow-sm">
+                   <Users className="h-3 w-3 mr-1" />
+                   {selectedPersonal.length} seleccionados
+                 </Badge>
+                 <Badge className="bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-200/60 font-semibold px-4 py-2 shadow-sm">
+                   <Calculator className="h-3 w-3 mr-1" />
+                   ${calculateTotalCost().toLocaleString()}
+                 </Badge>
+               </div>
+             </div>
+           </CardHeader>
 
-          {/* Personal Selection */}
-          <div className="bg-white/60 backdrop-blur-xl rounded-2xl p-1 shadow-lg border border-white/20">
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
-              <div className="p-6 border-b border-slate-200/60">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                      <Users className="h-4 w-4 text-white" />
-                    </div>
-                    <h3 className="text-lg font-bold text-slate-800">Personal Asignado</h3>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border-blue-200/60 font-medium">
-                      {selectedPersonal.length} seleccionados
-                    </Badge>
-                    <Badge className="bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800 border-emerald-200/60 font-medium">
-                      <Calculator className="h-3 w-3 mr-1" />
-                      Total: ${calculateTotalCost().toLocaleString()}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
+           <CardContent className="p-6">
+             {personal.length === 0 ? (
+               <div className="text-center py-12">
+                 <div className="relative mb-6">
+                   <div className="w-20 h-20 bg-gradient-to-r from-slate-100 to-slate-200 rounded-3xl flex items-center justify-center mx-auto shadow-xl">
+                     <Users className="h-10 w-10 text-slate-400" />
+                   </div>
+                   <div className="absolute inset-0 w-20 h-20 bg-gradient-to-r from-slate-100/50 to-slate-200/50 rounded-3xl blur-xl mx-auto"></div>
+                 </div>
+                 <h3 className="text-xl font-bold text-slate-800 mb-2">No hay personal disponible</h3>
+                 <p className="text-slate-600">Primero debe registrar empleados en el sistema</p>
+               </div>
+             ) : (
+               <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
+                 {personal.map((person, index) => {
+                   const isSelected = selectedPersonal.some(p => p.id === person.id);
+                   const selectedPersonData = selectedPersonal.find(p => p.id === person.id);
+                   
+                   return (
+                     <div
+                       key={person.id}
+                       className={cn(
+                         "border-2 rounded-2xl p-5 transition-all duration-300 group",
+                         isSelected 
+                           ? "border-selecta-green/40 bg-gradient-to-r from-selecta-green/10 to-primary/10 shadow-lg hover:shadow-xl" 
+                           : "border-slate-200/60 bg-white/90 hover:bg-slate-50/90 hover:border-slate-300/60 shadow-sm hover:shadow-md"
+                       )}
+                       style={{
+                         animationDelay: `${index * 100}ms`
+                       }}
+                     >
+                       {/* Checkbox y datos básicos */}
+                       <div className="flex items-center space-x-4 mb-4">
+                         <Checkbox
+                           id={person.id}
+                           checked={isSelected}
+                           onCheckedChange={(checked) => 
+                             handlePersonalToggle(person.id, checked as boolean)
+                           }
+                           className="border-selecta-green/60 data-[state=checked]:bg-selecta-green data-[state=checked]:border-selecta-green w-5 h-5"
+                         />
+                         
+                         <div className="flex-1 min-w-0">
+                           <label
+                             htmlFor={person.id}
+                             className="text-base font-bold cursor-pointer block truncate text-slate-800 group-hover:text-selecta-green transition-colors"
+                           >
+                             {person.nombre_completo}
+                           </label>
+                           
+                           <div className="flex items-center justify-between mt-3">
+                             <Badge className={`${getRoleBadgeVariant(person.rol)} border text-sm font-semibold shadow-sm hover:shadow-md transition-shadow`}>
+                               {person.rol}
+                             </Badge>
+                             
+                             <div className="flex items-center space-x-1 bg-gradient-to-r from-slate-50 to-slate-100 px-3 py-2 rounded-xl border border-slate-200/50">
+                               <DollarSign className="h-4 w-4 text-selecta-green" />
+                               <span className="text-sm font-bold text-slate-700">
+                                 ${Number(person.tarifa_hora).toLocaleString()}/h
+                               </span>
+                             </div>
+                           </div>
+                         </div>
+                       </div>
 
-              <div className="p-6">
-                {personal.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 bg-gradient-to-r from-slate-100 to-slate-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Users className="h-8 w-8 text-slate-400" />
-                    </div>
-                    <p className="text-slate-600 font-medium">No hay personal disponible</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
-                    {personal.map((person) => {
-                      const isSelected = selectedPersonal.some(p => p.id === person.id);
-                      const selectedPersonData = selectedPersonal.find(p => p.id === person.id);
-                      
-                      return (
-                        <div
-                          key={person.id}
-                          className={cn(
-                            "border-2 rounded-xl p-4 transition-all duration-200",
-                            isSelected 
-                              ? "border-selecta-green/40 bg-gradient-to-r from-selecta-green/5 to-primary/5 shadow-md" 
-                              : "border-slate-200/60 bg-white/80 hover:bg-slate-50/80 hover:border-slate-300/60"
-                          )}
-                        >
-                          {/* Checkbox y datos básicos */}
-                          <div className="flex items-center space-x-3 mb-3">
-                            <Checkbox
-                              id={person.id}
-                              checked={isSelected}
-                              onCheckedChange={(checked) => 
-                                handlePersonalToggle(person.id, checked as boolean)
-                              }
-                              className="border-selecta-green/60 data-[state=checked]:bg-selecta-green data-[state=checked]:border-selecta-green"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <label
-                                htmlFor={person.id}
-                                className="text-sm font-semibold cursor-pointer block truncate text-slate-800"
-                              >
-                                {person.nombre_completo}
-                              </label>
-                              <div className="flex items-center justify-between mt-2">
-                                <Badge className={`${getRoleBadgeVariant(person.rol)} border text-xs font-medium`}>
-                                  {person.rol}
-                                </Badge>
-                                <span className="text-xs font-semibold text-slate-600 bg-slate-100/80 px-2 py-1 rounded-lg">
-                                  <DollarSign className="h-3 w-3 inline mr-1" />
-                                  ${Number(person.tarifa_hora).toLocaleString()}/h
-                                </span>
-                              </div>
-                            </div>
-                          </div>
+                       {/* Campos de horario si está seleccionado */}
+                       {isSelected && (
+                         <div className="space-y-4 pt-4 border-t border-slate-200/60">
+                           <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-2">
+                               <label className="text-sm font-bold text-slate-700 flex items-center space-x-2">
+                                 <Clock className="h-4 w-4 text-selecta-green" />
+                                 <span>Hora Inicio</span>
+                               </label>
+                               <Input
+                                 type="time"
+                                 value={selectedPersonData?.hora_inicio || ""}
+                                 onChange={(e) => updatePersonalHours(person.id, 'hora_inicio', e.target.value)}
+                                 className="text-sm bg-white/90 border-slate-200/50 rounded-xl h-12 focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green shadow-sm hover:shadow-md transition-all"
+                               />
+                             </div>
+                             
+                             <div className="space-y-2">
+                               <label className="text-sm font-bold text-slate-700 flex items-center space-x-2">
+                                 <Clock className="h-4 w-4 text-selecta-green" />
+                                 <span>Hora Fin</span>
+                               </label>
+                               <Input
+                                 type="time"
+                                 value={selectedPersonData?.hora_fin || ""}
+                                 onChange={(e) => updatePersonalHours(person.id, 'hora_fin', e.target.value)}
+                                 className="text-sm bg-white/90 border-slate-200/50 rounded-xl h-12 focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green shadow-sm hover:shadow-md transition-all"
+                               />
+                             </div>
+                           </div>
 
-                          {/* Campos de horario si está seleccionado */}
-                          {isSelected && (
-                            <div className="space-y-3 pt-3 border-t border-slate-200/60">
-                              <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                  <label className="text-xs font-semibold text-slate-700 mb-2 block">
-                                    <Clock className="h-3 w-3 inline mr-1 text-selecta-green" />
-                                    Hora Inicio
-                                  </label>
-                                  <Input
-                                    type="time"
-                                    value={selectedPersonData?.hora_inicio || ""}
-                                    onChange={(e) => updatePersonalHours(person.id, 'hora_inicio', e.target.value)}
-                                    className="text-sm bg-white/80 border-slate-200/60 rounded-lg focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-xs font-semibold text-slate-700 mb-2 block">
-                                    <Clock className="h-3 w-3 inline mr-1 text-selecta-green" />
-                                    Hora Fin
-                                  </label>
-                                  <Input
-                                    type="time"
-                                    value={selectedPersonData?.hora_fin || ""}
-                                    onChange={(e) => updatePersonalHours(person.id, 'hora_fin', e.target.value)}
-                                    className="text-sm bg-white/80 border-slate-200/60 rounded-lg focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green"
-                                  />
-                                </div>
-                              </div>
+                           {/* Mostrar cálculos si hay horas definidas */}
+                           {selectedPersonData?.horas_trabajadas && selectedPersonData.horas_trabajadas > 0 && (
+                             <div className="bg-gradient-to-r from-emerald-50/80 to-green-50/80 p-4 rounded-2xl border border-emerald-200/60 shadow-sm">
+                               <div className="flex justify-between items-center text-sm">
+                                 <div className="flex items-center space-x-2">
+                                   <Sparkles className="h-4 w-4 text-emerald-600" />
+                                   <span className="text-emerald-800 font-bold">
+                                     Horas trabajadas: <span className="text-emerald-700">{selectedPersonData.horas_trabajadas}h</span>
+                                   </span>
+                                 </div>
+                                 <div className="bg-white/80 px-3 py-2 rounded-xl border border-emerald-200/50 shadow-sm">
+                                   <span className="font-bold text-emerald-700">
+                                     ${selectedPersonData.pago_calculado?.toLocaleString() || 0}
+                                   </span>
+                                 </div>
+                               </div>
+                               
+                               {selectedPersonData.horas_trabajadas > 12 && (
+                                 <div className="flex items-center mt-3 text-xs text-amber-700 bg-amber-50/80 px-3 py-2 rounded-xl border border-amber-200/60">
+                                   <AlertTriangle className="h-4 w-4 mr-2" />
+                                   <span className="font-medium">Más de 12 horas trabajadas - Verificar información</span>
+                                 </div>
+                               )}
+                             </div>
+                           )}
+                         </div>
+                       )}
+                     </div>
+                   );
+                 })}
+               </div>
+             )}
+           </CardContent>
+         </Card>
 
-                              {/* Mostrar cálculos si hay horas definidas */}
-                              {selectedPersonData?.horas_trabajadas && selectedPersonData.horas_trabajadas > 0 && (
-                                <div className="bg-gradient-to-r from-emerald-50 to-green-50 p-3 rounded-xl border border-emerald-200/60">
-                                  <div className="flex justify-between items-center text-sm">
-                                    <span className="text-emerald-800 font-medium">
-                                      Horas trabajadas: <strong>{selectedPersonData.horas_trabajadas}h</strong>
-                                    </span>
-                                    <span className="font-bold text-emerald-700 bg-white/80 px-2 py-1 rounded-lg">
-                                      ${selectedPersonData.pago_calculado?.toLocaleString() || 0}
-                                    </span>
-                                  </div>
-                                  {selectedPersonData.horas_trabajadas > 12 && (
-                                    <div className="flex items-center mt-2 text-xs text-amber-700 bg-amber-50/80 px-2 py-1 rounded-lg border border-amber-200/60">
-                                      <span className="mr-1">⚠️</span>
-                                      Más de 12 horas trabajadas - Verificar información
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+         {/* Botones de acción premium */}
+         <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-8 border-t border-slate-200/50">
+           <Button 
+             type="button" 
+             variant="outline" 
+             onClick={onCancel}
+             className="flex-1 sm:flex-initial bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300 rounded-2xl h-12 px-8 text-slate-700 font-semibold transition-all duration-200 hover:shadow-md"
+           >
+             Cancelar
+           </Button>
+           
+           <Button 
+             type="submit" 
+             disabled={loading} 
+             className="flex-1 sm:flex-initial group bg-gradient-to-r from-selecta-green to-primary hover:from-primary hover:to-selecta-green shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 rounded-2xl h-12 px-8 border-0 relative overflow-hidden"
+           >
+             {loading ? (
+               <div className="flex items-center justify-center space-x-3">
+                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                 <span className="font-semibold">Guardando...</span>
+               </div>
+             ) : (
+               <div className="flex items-center justify-center space-x-2 relative z-10">
+                 <Save className="h-5 w-5" />
+                 <span className="font-semibold">
+                   {evento ? "Actualizar Evento" : "Crear Evento"}
+                 </span>
+               </div>
+             )}
+             
+             {/* Efecto hover */}
+             <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+           </Button>
+         </div>
 
-          <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200/60">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onCancel}
-              className="rounded-xl border-slate-200/60 hover:bg-slate-50"
-            >
-              Cancelar
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={loading} 
-              className="bg-gradient-to-r from-selecta-green to-primary hover:shadow-lg hover:scale-105 transition-all duration-200 rounded-xl px-6"
-            >
-              {loading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Guardando...</span>
-                </div>
-              ) : (
-                evento ? "Actualizar Evento" : "Crear Evento"
-              )}
-            </Button>
-          </div>
-        </form>
-      </Form>
-    </div>
-  );
+         {/* Información adicional */}
+         <div className="text-center pt-4">
+           <p className="text-xs text-slate-500">
+             Los datos del evento serán guardados de forma segura en la base de datos
+           </p>
+         </div>
+       </form>
+     </Form>
+   </div>
+ );
 }

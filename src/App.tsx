@@ -15,6 +15,7 @@ import Cotizador from "./pages/Cotizador";
 import CotizacionesListPage from "./pages/Cotizaciones";
 import CotizacionEditorPage from "./pages/CotizacionEditor";
 import EventoDetallePage from "./pages/EventoDetalle";
+import BodegaPage from "./pages/Bodega"; // ⬅️ NUEVO
 
 const queryClient = new QueryClient();
 
@@ -114,6 +115,16 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <CotizacionEditorPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Bodega / Menaje */}
+            <Route
+              path="/bodega"
+              element={
+                <ProtectedRoute>
+                  <BodegaPage />
                 </ProtectedRoute>
               }
             />
