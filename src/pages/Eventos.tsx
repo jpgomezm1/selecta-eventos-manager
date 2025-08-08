@@ -14,6 +14,7 @@ import { LiquidacionDialog } from "@/components/Forms/LiquidacionDialog";
 import { useToast } from "@/hooks/use-toast";
 import { EventoConPersonal, Personal, PersonalAsignado } from "@/types/database";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { useNavigate } from "react-router-dom";
 
 // Configurar localizer para español
 import moment from 'moment';
@@ -30,6 +31,7 @@ interface CalendarEvent {
 }
 
 export default function EventosPage() {
+  const nav = useNavigate();
   const [eventos, setEventos] = useState<EventoConPersonal[]>([]);
   const [personal, setPersonal] = useState<Personal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -326,6 +328,7 @@ export default function EventosPage() {
             </div>
           </div>
 
+          {/* Botón Crear Evento (si mantienes creación manual) */}
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-gradient-to-r from-selecta-green to-primary hover:shadow-lg hover:scale-105 transition-all duration-200 rounded-xl px-6 py-3 shadow-md">
@@ -484,8 +487,8 @@ export default function EventosPage() {
                     }}
                     eventPropGetter={eventStyleGetter}
                     onSelectEvent={(event) => {
-                      setSelectedEvento(event.resource);
-                      setIsDialogOpen(true);
+                      // En lugar de abrir dialog, navegamos al detalle
+                      nav(`/eventos/${event.resource.id}`);
                     }}
                     popup
                     step={60}
@@ -496,7 +499,7 @@ export default function EventosPage() {
             </div>
           </div>
         ) : (
-          /* Vista Grid Original */
+          /* Vista Grid */
           <div className="bg-white/60 backdrop-blur-xl rounded-3xl p-1 shadow-xl border border-white/20">
             <div className="bg-white/90 backdrop-blur-sm rounded-3xl overflow-hidden">
               <div className="p-6 border-b border-slate-200/60">
@@ -509,8 +512,7 @@ export default function EventosPage() {
                     <p className="text-sm text-slate-600">
                       {selectedPersonFilter === 'all' 
                         ? "Todos los eventos registrados" 
-                        : `Eventos de ${personal.find(p => p.id === selectedPersonFilter)?.nombre_completo}`
-                      }
+                        : `Eventos de ${personal.find(p => p.id === selectedPersonFilter)?.nombre_completo}`}
                     </p>
                   </div>
                 </div>
@@ -528,18 +530,8 @@ export default function EventosPage() {
                     <p className="text-slate-600 max-w-sm mx-auto mb-4">
                       {selectedPersonFilter === 'all' 
                         ? "Comienza creando tu primer evento" 
-                        : "Este empleado no está asignado a ningún evento"
-                      }
+                        : "Este empleado no está asignado a ningún evento"}
                     </p>
-                    {selectedPersonFilter === 'all' && (
-                      <Button 
-                        onClick={() => setIsDialogOpen(true)}
-                        className="bg-gradient-to-r from-selecta-green to-primary hover:shadow-lg hover:scale-105 transition-all duration-200 rounded-xl"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Crear Primer Evento
-                      </Button>
-                    )}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -554,6 +546,7 @@ export default function EventosPage() {
                           className={`bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border-2 border-slate-200/40 hover:border-selecta-green/30 hover:shadow-xl transition-all duration-300 group overflow-hidden ${
                             hasSelectedPerson && selectedPersonFilter !== 'all' ? 'ring-2 ring-selecta-green/20' : ''
                           }`}
+                          onClick={() => nav(`/eventos/${evento.id}`)}
                         >
                           <div className="p-6 h-full">
                             <div className="flex items-start justify-between mb-4">
@@ -593,7 +586,6 @@ export default function EventosPage() {
                                 </p>
                               )}
 
-                              {/* Mostrar personal si hay filtro */}
                               {selectedPersonFilter !== 'all' && (
                                 <div className="bg-selecta-green/5 p-3 rounded-xl border border-selecta-green/20">
                                   <p className="text-xs font-medium text-selecta-green mb-1">Personal asignado:</p>
@@ -621,199 +613,115 @@ export default function EventosPage() {
                               </div>
                             </div>
 
-                            <div className="flex justify-end space-x-2">
-                            {evento.estado_liquidacion !== 'liquidado' && evento.personal.length > 0 && (
-                               <Button
-                                 variant="outline"
-                                 size="sm"
-                                 onClick={() => handleLiquidarEvento(evento)}
-                                 className="bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-200/60 hover:from-emerald-100 hover:to-emerald-200 rounded-lg"
-                               >
-                                 <DollarSign className="h-4 w-4" />
-                               </Button>
-                             )}
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               onClick={() => {
-                                 setSelectedEvento(evento);
-                                 setIsDialogOpen(true);
-                               }}
-                               className="hover:bg-blue-50 hover:text-blue-700 rounded-lg"
-                             >
-                               <Edit className="h-4 w-4" />
-                             </Button>
-                             <AlertDialog>
-                               <AlertDialogTrigger asChild>
-                                 <Button 
-                                   variant="ghost" 
-                                   size="sm"
-                                   className="hover:bg-red-50 hover:text-red-700 rounded-lg"
-                                 >
-                                   <Trash2 className="h-4 w-4" />
-                                 </Button>
-                               </AlertDialogTrigger>
-                               <AlertDialogContent className="bg-white/95 backdrop-blur-xl border-white/20 shadow-2xl rounded-3xl">
-                                 <AlertDialogHeader>
-                                   <AlertDialogTitle className="text-xl font-bold text-slate-800">
-                                     ¿Eliminar evento?
-                                   </AlertDialogTitle>
-                                   <AlertDialogDescription className="text-slate-600">
-                                     Esta acción no se puede deshacer. Se eliminará permanentemente
-                                     el evento "{evento.nombre_evento}".
-                                   </AlertDialogDescription>
-                                 </AlertDialogHeader>
-                                 <AlertDialogFooter>
-                                   <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-                                   <AlertDialogAction
-                                     onClick={() => handleDeleteEvento(evento.id)}
-                                     className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-xl"
-                                   >
-                                     Eliminar
-                                   </AlertDialogAction>
-                                 </AlertDialogFooter>
-                               </AlertDialogContent>
-                             </AlertDialog>
-                           </div>
-                         </div>
-                       </div>
-                     );
-                   })}
-                 </div>
-               )}
-             </div>
-           </div>
-         </div>
-       )}
+                            {/* Acciones (edit/delete/liquidar) — si quieres mantenerlas aquí */}
+                            <div className="flex justify-end space-x-2" onClick={(e) => e.stopPropagation()}>
+                              {evento.estado_liquidacion !== 'liquidado' && evento.personal.length > 0 && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleLiquidarEvento(evento)}
+                                  className="bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-200/60 hover:from-emerald-100 hover:to-emerald-200 rounded-lg"
+                                >
+                                  <DollarSign className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedEvento(evento);
+                                  setIsDialogOpen(true);
+                                }}
+                                className="hover:bg-blue-50 hover:text-blue-700 rounded-lg"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    className="hover:bg-red-50 hover:text-red-700 rounded-lg"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="bg-white/95 backdrop-blur-xl border-white/20 shadow-2xl rounded-3xl">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle className="text-xl font-bold text-slate-800">
+                                      ¿Eliminar evento?
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription className="text-slate-600">
+                                      Esta acción no se puede deshacer. Se eliminará permanentemente
+                                      el evento "{evento.nombre_evento}".
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteEvento(evento.id)}
+                                      className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-xl"
+                                    >
+                                      Eliminar
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
-       {/* Footer decorativo sutil */}
-       <div className="text-center pt-8">
-         <div className="inline-flex items-center space-x-2 text-sm text-slate-400">
-           <div className="w-1 h-1 bg-slate-300 rounded-full"></div>
-           <span>Última actualización: {new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</span>
-           <div className="w-1 h-1 bg-slate-300 rounded-full"></div>
-         </div>
-       </div>
-     </div>
+        {/* Footer decorativo sutil */}
+        <div className="text-center pt-8">
+          <div className="inline-flex items-center space-x-2 text-sm text-slate-400">
+            <div className="w-1 h-1 bg-slate-300 rounded-full"></div>
+            <span>Última actualización: {new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</span>
+            <div className="w-1 h-1 bg-slate-300 rounded-full"></div>
+          </div>
+        </div>
+      </div>
 
-     {/* Dialog de Liquidación */}
-     {liquidacionEvento && (
-       <LiquidacionDialog
-         evento={liquidacionEvento}
-         isOpen={isLiquidacionOpen}
-         onClose={() => {
-           setIsLiquidacionOpen(false);
-           setLiquidacionEvento(null);
-         }}
-         onLiquidationComplete={fetchEventos}
-       />
-     )}
+      {/* Dialog de Liquidación */}
+      {liquidacionEvento && (
+        <LiquidacionDialog
+          evento={liquidacionEvento}
+          isOpen={isLiquidacionOpen}
+          onClose={() => {
+            setIsLiquidacionOpen(false);
+            setLiquidacionEvento(null);
+          }}
+          onLiquidationComplete={fetchEventos}
+        />
+      )}
 
-     {/* Estilos CSS adicionales para el calendario */}
-     <style jsx global>{`
-       .rbc-calendar {
-         background: white;
-         border-radius: 12px;
-         border: none !important;
-         font-family: inherit;
-         box-shadow: none;
-       }
-       
-       .rbc-header {
-         background: linear-gradient(to right, #f8fafc, #f1f5f9);
-         border: none !important;
-         padding: 12px 8px;
-         font-weight: 600;
-         color: #475569;
-         font-size: 14px;
-       }
-       
-       .rbc-month-view {
-         border: none !important;
-       }
-       
-       .rbc-date-cell {
-         border-right: 1px solid #e2e8f0 !important;
-         border-bottom: 1px solid #e2e8f0 !important;
-       }
-       
-       .rbc-day-bg {
-         border-right: 1px solid #e2e8f0 !important;
-         border-bottom: 1px solid #e2e8f0 !important;
-       }
-       
-       .rbc-today {
-         background-color: rgba(16, 185, 129, 0.05) !important;
-       }
-       
-       .rbc-off-range-bg {
-         background-color: #f8fafc !important;
-       }
-       
-       .rbc-toolbar {
-         margin-bottom: 20px;
-         padding: 0 8px;
-       }
-       
-       .rbc-toolbar button {
-         background: white;
-         border: 1px solid #e2e8f0;
-         color: #475569;
-         padding: 8px 16px;
-         border-radius: 8px;
-         font-weight: 500;
-         margin: 0 2px;
-         transition: all 0.2s;
-       }
-       
-       .rbc-toolbar button:hover {
-         background: #f1f5f9;
-         border-color: #cbd5e1;
-       }
-       
-       .rbc-toolbar button.rbc-active {
-         background: linear-gradient(to right, #10b981, #059669);
-         border-color: #059669;
-         color: white;
-       }
-       
-       .rbc-event {
-         background: none !important;
-         border: none !important;
-         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-         cursor: pointer;
-         transition: all 0.2s;
-       }
-       
-       .rbc-event:hover {
-         transform: translateY(-1px);
-         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-       }
-       
-       .rbc-event-content {
-         padding: 2px 4px;
-       }
-       
-       .rbc-toolbar-label {
-         font-weight: 700;
-         font-size: 18px;
-         color: #1e293b;
-       }
-       
-       .rbc-btn-group button:first-child {
-         border-top-left-radius: 8px;
-         border-bottom-left-radius: 8px;
-       }
-       
-       .rbc-btn-group button:last-child {
-         border-top-right-radius: 8px;
-         border-bottom-right-radius: 8px;
-       }
-       
-       .rbc-btn-group button:not(:first-child) {
-         margin-left: -1px;
-       }
-     `}</style>
-   </div>
- );
+      {/* Estilos calendario */}
+      <style jsx global>{`
+        .rbc-calendar { background: white; border-radius: 12px; border: none !important; font-family: inherit; box-shadow: none; }
+        .rbc-header { background: linear-gradient(to right, #f8fafc, #f1f5f9); border: none !important; padding: 12px 8px; font-weight: 600; color: #475569; font-size: 14px; }
+        .rbc-month-view { border: none !important; }
+        .rbc-date-cell, .rbc-day-bg { border-right: 1px solid #e2e8f0 !important; border-bottom: 1px solid #e2e8f0 !important; }
+        .rbc-today { background-color: rgba(16, 185, 129, 0.05) !important; }
+        .rbc-off-range-bg { background-color: #f8fafc !important; }
+        .rbc-toolbar { margin-bottom: 20px; padding: 0 8px; }
+        .rbc-toolbar button { background: white; border: 1px solid #e2e8f0; color: #475569; padding: 8px 16px; border-radius: 8px; font-weight: 500; margin: 0 2px; transition: all 0.2s; }
+        .rbc-toolbar button:hover { background: #f1f5f9; border-color: #cbd5e1; }
+        .rbc-toolbar button.rbc-active { background: linear-gradient(to right, #10b981, #059669); border-color: #059669; color: white; }
+        .rbc-event { background: none !important; border: none !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); cursor: pointer; transition: all 0.2s; }
+        .rbc-event:hover { transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .rbc-event-content { padding: 2px 4px; }
+        .rbc-toolbar-label { font-weight: 700; font-size: 18px; color: #1e293b; }
+        .rbc-btn-group button:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+        .rbc-btn-group button:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+        .rbc-btn-group button:not(:first-child) { margin-left: -1px; }
+      `}</style>
+    </div>
+  );
 }

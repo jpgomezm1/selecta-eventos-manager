@@ -18,6 +18,7 @@ export default function CotizacionesListPage() {
       </div>
     );
   }
+
   if (error) {
     return (
       <div className="p-6">

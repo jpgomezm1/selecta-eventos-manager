@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCotizacionDetalle, addVersionToCotizacion, setVersionDefinitiva } from "@/integrations/supabase/apiCotizador";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,9 +7,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { ResumenCotizacion } from "@/components/Cotizador/ResumenCotizacion";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function CotizacionEditorPage() {
   const { id } = useParams();
+  const nav = useNavigate();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [active, setActive] = useState<string | null>(null);
@@ -22,16 +24,24 @@ export default function CotizacionEditorPage() {
 
   const { mutate: marcarDef } = useMutation({
     mutationFn: (version_id: string) => setVersionDefinitiva(id!, version_id),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({ title: "Versión definitiva marcada" });
       qc.invalidateQueries({ queryKey: ["cotizacion", id] });
+
+      // buscar evento creado para esta versión y navegar
+      const { data: ev } = await supabase
+        .from("eventos")
+        .select("id")
+        .eq("cotizacion_version_id", active!)
+        .maybeSingle();
+
+      if (ev?.id) nav(`/eventos/${ev.id}`);
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const { mutate: agregarVersion, isPending: creandoVersion } = useMutation({
     mutationFn: async () => {
-      // agrega versión vacía (duplica índice)
       const nextIndex = (data?.versiones?.length ?? 0) + 1;
       return addVersionToCotizacion(id!, {
         nombre_opcion: `Opción ${String.fromCharCode(64 + nextIndex)}`,
@@ -55,6 +65,7 @@ export default function CotizacionEditorPage() {
       </div>
     );
   }
+
   if (error || !data) {
     return (
       <div className="p-6">
@@ -108,7 +119,6 @@ export default function CotizacionEditorPage() {
                     personal: v.items.personal.reduce((a, p) => a + p.tarifa_estimada_por_persona * p.cantidad, 0),
                     transportes: v.items.transportes.reduce((a, t) => a + t.tarifa_unitaria * t.cantidad, 0),
                   }}
-                  // Nota: este editor muestra, pero para editar cantidades necesitaremos endpoints de update por versión (siguiente iteración).
                   onQtyChange={() => {}}
                   onRemove={() => {}}
                   onGuardar={() => {}}

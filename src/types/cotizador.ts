@@ -126,4 +126,23 @@ export interface PlatoCatalogo {
       is_definitiva?: boolean;
     }>;
   }
+
+  export interface Evento {
+    id: string;
+    nombre_evento: string;
+    ubicacion: string;
+    fecha_evento: string; // ISO
+    descripcion: string | null;
+    estado_liquidacion: "pendiente" | "liquidado";
+    cotizacion_version_id: string | null;
+    created_at?: string | null;
+    updated_at?: string | null;
+  }
+  
+  export interface EventoRequerimiento {
+    platos: Array<{ plato_id: string; nombre: string; precio_unitario: number; cantidad: number; subtotal: number }>;
+    transportes: Array<{ transporte_id: string; lugar: string; tarifa_unitaria: number; cantidad: number; subtotal: number }>;
+    personal: Array<{ personal_costo_id: string; rol: string; tarifa_estimada_por_persona: number; cantidad: number; subtotal: number }>;
+  }
+  
   

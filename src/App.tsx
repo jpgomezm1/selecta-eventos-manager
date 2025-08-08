@@ -14,12 +14,13 @@ import NotFound from "./pages/NotFound";
 import Cotizador from "./pages/Cotizador";
 import CotizacionesListPage from "./pages/Cotizaciones";
 import CotizacionEditorPage from "./pages/CotizacionEditor";
+import EventoDetallePage from "./pages/EventoDetalle";
 
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-
+  
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -27,11 +28,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-
+  
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
-
+  
   return <AppLayout>{children}</AppLayout>;
 }
 
@@ -62,6 +63,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/eventos"
               element={
@@ -70,8 +72,15 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/eventos/:id"
+              element={
+                <ProtectedRoute>
+                  <EventoDetallePage />
+                </ProtectedRoute>
+              }
+            />
 
-            {/* Listado de cotizaciones */}
             <Route
               path="/cotizaciones"
               element={
@@ -81,7 +90,7 @@ const App = () => (
               }
             />
 
-            {/* Crear nueva cotización (dos entradas válidas) */}
+            {/* Crear nueva cotización: admitimos ambas URLs */}
             <Route
               path="/cotizador"
               element={

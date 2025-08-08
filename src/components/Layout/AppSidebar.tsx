@@ -1,5 +1,15 @@
 import React, { useEffect } from "react";
-import { Users, Calendar, LayoutDashboard, LogOut, Menu, ChevronLeft, ChevronRight, Calculator } from "lucide-react";
+import {
+  Users,
+  Calendar,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  ChevronLeft,
+  ChevronRight,
+  Calculator,
+  FileText,
+} from "lucide-react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -11,8 +21,8 @@ import { cn } from "@/lib/utils";
 const navigation = [
   { title: "Personal", url: "/personal", icon: Users },
   { title: "Eventos", url: "/eventos", icon: Calendar },
-  { title: "Cotizaciones", url: "/cotizaciones", icon: Calculator },
-{ title: "Nueva Cotización", url: "/cotizador/nueva", icon: Calculator },
+  { title: "Cotizaciones", url: "/cotizaciones", icon: FileText },
+  { title: "Nueva Cotización", url: "/cotizador/nueva", icon: Calculator },
 ];
 
 export function AppSidebar() {
