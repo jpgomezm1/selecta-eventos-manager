@@ -11,12 +11,15 @@ import PersonalDetalle from "./pages/PersonalDetalle";
 import Eventos from "./pages/Eventos";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Cotizador from "./pages/Cotizador";
+import CotizacionesListPage from "./pages/Cotizaciones";
+import CotizacionEditorPage from "./pages/CotizacionEditor";
 
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -24,11 +27,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  
+
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
-  
+
   return <AppLayout>{children}</AppLayout>;
 }
 
@@ -42,21 +45,70 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<Navigate to="/personal" replace />} />
-            <Route path="/personal" element={
-              <ProtectedRoute>
-                <Personal />
-              </ProtectedRoute>
-            } />
-            <Route path="/personal/:id" element={
-              <ProtectedRoute>
-                <PersonalDetalle />
-              </ProtectedRoute>
-            } />
-            <Route path="/eventos" element={
-              <ProtectedRoute>
-                <Eventos />
-              </ProtectedRoute>
-            } />
+
+            <Route
+              path="/personal"
+              element={
+                <ProtectedRoute>
+                  <Personal />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/personal/:id"
+              element={
+                <ProtectedRoute>
+                  <PersonalDetalle />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/eventos"
+              element={
+                <ProtectedRoute>
+                  <Eventos />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Listado de cotizaciones */}
+            <Route
+              path="/cotizaciones"
+              element={
+                <ProtectedRoute>
+                  <CotizacionesListPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Crear nueva cotización (dos entradas válidas) */}
+            <Route
+              path="/cotizador"
+              element={
+                <ProtectedRoute>
+                  <Cotizador />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cotizador/nueva"
+              element={
+                <ProtectedRoute>
+                  <Cotizador />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Editor de una cotización existente */}
+            <Route
+              path="/cotizador/:id"
+              element={
+                <ProtectedRoute>
+                  <CotizacionEditorPage />
+                </ProtectedRoute>
+              }
+            />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

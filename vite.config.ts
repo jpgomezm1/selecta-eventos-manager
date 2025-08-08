@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
+import react from "@vitejs/plugin-react"; // ⬅️ Babel en vez de SWC
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
@@ -10,9 +10,13 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   plugins: [
-    react(),
-    mode === 'development' &&
-    componentTagger(),
+    react({
+      jsxImportSource: "react",
+      babel: {
+        plugins: [],
+      },
+    }),
+    mode === "development" && componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
