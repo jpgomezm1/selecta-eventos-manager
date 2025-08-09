@@ -1,9 +1,30 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
+import { 
+  Trash2, 
+  Plus, 
+  Minus, 
+  Save, 
+  Calculator, 
+  Users, 
+  DollarSign,
+  Utensils,
+  Truck,
+  ChefHat,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
+  TrendingUp,
+  Eye,
+  EyeOff,
+  BarChart3
+} from "lucide-react";
 import type { CotizacionItemsState } from "@/types/cotizador";
+import { cn } from "@/lib/utils";
 
 type Props = {
   invitados: number;
@@ -16,6 +37,33 @@ type Props = {
   guardando: boolean;
 };
 
+const SECTION_CONFIG = {
+  platos: {
+    icon: Utensils,
+    color: "orange",
+    label: "Platos y Menú",
+    bgColor: "bg-orange-50",
+    textColor: "text-orange-700",
+    borderColor: "border-orange-200"
+  },
+  personal: {
+    icon: ChefHat,
+    color: "blue", 
+    label: "Personal de Servicio",
+    bgColor: "bg-blue-50",
+    textColor: "text-blue-700",
+    borderColor: "border-blue-200"
+  },
+  transportes: {
+    icon: Truck,
+    color: "green",
+    label: "Logística y Transporte", 
+    bgColor: "bg-green-50",
+    textColor: "text-green-700",
+    borderColor: "border-green-200"
+  }
+};
+
 export function ResumenCotizacion({
   invitados,
   items,
@@ -26,137 +74,361 @@ export function ResumenCotizacion({
   onGuardar,
   guardando,
 }: Props) {
-  const rows = [
-    ...items.platos.map((p) => ({
-      tipo: "platos" as const,
-      id: p.plato_id,
-      nombre: p.nombre,
-      precio: p.precio_unitario,
-      cantidad: p.cantidad,
-      subtotal: p.cantidad * p.precio_unitario,
-      group: "Platos",
-    })),
-    ...items.personal.map((p) => ({
-      tipo: "personal" as const,
-      id: p.personal_costo_id,
-      nombre: p.rol,
-      precio: p.tarifa_estimada_por_persona,
-      cantidad: p.cantidad,
-      subtotal: p.cantidad * p.tarifa_estimada_por_persona,
-      group: "Personal",
-    })),
-    ...items.transportes.map((t) => ({
-      tipo: "transportes" as const,
-      id: t.transporte_id,
-      nombre: `Transporte • ${t.lugar}`,
-      precio: t.tarifa_unitaria,
-      cantidad: t.cantidad,
-      subtotal: t.cantidad * t.tarifa_unitaria,
-      group: "Transporte",
-    })),
-  ];
+  // Calcular estadísticas
+  const totalItems = items.platos.length + items.personal.length + items.transportes.length;
+  const totalQuantity = [
+    ...items.platos.map(p => p.cantidad),
+    ...items.personal.map(p => p.cantidad), 
+    ...items.transportes.map(t => t.cantidad)
+  ].reduce((sum, qty) => sum + qty, 0);
 
-  const hasItems = rows.length > 0;
+  const costPerGuest = invitados > 0 ? total / invitados : 0;
+  const hasItems = totalItems > 0;
 
-  // Simple grouping in-place
-  const grouped = [
-    { label: "Platos", rows: rows.filter((r) => r.group === "Platos"), subtotal: subtotales.platos },
-    { label: "Personal", rows: rows.filter((r) => r.group === "Personal"), subtotal: subtotales.personal },
-    { label: "Transporte", rows: rows.filter((r) => r.group === "Transporte"), subtotal: subtotales.transportes },
-  ].filter((g) => g.rows.length > 0);
+  // Calcular porcentajes
+  const platosPercentage = total > 0 ? (subtotales.platos / total) * 100 : 0;
+  const personalPercentage = total > 0 ? (subtotales.personal / total) * 100 : 0;
+  const transportesPercentage = total > 0 ? (subtotales.transportes / total) * 100 : 0;
 
-  return (
-    <Card className="sticky top-4 shadow-soft">
-      <CardHeader>
-        <CardTitle>Resumen</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="text-sm text-slate-600">
-          Invitados: <span className="font-semibold text-slate-800">{invitados}</span>
-        </div>
+  // Preparar datos por sección
+  const sections = [
+    {
+      key: "platos" as const,
+      ...SECTION_CONFIG.platos,
+      items: items.platos.map(p => ({
+        tipo: "platos" as const,
+        id: p.plato_id,
+        nombre: p.nombre,
+        precio: p.precio_unitario,
+        cantidad: p.cantidad,
+        subtotal: p.cantidad * p.precio_unitario
+      })),
+      subtotal: subtotales.platos,
+      percentage: platosPercentage
+    },
+    {
+      key: "personal" as const,
+      ...SECTION_CONFIG.personal,
+      items: items.personal.map(p => ({
+        tipo: "personal" as const,
+        id: p.personal_costo_id,
+        nombre: p.rol,
+        precio: p.tarifa_estimada_por_persona,
+        cantidad: p.cantidad,
+        subtotal: p.cantidad * p.tarifa_estimada_por_persona
+      })),
+      subtotal: subtotales.personal,
+      percentage: personalPercentage
+    },
+    {
+      key: "transportes" as const,
+      ...SECTION_CONFIG.transportes,
+      items: items.transportes.map(t => ({
+        tipo: "transportes" as const,
+        id: t.transporte_id,
+        nombre: t.lugar,
+        precio: t.tarifa_unitaria,
+        cantidad: t.cantidad,
+        subtotal: t.cantidad * t.tarifa_unitaria
+      })),
+      subtotal: subtotales.transportes,
+      percentage: transportesPercentage
+    }
+  ].filter(section => section.items.length > 0);
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Item</TableHead>
-              <TableHead className="text-right">Precio</TableHead>
-              <TableHead className="text-center">Cant.</TableHead>
-              <TableHead className="text-right">Subtotal</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {!hasItems ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center text-slate-500 py-6">
-                  Agrega items desde las pestañas de la izquierda.
-                </TableCell>
-              </TableRow>
-            ) : (
-              grouped.flatMap((g) => [
-                <TableRow key={`group-${g.label}`} className="bg-slate-50/60">
-                  <TableCell colSpan={5} className="font-semibold">{g.label}</TableCell>
-                </TableRow>,
-                ...g.rows.map((r) => (
-                  <TableRow key={`${r.tipo}-${r.id}`}>
-                    <TableCell className="font-medium">{r.nombre}</TableCell>
-                    <TableCell className="text-right">${r.precio.toLocaleString()}</TableCell>
-                    <TableCell className="text-center">
-                      <div className="inline-flex items-center gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => onQtyChange(r.tipo, r.id, Math.max(1, r.cantidad - 1))}
-                        >
-                          -
-                        </Button>
-                        <Input
-                          type="number"
-                          min={1}
-                          className="w-16 text-center"
-                          value={r.cantidad}
-                          onChange={(e) => onQtyChange(r.tipo, r.id, Math.max(1, Number(e.target.value)))}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => onQtyChange(r.tipo, r.id, r.cantidad + 1)}
-                        >
-                          +
-                        </Button>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">${r.subtotal.toLocaleString()}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => onRemove(r.tipo, r.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                )),
-                <TableRow key={`subtotal-${g.label}`}>
-                  <TableCell colSpan={3} className="text-right font-medium">Subtotal {g.label}</TableCell>
-                  <TableCell className="text-right font-semibold">${g.subtotal.toLocaleString()}</TableCell>
-                  <TableCell />
-                </TableRow>,
-              ])
-            )}
-          </TableBody>
-        </Table>
-
-        <div className="flex items-center justify-between pt-2">
-          <div className="text-sm text-slate-500">* Cálculo en tiempo real</div>
-          <div className="text-right">
-            <div className="text-slate-500 text-sm">Total</div>
-            <div className="text-2xl font-bold">${total.toLocaleString()}</div>
+  const renderItemRow = (item: any, sectionColor: string) => (
+    <div 
+      key={`${item.tipo}-${item.id}`}
+      className="group relative bg-white rounded-xl p-4 border border-slate-200 hover:shadow-md transition-all duration-200"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <h4 className="font-medium text-slate-800 truncate mb-1">
+            {item.nombre}
+          </h4>
+          <div className="flex items-center space-x-2 text-sm text-slate-600">
+            <DollarSign className="h-3 w-3" />
+            <span>{item.precio.toLocaleString()}</span>
+            <span>×</span>
+            <span>{item.cantidad}</span>
           </div>
         </div>
 
-        <Button className="w-full" onClick={onGuardar} disabled={guardando || !hasItems}>
-          {guardando ? "Guardando..." : "Guardar Cotización"}
+        <div className="flex items-center space-x-3 shrink-0">
+          {/* Controles de cantidad */}
+          <div className="flex items-center space-x-1 bg-slate-50 rounded-lg p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onQtyChange(item.tipo, item.id, Math.max(1, item.cantidad - 1))}
+              className="h-7 w-7 p-0 hover:bg-white"
+            >
+              <Minus className="h-3 w-3" />
+            </Button>
+            
+            <Input
+              type="number"
+              min={1}
+              value={item.cantidad}
+              onChange={(e) => onQtyChange(item.tipo, item.id, Math.max(1, Number(e.target.value)))}
+              className="w-14 h-7 text-center text-sm border-0 bg-transparent focus:bg-white focus:border focus:border-slate-300"
+            />
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onQtyChange(item.tipo, item.id, item.cantidad + 1)}
+              className="h-7 w-7 p-0 hover:bg-white"
+            >
+              <Plus className="h-3 w-3" />
+            </Button>
+          </div>
+
+          {/* Subtotal */}
+          <div className="text-right min-w-[80px]">
+            <div className={cn("font-semibold", `text-${sectionColor}-600`)}>
+              ${item.subtotal.toLocaleString()}
+            </div>
+          </div>
+
+          {/* Botón eliminar */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onRemove(item.tipo, item.id)}
+            className="h-7 w-7 p-0 text-red-500 hover:bg-red-50 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <Card className="sticky top-4 shadow-xl border-slate-200 overflow-hidden">
+      {/* Header mejorado */}
+      <CardHeader className="bg-gradient-to-r from-emerald-50 via-green-50 to-emerald-50 border-b border-emerald-200 pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-emerald-500 rounded-xl shadow-lg">
+              <Calculator className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <CardTitle className="text-emerald-800 text-lg">Resumen de Cotización</CardTitle>
+              <p className="text-emerald-600 text-sm">Detalles y totales</p>
+            </div>
+          </div>
+
+          {hasItems && (
+            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+              {totalItems} elementos
+            </Badge>
+          )}
+        </div>
+
+        {/* Estadísticas del evento */}
+        <div className="grid grid-cols-2 gap-4 mt-4">
+          <div className="text-center p-3 bg-white/60 rounded-xl">
+            <div className="flex items-center justify-center mb-1">
+              <Users className="h-4 w-4 text-emerald-600" />
+            </div>
+            <div className="font-semibold text-emerald-800">{invitados}</div>
+            <div className="text-xs text-emerald-600">Invitados</div>
+          </div>
+          
+          <div className="text-center p-3 bg-white/60 rounded-xl">
+            <div className="flex items-center justify-center mb-1">
+              <TrendingUp className="h-4 w-4 text-emerald-600" />
+            </div>
+            <div className="font-semibold text-emerald-800">
+              ${costPerGuest.toLocaleString()}
+            </div>
+            <div className="text-xs text-emerald-600">Por invitado</div>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-6 space-y-6">
+        {!hasItems ? (
+          /* Estado vacío mejorado */
+          <div className="text-center py-12 space-y-4">
+            <div className="w-16 h-16 mx-auto bg-slate-100 rounded-full flex items-center justify-center">
+              <Sparkles className="h-6 w-6 text-slate-400" />
+            </div>
+            <div>
+              <h3 className="font-medium text-slate-700 mb-2">¡Comienza tu cotización!</h3>
+              <p className="text-slate-500 text-sm">
+                Selecciona elementos desde las pestañas para ver el resumen aquí
+              </p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Distribución de costos */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-slate-800 flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Distribución de Costos
+                </h4>
+                <span className="text-sm text-slate-600">{totalQuantity} items</span>
+              </div>
+
+              <div className="space-y-2">
+                {sections.map((section) => (
+                  <div key={section.key} className="flex items-center gap-3">
+                    <section.icon className={cn("h-4 w-4", section.textColor)} />
+                    <div className="flex-1">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="font-medium text-slate-700">{section.label}</span>
+                        <span className="text-slate-600">{section.percentage.toFixed(1)}%</span>
+                      </div>
+                      <Progress 
+                        value={section.percentage} 
+                        className="h-2"
+                      />
+                    </div>
+                    <span className={cn("text-sm font-semibold", section.textColor)}>
+                      ${section.subtotal.toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Elementos por sección */}
+            <div className="space-y-6">
+              {sections.map((section) => (
+                <div key={section.key} className="space-y-3">
+                  <div className={cn(
+                    "flex items-center justify-between p-3 rounded-xl border",
+                    section.bgColor,
+                    section.borderColor
+                  )}>
+                    <div className="flex items-center space-x-2">
+                      <section.icon className={cn("h-5 w-5", section.textColor)} />
+                      <h4 className={cn("font-semibold", section.textColor)}>
+                        {section.label}
+                      </h4>
+                      <Badge className={cn(
+                        "text-xs",
+                        `bg-${section.color}-100 text-${section.color}-700 border-${section.color}-200`
+                      )}>
+                        {section.items.length}
+                      </Badge>
+                    </div>
+                    
+                    <div className={cn("font-bold", section.textColor)}>
+                      ${section.subtotal.toLocaleString()}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {section.items.map(item => renderItemRow(item, section.color))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <Separator />
+
+            {/* Total final */}
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-2xl p-6 border border-slate-200">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    <DollarSign className="h-5 w-5 text-emerald-600" />
+                    <span className="text-slate-600 font-medium">Total de la Cotización</span>
+                  </div>
+                  
+                  {total > 100000 && (
+                    <Badge className="bg-purple-100 text-purple-700 border-purple-200">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      Premium
+                    </Badge>
+                  )}
+                </div>
+                
+                <div className="text-3xl font-bold text-emerald-600 mb-2">
+                  ${total.toLocaleString()}
+                </div>
+                
+                <div className="flex items-center justify-between text-sm text-slate-600">
+                  <span>Cálculo en tiempo real</span>
+                  <span>
+                    {invitados > 0 && `$${costPerGuest.toLocaleString()} por invitado`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Alertas inteligentes */}
+              {total > 0 && (
+                <div className="space-y-2">
+                  {total < 50000 && (
+                    <div className="flex items-center space-x-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <AlertCircle className="h-4 w-4 text-amber-600" />
+                      <span className="text-amber-700 text-sm">
+                        Cotización básica - Considera agregar más elementos
+                      </span>
+                    </div>
+                  )}
+                  
+                  {total >= 50000 && total < 150000 && (
+                    <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                      <span className="text-blue-700 text-sm">
+                        Cotización completa - ¡Excelente propuesta!
+                      </span>
+                    </div>
+                  )}
+                  
+                  {total >= 150000 && (
+                    <div className="flex items-center space-x-2 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                      <Sparkles className="h-4 w-4 text-purple-600" />
+                      <span className="text-purple-700 text-sm">
+                        Cotización premium - Propuesta de alto valor
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Botón de guardar mejorado */}
+        <Button 
+          className={cn(
+            "w-full h-12 font-semibold text-base transition-all duration-200",
+            "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700",
+            "shadow-lg hover:shadow-xl transform hover:scale-[1.02]",
+            guardando && "animate-pulse"
+          )}
+          onClick={onGuardar} 
+          disabled={guardando || !hasItems}
+        >
+          {guardando ? (
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+              <span>Guardando...</span>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-2">
+              <Save className="h-4 w-4" />
+              <span>Guardar Cotización</span>
+            </div>
+          )}
         </Button>
+
+        {/* Footer informativo */}
+        <div className="text-center pt-2">
+          <p className="text-xs text-slate-500">
+            Los cálculos se actualizan automáticamente
+          </p>
+        </div>
       </CardContent>
     </Card>
   );

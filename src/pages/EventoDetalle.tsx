@@ -134,7 +134,7 @@ export default function EventoDetallePage() {
         <div className="absolute top-1/3 right-1/4 w-32 h-32 bg-gradient-to-r from-purple-100/40 to-pink-100/40 rounded-full blur-2xl"></div>
       </div>
 
-      <div className="relative z-10 container mx-auto px-4 py-8 space-y-8">
+      <div className="relative z-10 container mx-auto px-4 py-8 space-y-8 max-w-7xl">
         {/* Header premium */}
         <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
           <div className="flex items-start gap-4 flex-1">
@@ -222,115 +222,118 @@ export default function EventoDetallePage() {
           </div>
         </div>
 
-        {/* Layout de dos columnas premium */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Columna izquierda: REQUERIMIENTO */}
-          <div className="lg:col-span-2 space-y-8">
-            <Card className="bg-white/70 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-slate-50/50 to-white/50 backdrop-blur-sm border-b border-slate-200/30">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <FileText className="h-5 w-5 text-white" />
-                  </div>
-                  <CardTitle className="text-xl font-bold text-slate-800">Requerimiento del Evento</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-6 space-y-8">
-                {/* PLATOS */}
-                <SeccionTabla
-                  titulo="Menú y Platos"
-                  emptyHint="Este evento no tiene platos definidos en el requerimiento."
-                  icon={<UtensilsCrossed className="h-5 w-5 text-orange-600" />}
-                  rows={req.platos.map((p) => ({
-                    nombre: p.nombre,
-                    precio: p.precio_unitario,
-                    cantidad: p.cantidad,
-                    subtotal: p.subtotal,
-                  }))}
-                />
-
-                <Separator className="my-6" />
-
-                {/* PERSONAL */}
-                <SeccionTabla
-                  titulo="Personal Requerido"
-                  emptyHint="No se definió personal en la cotización original."
-                  icon={<Users className="h-5 w-5 text-blue-600" />}
-                  rows={req.personal.map((p) => ({
-                    nombre: p.rol,
-                    precio: p.tarifa_estimada_por_persona,
-                    cantidad: p.cantidad,
-                    subtotal: p.subtotal,
-                  }))}
-                />
-
-                <Separator className="my-6" />
-
-                {/* TRANSPORTE */}
-                <SeccionTabla
-                  titulo="Logística y Transporte"
-                  emptyHint="No se definió transporte en la cotización original."
-                  icon={<Truck className="h-5 w-5 text-green-600" />}
-                  rows={req.transportes.map((t) => ({
-                    nombre: t.lugar,
-                    precio: t.tarifa_unitaria,
-                    cantidad: t.cantidad,
-                    subtotal: t.subtotal,
-                  }))}
-                />
-
-                {/* Total premium */}
-                <div className="flex justify-end pt-6">
-                  <Card className="bg-gradient-to-r from-emerald-50/80 to-green-50/80 backdrop-blur-sm border-emerald-200/60 rounded-2xl shadow-lg">
-                    <CardContent className="p-6 text-right">
-                      <div className="text-sm text-emerald-700 font-semibold mb-1">Total Estimado (Requerimiento)</div>
-                      <div className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
-                        ${totalRequerimiento.toLocaleString()}
-                      </div>
-                      <div className="text-xs text-emerald-600 mt-1">Basado en cotización original</div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Columna derecha: PANELES DE GESTIÓN */}
-          <div className="lg:col-span-1 space-y-8">
-            <PersonalPanel
-              eventoId={head.id}
-              fechaEvento={head.fecha_evento}
-              estadoLiquidacion={head.estado_liquidacion}
+        {/* Sección REQUERIMIENTO */}
+        <Card className="bg-white/70 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-slate-50/50 to-white/50 backdrop-blur-sm border-b border-slate-200/30">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <FileText className="h-5 w-5 text-white" />
+              </div>
+              <CardTitle className="text-xl font-bold text-slate-800">Requerimiento del Evento</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6 space-y-8">
+            {/* PLATOS */}
+            <SeccionTabla
+              titulo="Menú y Platos"
+              emptyHint="Este evento no tiene platos definidos en el requerimiento."
+              icon={<UtensilsCrossed className="h-5 w-5 text-orange-600" />}
+              rows={req.platos.map((p) => ({
+                nombre: p.nombre,
+                precio: p.precio_unitario,
+                cantidad: p.cantidad,
+                subtotal: p.subtotal,
+              }))}
             />
 
-            <MenajePanel
-              eventoId={head.id}
-              fechaEvento={head.fecha_evento}
+            <Separator className="my-6" />
+
+            {/* PERSONAL */}
+            <SeccionTabla
+              titulo="Personal Requerido"
+              emptyHint="No se definió personal en la cotización original."
+              icon={<Users className="h-5 w-5 text-blue-600" />}
+              rows={req.personal.map((p) => ({
+                nombre: p.rol,
+                precio: p.tarifa_estimada_por_persona,
+                cantidad: p.cantidad,
+                subtotal: p.subtotal,
+              }))}
             />
 
-            <TransportePanel
-              eventoId={head.id}
+            <Separator className="my-6" />
+
+            {/* TRANSPORTE */}
+            <SeccionTabla
+              titulo="Logística y Transporte"
+              emptyHint="No se definió transporte en la cotización original."
+              icon={<Truck className="h-5 w-5 text-green-600" />}
+              rows={req.transportes.map((t) => ({
+                nombre: t.lugar,
+                precio: t.tarifa_unitaria,
+                cantidad: t.cantidad,
+                subtotal: t.subtotal,
+              }))}
             />
 
-            {/* Información de origen */}
-            {head.cotizacion_version_id && (
-              <Card className="bg-gradient-to-r from-purple-50/80 to-purple-100/80 backdrop-blur-sm border-purple-200/60 rounded-3xl shadow-lg">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                      <Receipt className="h-4 w-4 text-white" />
-                    </div>
-                    <h4 className="font-bold text-purple-800">Información de Origen</h4>
+            {/* Total premium */}
+            <div className="flex justify-end pt-6">
+              <Card className="bg-gradient-to-r from-emerald-50/80 to-green-50/80 backdrop-blur-sm border-emerald-200/60 rounded-2xl shadow-lg">
+                <CardContent className="p-6 text-right">
+                  <div className="text-sm text-emerald-700 font-semibold mb-1">Total Estimado (Requerimiento)</div>
+                  <div className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+                    ${totalRequerimiento.toLocaleString()}
                   </div>
-                  <p className="text-sm text-purple-700 leading-relaxed">
-                    Este evento fue generado desde una cotización aprobada
-                  </p>
-                  <div className="mt-3 p-3 bg-white/60 rounded-xl border border-purple-200/50">
-                    <code className="text-sm font-mono text-purple-800">{head.cotizacion_version_id}</code>
-                  </div>
+                  <div className="text-xs text-emerald-600 mt-1">Basado en cotización original</div>
                 </CardContent>
               </Card>
-            )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* PANELES DE GESTIÓN - Layout horizontal en una sola fila */}
+        <div className="space-y-6">
+          {/* Panel Personal - Ocupa todo el ancho */}
+          <PersonalPanel
+            eventoId={head.id}
+            fechaEvento={head.fecha_evento}
+            estadoLiquidacion={head.estado_liquidacion}
+          />
+
+          {/* Panel Menaje - Ocupa todo el ancho */}
+          <MenajePanel
+            eventoId={head.id}
+            fechaEvento={head.fecha_evento}
+          />
+
+          {/* Layout para Transporte + Info origen en dos columnas solo en pantallas grandes */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Panel Transporte - Ocupa 2 columnas */}
+            <div className="lg:col-span-2">
+              <TransportePanel eventoId={head.id} />
+            </div>
+
+            {/* Información de origen - Ocupa 1 columna */}
+            <div className="lg:col-span-1">
+              {head.cotizacion_version_id && (
+                <Card className="bg-gradient-to-r from-purple-50/80 to-purple-100/80 backdrop-blur-sm border-purple-200/60 rounded-3xl shadow-lg h-fit">
+                  <CardContent className="p-6">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                        <Receipt className="h-4 w-4 text-white" />
+                      </div>
+                      <h4 className="font-bold text-purple-800">Información de Origen</h4>
+                    </div>
+                    <p className="text-sm text-purple-700 leading-relaxed mb-3">
+                      Este evento fue generado desde una cotización aprobada
+                    </p>
+                    <div className="p-3 bg-white/60 rounded-xl border border-purple-200/50">
+                      <code className="text-sm font-mono text-purple-800 break-all">{head.cotizacion_version_id}</code>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         </div>
 
