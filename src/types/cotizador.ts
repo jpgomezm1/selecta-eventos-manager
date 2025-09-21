@@ -38,6 +38,8 @@ export interface PlatoCatalogo {
     cliente_nombre: string | null;
     numero_invitados: number;
     fecha_evento_estimada: string | null; // ISO
+    ubicacion_evento?: string | null;
+    comercial_encargado: string;
     total_cotizado: number;
     estado: EstadoCotizacion;
     created_at?: string | null;
@@ -90,6 +92,8 @@ export interface PlatoCatalogo {
     cliente_nombre: string | null;
     numero_invitados: number;
     fecha_evento_estimada: Date | null;
+    ubicacion_evento?: string | null;
+    comercial_encargado: string;
     total_cotizado: number;
     estado: EstadoCotizacion;
   }
@@ -116,6 +120,8 @@ export interface PlatoCatalogo {
       cliente_nombre: string | null;
       numero_invitados: number;
       fecha_evento_estimada: string | null;
+      ubicacion_evento?: string | null;
+      comercial_encargado: string;
     };
     versiones: Array<{
       id?: string; // vacío si aún no existe en DB
@@ -135,6 +141,7 @@ export interface PlatoCatalogo {
     descripcion: string | null;
     estado_liquidacion: "pendiente" | "liquidado";
     cotizacion_version_id: string | null;
+    comercial_encargado?: string | null; // Heredado de la cotización
     created_at?: string | null;
     updated_at?: string | null;
   }

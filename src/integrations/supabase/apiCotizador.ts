@@ -77,27 +77,51 @@ export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
   const versiones = await Promise.all(
     (vers ?? []).map(async (v: any) => {
       const [{ data: p }, { data: t }, { data: pe }] = await Promise.all([
-        supabase.from("cotizacion_platos").select("*").eq("cotizacion_version_id", v.id),
-        supabase.from("cotizacion_transporte_items").select("*").eq("cotizacion_version_id", v.id),
-        supabase.from("cotizacion_personal_items").select("*").eq("cotizacion_version_id", v.id),
+        supabase
+          .from("cotizacion_platos")
+          .select(`
+            *,
+            platos_catalogo (
+              nombre
+            )
+          `)
+          .eq("cotizacion_version_id", v.id),
+        supabase
+          .from("cotizacion_transporte_items")
+          .select(`
+            *,
+            transporte_tarifas (
+              lugar
+            )
+          `)
+          .eq("cotizacion_version_id", v.id),
+        supabase
+          .from("cotizacion_personal_items")
+          .select(`
+            *,
+            personal_costos_catalogo (
+              rol
+            )
+          `)
+          .eq("cotizacion_version_id", v.id),
       ]);
 
       const items: CotizacionItemsState = {
         platos: (p ?? []).map((x: any) => ({
           plato_id: x.plato_id,
-          nombre: "", // nombre se usa solo en snapshot de evento
+          nombre: x.platos_catalogo?.nombre || "Plato sin nombre",
           precio_unitario: Number(x.precio_unitario),
           cantidad: x.cantidad,
         })),
         transportes: (t ?? []).map((x: any) => ({
           transporte_id: x.transporte_id,
-          lugar: "",
+          lugar: x.transporte_tarifas?.lugar || "Lugar sin especificar",
           tarifa_unitaria: Number(x.tarifa_unitaria),
           cantidad: x.cantidad,
         })),
         personal: (pe ?? []).map((x: any) => ({
           personal_costo_id: x.personal_costo_id,
-          rol: "",
+          rol: x.personal_costos_catalogo?.rol || "Rol sin especificar",
           tarifa_estimada_por_persona: Number(x.tarifa_estimada_por_persona),
           cantidad: x.cantidad,
         })),
@@ -134,6 +158,8 @@ export async function createCotizacionWithVersions(payload: CotizacionWithVersio
       fecha_evento_estimada: payload.cotizacion.fecha_evento_estimada
         ? payload.cotizacion.fecha_evento_estimada.toISOString().slice(0, 10)
         : null,
+      ubicacion_evento: payload.cotizacion.ubicacion_evento,
+      comercial_encargado: payload.cotizacion.comercial_encargado,
       total_cotizado: payload.cotizacion.total_cotizado,
       estado: payload.cotizacion.estado,
     })

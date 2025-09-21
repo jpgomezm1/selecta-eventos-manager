@@ -42,6 +42,7 @@ export default function EventosPage() {
   const [isLiquidacionOpen, setIsLiquidacionOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
   const [selectedPersonFilter, setSelectedPersonFilter] = useState<string>('all');
+  const [selectedComercialFilter, setSelectedComercialFilter] = useState<string>('all');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -80,6 +81,12 @@ export default function EventosPage() {
             metodo_pago,
             notas_pago,
             personal (*)
+          ),
+          cotizacion_versiones (
+            cotizaciones (
+              ubicacion_evento,
+              comercial_encargado
+            )
           )
         `)
         .order("fecha_evento", { ascending: false });
@@ -100,9 +107,16 @@ export default function EventosPage() {
           evento_personal_id: ep.id,
         })) || [];
         const costoTotal = personalAsignado.reduce((sum: number, p: PersonalAsignado) => sum + (p.pago_calculado || Number(p.tarifa_hora)), 0);
-        
+
+        // Extraer información de la cotización si existe
+        const cotizacionInfo = evento.cotizacion_versiones?.cotizaciones;
+        const ubicacionEvento = cotizacionInfo?.ubicacion_evento || evento.ubicacion;
+        const comercialEncargado = cotizacionInfo?.comercial_encargado;
+
         return {
           ...evento,
+          ubicacion: ubicacionEvento,
+          comercial_encargado: comercialEncargado,
           estado_liquidacion: (evento.estado_liquidacion as 'pendiente' | 'liquidado') || 'pendiente',
           personal: personalAsignado,
           costo_total: costoTotal,
@@ -193,12 +207,21 @@ export default function EventosPage() {
     return "bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 border-orange-200 shadow-sm";
   };
 
-  // Filtrar eventos según el personal seleccionado
-  const filteredEventos = selectedPersonFilter === 'all' 
-    ? eventos 
-    : eventos.filter(evento => 
-        evento.personal.some(p => p.id === selectedPersonFilter)
-      );
+  // Obtener lista de comerciales únicos
+  const comerciales = [...new Set(eventos
+    .map(evento => evento.comercial_encargado)
+    .filter(Boolean)
+  )].sort();
+
+  // Filtrar eventos según los filtros seleccionados
+  const filteredEventos = eventos.filter(evento => {
+    const matchesPersonal = selectedPersonFilter === 'all' ||
+      evento.personal.some(p => p.id === selectedPersonFilter);
+    const matchesComercial = selectedComercialFilter === 'all' ||
+      evento.comercial_encargado === selectedComercialFilter;
+
+    return matchesPersonal && matchesComercial;
+  });
 
   // Convertir eventos para el calendario
   const calendarEvents: CalendarEvent[] = filteredEventos.map(evento => ({
@@ -503,11 +526,13 @@ export default function EventosPage() {
                 </Button>
               </div>
 
-              {/* Filtro por personal premium */}
-              <div className="flex items-center space-x-3">
+              {/* Filtros premium */}
+              <div className="flex flex-wrap items-center gap-6">
+                {/* Filtro por personal */}
+                <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2">
                   <Filter className="h-5 w-5 text-slate-600" />
-                  <span className="text-sm font-semibold text-slate-700">Filtrar por empleado:</span>
+                  <span className="text-sm font-semibold text-slate-700">Empleado:</span>
                 </div>
                 <Select value={selectedPersonFilter} onValueChange={setSelectedPersonFilter}>
                   <SelectTrigger className="w-56 bg-white/80 border-slate-200/50 rounded-2xl shadow-sm hover:shadow-md transition-all">
@@ -532,6 +557,38 @@ export default function EventosPage() {
                     <X className="h-4 w-4" />
                   </Button>
                 )}
+                </div>
+
+                {/* Filtro por comercial */}
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
+                    <Users className="h-5 w-5 text-primary" />
+                    <span className="text-sm font-semibold text-slate-700">Comercial:</span>
+                  </div>
+                  <Select value={selectedComercialFilter} onValueChange={setSelectedComercialFilter}>
+                    <SelectTrigger className="w-56 bg-white/80 border-slate-200/50 rounded-2xl shadow-sm hover:shadow-md transition-all">
+                      <SelectValue placeholder="Todos los comerciales" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white/95 backdrop-blur-xl border-white/30 rounded-2xl shadow-2xl">
+                      <SelectItem value="all">Todos los comerciales</SelectItem>
+                      {comerciales.map((comercial) => (
+                        <SelectItem key={comercial} value={comercial} className="rounded-xl">
+                          {comercial}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedComercialFilter !== 'all' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedComercialFilter('all')}
+                      className="text-slate-500 hover:text-slate-700 rounded-xl"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -550,9 +607,9 @@ export default function EventosPage() {
                   <div>
                     <CardTitle className="text-xl font-bold text-slate-800">Calendario de Eventos</CardTitle>
                     <CardDescription className="text-slate-600">
-                      {selectedPersonFilter === 'all' 
-                        ? `Vista completa - ${filteredEventos.length} eventos` 
-                        : `Eventos de ${personal.find(p => p.id === selectedPersonFilter)?.nombre_completo} (${filteredEventos.length})`
+                      {selectedPersonFilter === 'all' && selectedComercialFilter === 'all'
+                        ? `Vista completa - ${filteredEventos.length} eventos`
+                        : `${filteredEventos.length} eventos filtrados`
                       }
                     </CardDescription>
                   </div>
@@ -624,9 +681,9 @@ export default function EventosPage() {
                <div>
                  <CardTitle className="text-xl font-bold text-slate-800">Catálogo de Eventos ({filteredEventos.length})</CardTitle>
                  <CardDescription className="text-slate-600">
-                   {selectedPersonFilter === 'all' 
-                     ? "Vista completa de todos los eventos registrados" 
-                     : `Eventos asignados a ${personal.find(p => p.id === selectedPersonFilter)?.nombre_completo}`}
+                   {selectedPersonFilter === 'all' && selectedComercialFilter === 'all'
+                     ? "Vista completa de todos los eventos registrados"
+                     : "Eventos filtrados según criterios seleccionados"}
                  </CardDescription>
                </div>
              </div>
@@ -712,6 +769,13 @@ export default function EventosPage() {
                              <MapPin className="h-4 w-4 mr-3 text-selecta-green group-hover/item:scale-110 transition-transform" />
                              <span className="line-clamp-1 font-medium">{evento.ubicacion}</span>
                            </div>
+
+                           {evento.comercial_encargado && (
+                             <div className="flex items-center text-sm text-slate-600 group/item hover:text-primary transition-colors">
+                               <Users className="h-4 w-4 mr-3 text-primary group-hover/item:scale-110 transition-transform" />
+                               <span className="line-clamp-1 font-medium">Comercial: {evento.comercial_encargado}</span>
+                             </div>
+                           )}
 
                            {evento.descripcion && (
                              <div className="bg-gradient-to-r from-slate-50/80 to-white/80 p-4 rounded-2xl border border-slate-200/40">

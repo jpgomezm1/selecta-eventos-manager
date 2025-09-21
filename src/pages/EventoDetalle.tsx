@@ -20,16 +20,36 @@ type EventoHead = {
   descripcion: string | null;
   estado_liquidacion: "pendiente" | "liquidado";
   cotizacion_version_id: string | null;
+  comercial_encargado?: string | null;
 };
 
 async function getEventoHead(id: string): Promise<EventoHead> {
   const { data, error } = await supabase
     .from("eventos")
-    .select("*")
+    .select(`
+      *,
+      cotizacion_versiones (
+        cotizaciones (
+          ubicacion_evento,
+          comercial_encargado
+        )
+      )
+    `)
     .eq("id", id)
     .single();
+
   if (error) throw error;
-  return data as EventoHead;
+
+  // Extraer información de la cotización si existe
+  const cotizacionInfo = data.cotizacion_versiones?.cotizaciones;
+  const ubicacionEvento = cotizacionInfo?.ubicacion_evento || data.ubicacion;
+  const comercialEncargado = cotizacionInfo?.comercial_encargado;
+
+  return {
+    ...data,
+    ubicacion: ubicacionEvento,
+    comercial_encargado: comercialEncargado,
+  } as EventoHead;
 }
 
 export default function EventoDetallePage() {
@@ -170,6 +190,13 @@ export default function EventoDetallePage() {
                   <MapPin className="h-5 w-5 text-selecta-green" />
                   <span className="font-semibold text-slate-700">{head.ubicacion || "Sin ubicación"}</span>
                 </div>
+
+                {head.comercial_encargado && (
+                  <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-2 shadow-sm border border-white/30">
+                    <Users className="h-5 w-5 text-primary" />
+                    <span className="font-semibold text-slate-700">Comercial: {head.comercial_encargado}</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-3">

@@ -50,6 +50,8 @@ type FormValues = {
   cliente_nombre: string;
   numero_invitados: number;
   fecha_evento_estimada?: string;
+  ubicacion_evento?: string;
+  comercial_encargado: string;
 };
 
 type OpcionState = {
@@ -68,6 +70,8 @@ export default function Cotizador() {
       cliente_nombre: "",
       numero_invitados: 50,
       fecha_evento_estimada: "",
+      ubicacion_evento: "",
+      comercial_encargado: "",
     },
   });
 
@@ -321,6 +325,15 @@ export default function Cotizador() {
       return;
     }
 
+    if (!v.comercial_encargado.trim()) {
+      toast({
+        title: "Comercial requerido",
+        description: "Ingresa el nombre del comercial encargado",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const versiones = opciones.map((o, i) => {
       const tot = calcSubtotales(o.items);
       return {
@@ -339,6 +352,8 @@ export default function Cotizador() {
         cliente_nombre: v.cliente_nombre?.trim() || null,
         numero_invitados: Number(v.numero_invitados),
         fecha_evento_estimada: v.fecha_evento_estimada ? new Date(v.fecha_evento_estimada) : null,
+        ubicacion_evento: v.ubicacion_evento?.trim() || null,
+        comercial_encargado: v.comercial_encargado.trim(),
         total_cotizado: versiones[0]?.total ?? 0,
         estado: "Borrador",
       },
@@ -486,6 +501,32 @@ export default function Cotizador() {
                     <Input
                       type="date"
                       {...register("fecha_evento_estimada")}
+                      className="h-12 bg-white border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 flex items-center space-x-2">
+                      <Users className="h-4 w-4 text-selecta-green" />
+                      <span>Comercial Encargado *</span>
+                    </label>
+                    <Input
+                      placeholder="Nombre del comercial responsable"
+                      {...register("comercial_encargado")}
+                      className="h-12 bg-white border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 flex items-center space-x-2">
+                      <Sparkles className="h-4 w-4 text-selecta-green" />
+                      <span>Ubicación del Evento</span>
+                    </label>
+                    <Input
+                      placeholder="Ej: Hacienda Los Robles, Chía"
+                      {...register("ubicacion_evento")}
                       className="h-12 bg-white border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green"
                     />
                   </div>
