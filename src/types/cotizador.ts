@@ -30,7 +30,7 @@ export interface PlatoCatalogo {
     created_at?: string | null;
   }
   
-  export type EstadoCotizacion = "Borrador" | "Enviada" | "Aceptada" | "Rechazada";
+  export type EstadoCotizacion = "Pendiente por Aprobación" | "Enviada" | "Cotización Aprobada" | "Rechazada";
   
   export interface Cotizacion {
     id: string;

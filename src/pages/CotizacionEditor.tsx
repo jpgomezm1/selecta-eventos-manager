@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getCotizacionDetalle, addVersionToCotizacion, setVersionDefinitiva } from "@/integrations/supabase/apiCotizador";
+import { getCotizacionDetalle, addVersionToCotizacion, setVersionDefinitiva, updateVersionCotizacion, deleteVersionCotizacion } from "@/integrations/supabase/apiCotizador";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -30,10 +30,17 @@ import {
   ChefHat,
   Truck,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CotizacionItemsState } from "@/types/cotizador";
+import BuilderTabs from "@/components/Cotizador/BuilderTabs";
+import {
+  getPlatosCatalogo,
+  getTransporteTarifas,
+  getPersonalCostosCatalogo,
+} from "@/integrations/supabase/apiCotizador";
 
 const SECTION_CONFIG = {
   platos: {
@@ -363,11 +370,27 @@ export default function CotizacionEditorPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [active, setActive] = useState<string | null>(null);
+  const [editingVersion, setEditingVersion] = useState<string | null>(null);
+  const [editingItems, setEditingItems] = useState<CotizacionItemsState>({ platos: [], personal: [], transportes: [] });
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["cotizacion", id],
     queryFn: () => getCotizacionDetalle(id!),
     enabled: !!id,
+  });
+
+  // Catálogos para el builder
+  const { data: platos } = useQuery({
+    queryKey: ["platosCatalogo"],
+    queryFn: getPlatosCatalogo,
+  });
+  const { data: transportes } = useQuery({
+    queryKey: ["transporteTarifas"],
+    queryFn: getTransporteTarifas,
+  });
+  const { data: personalCostos } = useQuery({
+    queryKey: ["personalCostosCatalogo"],
+    queryFn: getPersonalCostosCatalogo,
   });
 
   const { mutate: marcarDef } = useMutation({
@@ -391,6 +414,112 @@ export default function CotizacionEditorPage() {
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  // Función para entrar/salir del modo edición
+  const toggleEditMode = (versionId: string, versionItems?: CotizacionItemsState) => {
+    if (editingVersion === versionId) {
+      // Salir del modo edición
+      setEditingVersion(null);
+      setEditingItems({ platos: [], personal: [], transportes: [] });
+    } else {
+      // Entrar al modo edición
+      setEditingVersion(versionId);
+      if (versionItems) {
+        setEditingItems(versionItems);
+      }
+    }
+  };
+
+  // Funciones para agregar items durante la edición
+  const addPlatoToEdit = (plato: any) => {
+    const existingIndex = editingItems.platos.findIndex(p => p.plato_id === plato.id);
+    if (existingIndex >= 0) {
+      const updated = [...editingItems.platos];
+      updated[existingIndex].cantidad += 1;
+      setEditingItems(prev => ({ ...prev, platos: updated }));
+    } else {
+      setEditingItems(prev => ({
+        ...prev,
+        platos: [...prev.platos, {
+          plato_id: plato.id,
+          nombre: plato.nombre,
+          precio_unitario: plato.precio,
+          cantidad: 1
+        }]
+      }));
+    }
+  };
+
+  const addPersonalToEdit = (personal: any) => {
+    const existingIndex = editingItems.personal.findIndex(p => p.personal_costo_id === personal.id);
+    if (existingIndex >= 0) {
+      const updated = [...editingItems.personal];
+      updated[existingIndex].cantidad += 1;
+      setEditingItems(prev => ({ ...prev, personal: updated }));
+    } else {
+      setEditingItems(prev => ({
+        ...prev,
+        personal: [...prev.personal, {
+          personal_costo_id: personal.id,
+          rol: personal.rol,
+          tarifa_estimada_por_persona: personal.tarifa,
+          cantidad: 1
+        }]
+      }));
+    }
+  };
+
+  const addTransporteToEdit = (transporte: any) => {
+    const existingIndex = editingItems.transportes.findIndex(t => t.transporte_id === transporte.id);
+    if (existingIndex >= 0) {
+      const updated = [...editingItems.transportes];
+      updated[existingIndex].cantidad += 1;
+      setEditingItems(prev => ({ ...prev, transportes: updated }));
+    } else {
+      setEditingItems(prev => ({
+        ...prev,
+        transportes: [...prev.transportes, {
+          transporte_id: transporte.id,
+          lugar: transporte.lugar,
+          tarifa_unitaria: transporte.tarifa,
+          cantidad: 1
+        }]
+      }));
+    }
+  };
+
+  const updateQtyInEdit = (tipo: keyof CotizacionItemsState, id: string, qty: number) => {
+    if (qty <= 0) {
+      // Remover item si cantidad es 0
+      setEditingItems(prev => ({
+        ...prev,
+        [tipo]: prev[tipo].filter((item: any) => {
+          const itemId = tipo === 'platos' ? item.plato_id :
+                        tipo === 'personal' ? item.personal_costo_id :
+                        item.transporte_id;
+          return itemId !== id;
+        })
+      }));
+    } else {
+      // Actualizar cantidad
+      setEditingItems(prev => ({
+        ...prev,
+        [tipo]: prev[tipo].map((item: any) => {
+          const itemId = tipo === 'platos' ? item.plato_id :
+                        tipo === 'personal' ? item.personal_costo_id :
+                        item.transporte_id;
+          return itemId === id ? { ...item, cantidad: qty } : item;
+        })
+      }));
+    }
+  };
+
+  // Función para confirmar y eliminar versión
+  const confirmarEliminarVersion = (versionId: string, versionName: string) => {
+    if (window.confirm(`¿Estás seguro de que quieres eliminar la "${versionName}"? Esta acción no se puede deshacer.`)) {
+      eliminarVersion(versionId);
+    }
+  };
+
   const { mutate: agregarVersion, isPending: creandoVersion } = useMutation({
     mutationFn: async () => {
       const nextIndex = (data?.versiones?.length ?? 0) + 1;
@@ -398,15 +527,50 @@ export default function CotizacionEditorPage() {
         nombre_opcion: `Opción ${String.fromCharCode(64 + nextIndex)}`,
         version_index: nextIndex,
         total: 0,
-        estado: "Borrador",
+        estado: "Pendiente por Aprobación",
         items: { platos: [], personal: [], transportes: [] },
       });
     },
-    onSuccess: () => {
-      toast({ 
+    onSuccess: (result) => {
+      toast({
         title: "¡Nueva opción creada!",
         description: "Se agregó una nueva versión lista para personalizar."
       });
+      qc.invalidateQueries({ queryKey: ["cotizacion", id] });
+      // Activar automáticamente el modo edición para la nueva versión
+      setEditingVersion(result.id);
+      setEditingItems({ platos: [], personal: [], transportes: [] });
+      setActive(result.id);
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const { mutate: guardarCambios, isPending: guardandoCambios } = useMutation({
+    mutationFn: (versionId: string) => updateVersionCotizacion(id!, versionId, editingItems),
+    onSuccess: () => {
+      toast({
+        title: "¡Cambios guardados!",
+        description: "La versión ha sido actualizada exitosamente."
+      });
+      setEditingVersion(null);
+      setEditingItems({ platos: [], personal: [], transportes: [] });
+      qc.invalidateQueries({ queryKey: ["cotizacion", id] });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const { mutate: eliminarVersion, isPending: eliminandoVersion } = useMutation({
+    mutationFn: (versionId: string) => deleteVersionCotizacion(versionId),
+    onSuccess: () => {
+      toast({
+        title: "¡Versión eliminada!",
+        description: "La opción ha sido eliminada exitosamente."
+      });
+      // Salir del modo edición si estaba editando la versión eliminada
+      if (editingVersion) {
+        setEditingVersion(null);
+        setEditingItems({ platos: [], personal: [], transportes: [] });
+      }
       qc.invalidateQueries({ queryKey: ["cotizacion", id] });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -662,9 +826,10 @@ export default function CotizacionEditorPage() {
 
                  {versiones.map((v) => (
                    <TabsContent key={v.id} value={v.id} className="mt-0 space-y-6">
-                     {/* Header de la versión */}
-                     <div className="flex items-center justify-between p-6 bg-gradient-to-r from-slate-50/80 to-slate-100/80 rounded-2xl border border-slate-200/50">
-                       <div className="flex items-center space-x-4">
+                     {/* Header de la versión - Layout mejorado */}
+                     <div className="p-6 bg-gradient-to-r from-slate-50/80 to-slate-100/80 rounded-2xl border border-slate-200/50 space-y-4">
+                       {/* Primera fila: Título y estado */}
+                       <div className="flex items-center justify-between">
                          <div className="flex items-center space-x-3">
                            {v.is_definitiva ? (
                              <div className="p-2 bg-green-100 rounded-xl">
@@ -682,50 +847,139 @@ export default function CotizacionEditorPage() {
                              </p>
                            </div>
                          </div>
+
+                         {/* Total de la versión */}
+                         <div className="text-right">
+                           <div className="text-2xl font-bold text-selecta-green">
+                             {new Intl.NumberFormat('es-CO', {
+                               style: 'currency',
+                               currency: 'COP',
+                               minimumFractionDigits: 0
+                             }).format(
+                               v.items.platos.reduce((a, p) => a + p.precio_unitario * p.cantidad, 0) +
+                               v.items.personal.reduce((a, p) => a + p.tarifa_estimada_por_persona * p.cantidad, 0) +
+                               v.items.transportes.reduce((a, t) => a + t.tarifa_unitaria * t.cantidad, 0)
+                             )}
+                           </div>
+                           <p className="text-sm text-slate-600">Total de la opción</p>
+                         </div>
                        </div>
 
-                       <div className="flex items-center space-x-4">
+                       {/* Segunda fila: Estadísticas y botones de acción */}
+                       <div className="flex items-center justify-between pt-2 border-t border-slate-200/50">
                          {/* Estadísticas de la versión */}
                          <div className="flex items-center space-x-4 text-sm">
-                           <div className="flex items-center space-x-1 bg-white/70 px-3 py-1 rounded-xl">
+                           <div className="flex items-center space-x-1 bg-white/70 px-3 py-2 rounded-xl shadow-sm">
                              <div className="w-2 h-2 bg-orange-400 rounded-full" />
                              <span className="text-slate-600 font-medium">{v.items.platos.length} platos</span>
                            </div>
-                           <div className="flex items-center space-x-1 bg-white/70 px-3 py-1 rounded-xl">
+                           <div className="flex items-center space-x-1 bg-white/70 px-3 py-2 rounded-xl shadow-sm">
                              <div className="w-2 h-2 bg-blue-400 rounded-full" />
                              <span className="text-slate-600 font-medium">{v.items.personal.length} personal</span>
                            </div>
-                           <div className="flex items-center space-x-1 bg-white/70 px-3 py-1 rounded-xl">
+                           <div className="flex items-center space-x-1 bg-white/70 px-3 py-2 rounded-xl shadow-sm">
                              <div className="w-2 h-2 bg-green-400 rounded-full" />
                              <span className="text-slate-600 font-medium">{v.items.transportes.length} transportes</span>
                            </div>
                          </div>
 
+                         {/* Botones de acción */}
                          {!v.is_definitiva && (
-                           <Button
-                             onClick={() => marcarDef(v.id)}
-                             className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-emerald-500 hover:to-green-500 text-white rounded-2xl px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-300"
-                           >
-                             <Check className="h-4 w-4 mr-2" />
-                             Marcar definitiva
-                           </Button>
+                           <div className="flex items-center space-x-2">
+                             <Button
+                               onClick={() => toggleEditMode(v.id, v.items)}
+                               variant={editingVersion === v.id ? "outline" : "default"}
+                               size="sm"
+                               className="rounded-xl px-3 py-2 shadow-lg hover:shadow-xl transition-all duration-300"
+                             >
+                               <Edit className="h-4 w-4 mr-2" />
+                               {editingVersion === v.id ? "Ver resumen" : "Editar"}
+                             </Button>
+
+                             {/* Botón eliminar solo si hay más de una versión */}
+                             {data?.versiones && data.versiones.length > 1 && (
+                               <Button
+                                 onClick={() => confirmarEliminarVersion(v.id, v.nombre_opcion)}
+                                 variant="outline"
+                                 size="sm"
+                                 disabled={eliminandoVersion}
+                                 className="rounded-xl px-3 py-2 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 shadow-lg hover:shadow-xl transition-all duration-300"
+                               >
+                                 {eliminandoVersion ? (
+                                   <div className="animate-spin w-4 h-4 border-2 border-red-300 border-t-red-600 rounded-full mr-2" />
+                                 ) : (
+                                   <Trash2 className="h-4 w-4 mr-2" />
+                                 )}
+                                 {eliminandoVersion ? "Eliminando..." : "Eliminar"}
+                               </Button>
+                             )}
+
+                             <Button
+                               onClick={() => marcarDef(v.id)}
+                               size="sm"
+                               className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-emerald-500 hover:to-green-500 text-white rounded-xl px-3 py-2 shadow-lg hover:shadow-xl transition-all duration-300"
+                             >
+                               <Check className="h-4 w-4 mr-2" />
+                               Marcar definitiva
+                             </Button>
+                           </div>
                          )}
                        </div>
                      </div>
 
-                     {/* Contenido de la versión - Ahora usando ResumenCotizacionReadOnly */}
+                     {/* Contenido de la versión - Condicional entre edición y resumen */}
                      <div className="bg-white/50 backdrop-blur-sm rounded-2xl border border-white/30 overflow-hidden">
-                       <ResumenCotizacionReadOnly
-                         invitados={cotizacion.numero_invitados}
-                         items={v.items}
-                         total={Number(v.total)}
-                         subtotales={{
-                           platos: v.items.platos.reduce((a, p) => a + p.precio_unitario * p.cantidad, 0),
-                           personal: v.items.personal.reduce((a, p) => a + p.tarifa_estimada_por_persona * p.cantidad, 0),
-                           transportes: v.items.transportes.reduce((a, t) => a + t.tarifa_unitaria * t.cantidad, 0),
-                         }}
-                         versionName={v.nombre_opcion}
-                       />
+                       {editingVersion === v.id ? (
+                         <div className="p-6">
+                           {/* Builder para editar */}
+                           <BuilderTabs
+                             invitados={cotizacion.numero_invitados}
+                             items={editingItems}
+                             platos={platos || []}
+                             personal={personalCostos || []}
+                             transportes={transportes || []}
+                             onAddPlato={addPlatoToEdit}
+                             onAddPersonal={addPersonalToEdit}
+                             onAddTransporte={addTransporteToEdit}
+                             onQtyChange={updateQtyInEdit}
+                           />
+
+                           {/* Botones de acción para guardar/cancelar */}
+                           <div className="flex justify-end space-x-4 mt-6 pt-6 border-t border-slate-200">
+                             <Button
+                               variant="outline"
+                               onClick={() => toggleEditMode(v.id)}
+                               className="rounded-2xl px-6 py-2"
+                             >
+                               Cancelar
+                             </Button>
+                             <Button
+                               onClick={() => guardarCambios(v.id)}
+                               disabled={guardandoCambios}
+                               className="bg-gradient-to-r from-selecta-green to-primary text-white rounded-2xl px-6 py-2"
+                             >
+                               {guardandoCambios ? (
+                                 <div className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full mr-2" />
+                               ) : (
+                                 <CheckCircle className="h-4 w-4 mr-2" />
+                               )}
+                               {guardandoCambios ? "Guardando..." : "Guardar cambios"}
+                             </Button>
+                           </div>
+                         </div>
+                       ) : (
+                         <ResumenCotizacionReadOnly
+                           invitados={cotizacion.numero_invitados}
+                           items={v.items}
+                           total={Number(v.total)}
+                           subtotales={{
+                             platos: v.items.platos.reduce((a, p) => a + p.precio_unitario * p.cantidad, 0),
+                             personal: v.items.personal.reduce((a, p) => a + p.tarifa_estimada_por_persona * p.cantidad, 0),
+                             transportes: v.items.transportes.reduce((a, t) => a + t.tarifa_unitaria * t.cantidad, 0),
+                           }}
+                           versionName={v.nombre_opcion}
+                         />
+                       )}
                      </div>
                    </TabsContent>
                  ))}

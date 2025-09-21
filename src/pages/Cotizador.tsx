@@ -340,7 +340,7 @@ export default function Cotizador() {
         nombre_opcion: o.nombre_opcion,
         version_index: i + 1,
         total: tot.total,
-        estado: "Borrador" as const,
+        estado: "Pendiente por Aprobación" as const,
         is_definitiva: i === 0 && opciones.length === 1 ? true : false,
         items: o.items,
       };
@@ -355,7 +355,7 @@ export default function Cotizador() {
         ubicacion_evento: v.ubicacion_evento?.trim() || null,
         comercial_encargado: v.comercial_encargado.trim(),
         total_cotizado: versiones[0]?.total ?? 0,
-        estado: "Borrador",
+        estado: "Pendiente por Aprobación",
       },
       versiones,
     };

@@ -220,6 +220,38 @@ export async function addVersionToCotizacion(
   return { id: ver!.id as string };
 }
 
+/** Actualizar una versión existente */
+export async function updateVersionCotizacion(
+  cotizacion_id: string,
+  version_id: string,
+  items: CotizacionItemsState
+) {
+  // Calcular nuevo total
+  const total =
+    items.platos.reduce((a, p) => a + p.precio_unitario * p.cantidad, 0) +
+    items.personal.reduce((a, p) => a + p.tarifa_estimada_por_persona * p.cantidad, 0) +
+    items.transportes.reduce((a, t) => a + t.tarifa_unitaria * t.cantidad, 0);
+
+  // Actualizar total de la versión
+  const { error: updateError } = await supabase
+    .from("cotizacion_versiones")
+    .update({ total })
+    .eq("id", version_id);
+  if (updateError) throw updateError;
+
+  // Eliminar items existentes
+  await Promise.all([
+    supabase.from("cotizacion_platos").delete().eq("cotizacion_version_id", version_id),
+    supabase.from("cotizacion_personal_items").delete().eq("cotizacion_version_id", version_id),
+    supabase.from("cotizacion_transporte_items").delete().eq("cotizacion_version_id", version_id),
+  ]);
+
+  // Insertar nuevos items
+  await insertItemsForVersion(cotizacion_id, version_id, items);
+
+  return { success: true };
+}
+
 /** =====================
  *  EVENTO DESDE VERSIÓN
  *  ===================== */
@@ -470,7 +502,7 @@ export async function setVersionDefinitiva(cotizacion_id: string, version_id: st
   // 2) marcar seleccionada
   const { data: v, error: e2 } = await supabase
     .from("cotizacion_versiones")
-    .update({ is_definitiva: true, estado: "Aceptada" })
+    .update({ is_definitiva: true, estado: "Cotización Aprobada" })
     .eq("id", version_id)
     .select("id,total")
     .single();
@@ -480,7 +512,7 @@ export async function setVersionDefinitiva(cotizacion_id: string, version_id: st
   const totalDef = Number(v!.total);
   const { error: e3 } = await supabase
     .from("cotizaciones")
-    .update({ total_cotizado: totalDef, estado: "Aceptada" })
+    .update({ total_cotizado: totalDef, estado: "Cotización Aprobada" })
     .eq("id", cotizacion_id);
   if (e3) throw e3;
 
@@ -549,4 +581,39 @@ async function insertItemsForVersion(
     const { error } = await supabase.from("cotizacion_personal_items").insert(rows);
     if (error) throw error;
   }
+}
+
+/**
+ * Eliminar una versión de cotización y todos sus items relacionados
+ */
+export async function deleteVersionCotizacion(versionId: string): Promise<void> {
+  // Primero eliminar todos los items relacionados
+  const { error: platosError } = await supabase
+    .from("cotizacion_platos")
+    .delete()
+    .eq("cotizacion_version_id", versionId);
+
+  if (platosError) throw platosError;
+
+  const { error: transporteError } = await supabase
+    .from("cotizacion_transporte_items")
+    .delete()
+    .eq("cotizacion_version_id", versionId);
+
+  if (transporteError) throw transporteError;
+
+  const { error: personalError } = await supabase
+    .from("cotizacion_personal_items")
+    .delete()
+    .eq("cotizacion_version_id", versionId);
+
+  if (personalError) throw personalError;
+
+  // Finalmente eliminar la versión
+  const { error: versionError } = await supabase
+    .from("cotizacion_versiones")
+    .delete()
+    .eq("id", versionId);
+
+  if (versionError) throw versionError;
 }

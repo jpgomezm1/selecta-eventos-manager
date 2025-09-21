@@ -1,5 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { listCotizaciones } from "@/integrations/supabase/apiCotizador";
+import { listCotizaciones, getCotizacionDetalle } from "@/integrations/supabase/apiCotizador";
+import { generateSelectaPremiumPDF } from "@/lib/selecta-premium-pdf";
+import { useToast } from "@/components/ui/use-toast";
+import CotizacionPDFModal from "@/components/CotizacionPDFModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,30 +26,46 @@ import {
   CheckCircle,
   AlertTriangle,
   X,
-  ArrowUpDown
+  ArrowUpDown,
+  Download
 } from "lucide-react";
 
 export default function CotizacionesListPage() {
   const nav = useNavigate();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterComercial, setFilterComercial] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("fecha_desc");
+  const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [selectedCotizacion, setSelectedCotizacion] = useState<any>(null);
   
   const { data, isLoading, error } = useQuery({
     queryKey: ["cotizaciones"],
     queryFn: listCotizaciones,
   });
 
+  // Obtener lista de comerciales únicos
+  const comerciales = useMemo(() => {
+    if (!data) return [];
+    return [...new Set(data
+      .map(c => c.comercial_encargado)
+      .filter(Boolean)
+    )].sort();
+  }, [data]);
+
   // Filtros y ordenamiento
   const filteredAndSortedData = useMemo(() => {
     if (!data) return [];
-    
+
     let filtered = data.filter(c => {
       const matchesSearch = c.nombre_cotizacion.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            (c.cliente_nombre || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = filterStatus === 'all' || c.estado === filterStatus;
-      
-      return matchesSearch && matchesStatus;
+      const matchesComercial = filterComercial === 'all' || c.comercial_encargado === filterComercial;
+
+      return matchesSearch && matchesStatus && matchesComercial;
     });
 
     // Ordenamiento
@@ -68,41 +87,95 @@ export default function CotizacionesListPage() {
     });
 
     return filtered;
-  }, [data, searchTerm, filterStatus, sortBy]);
+  }, [data, searchTerm, filterStatus, filterComercial, sortBy]);
 
   // Estadísticas
   const stats = useMemo(() => {
-    if (!data) return { total: 0, borrador: 0, aprobado: 0, rechazado: 0, totalValue: 0 };
-    
+    if (!data) return { total: 0, pendiente: 0, aprobado: 0, rechazado: 0, totalValue: 0 };
+
     return {
       total: data.length,
-      borrador: data.filter(c => c.estado === 'borrador').length,
-      aprobado: data.filter(c => c.estado === 'aprobado').length,
-      rechazado: data.filter(c => c.estado === 'rechazado').length,
+      pendiente: data.filter(c => c.estado === 'Pendiente por Aprobación').length,
+      aprobado: data.filter(c => c.estado === 'Cotización Aprobada').length,
+      rechazado: data.filter(c => c.estado === 'Rechazada').length,
       totalValue: data.reduce((sum, c) => sum + c.total_cotizado, 0)
     };
   }, [data]);
 
+  // Función para abrir modal de selección de PDF
+  const handleOpenPDFModal = async (cotizacionId: string) => {
+    try {
+      const detalle = await getCotizacionDetalle(cotizacionId);
+      setSelectedCotizacion(detalle);
+      setPdfModalOpen(true);
+    } catch (error) {
+      console.error('Error loading cotización:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo cargar la información de la cotización.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Función para generar PDF con opciones seleccionadas
+  const handleGeneratePDF = async (selectedVersions: string[]) => {
+    if (!selectedCotizacion) return;
+
+    try {
+      setDownloadingPdf(selectedCotizacion.cotizacion.id);
+
+      toast({
+        title: "Generando PDF Premium...",
+        description: "Creando tu propuesta con el mejor diseño."
+      });
+
+      await generateSelectaPremiumPDF(selectedCotizacion, selectedVersions);
+
+      toast({
+        title: "¡PDF Premium generado!",
+        description: "Tu propuesta elegante está lista para enviar al cliente."
+      });
+
+      setPdfModalOpen(false);
+      setSelectedCotizacion(null);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Error al generar PDF",
+        description: "No se pudo generar la propuesta. Inténtalo de nuevo.",
+        variant: "destructive"
+      });
+    } finally {
+      setDownloadingPdf(null);
+    }
+  };
+
   const getStatusBadge = (estado: string) => {
     const configs = {
-      borrador: { 
-        class: "bg-gradient-to-r from-slate-50 to-slate-100 text-slate-700 border-slate-200", 
-        icon: <FileText className="h-3 w-3 mr-1" />,
-        label: "Borrador"
+      "Pendiente por Aprobación": {
+        class: "bg-gradient-to-r from-yellow-50 to-yellow-100 text-yellow-700 border-yellow-200",
+        icon: <Clock className="h-3 w-3 mr-1" />,
+        label: "Pendiente"
       },
-      aprobado: { 
-        class: "bg-gradient-to-r from-green-50 to-green-100 text-green-700 border-green-200", 
+      "Cotización Aprobada": {
+        class: "bg-gradient-to-r from-green-50 to-green-100 text-green-700 border-green-200",
         icon: <CheckCircle className="h-3 w-3 mr-1" />,
-        label: "Aprobado"
+        label: "Aprobada"
       },
-      rechazado: { 
-        class: "bg-gradient-to-r from-red-50 to-red-100 text-red-700 border-red-200", 
+      "Rechazada": {
+        class: "bg-gradient-to-r from-red-50 to-red-100 text-red-700 border-red-200",
         icon: <AlertTriangle className="h-3 w-3 mr-1" />,
-        label: "Rechazado"
+        label: "Rechazada"
+      },
+      "Enviada": {
+        class: "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-200",
+        icon: <FileText className="h-3 w-3 mr-1" />,
+        label: "Enviada"
       }
     };
     
-    const config = configs[estado as keyof typeof configs] || configs.borrador;
+    const config = configs[estado as keyof typeof configs] || configs["Pendiente por Aprobación"];
     return (
       <Badge className={`${config.class} shadow-sm font-semibold border`}>
         {config.icon}
@@ -256,8 +329,8 @@ export default function CotizacionesListPage() {
             </CardHeader>
             <CardContent className="p-4">
               <div className="text-center">
-                <div className="text-3xl font-bold text-slate-600">{stats.borrador}</div>
-                <p className="text-xs text-slate-600 font-medium">Borradores</p>
+                <div className="text-3xl font-bold text-slate-600">{stats.pendiente}</div>
+                <p className="text-xs text-slate-600 font-medium">Pendientes</p>
               </div>
             </CardContent>
           </Card>
@@ -331,10 +404,28 @@ export default function CotizacionesListPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-white/95 backdrop-blur-xl border-white/20 rounded-2xl shadow-2xl">
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="borrador">Borradores</SelectItem>
-                    <SelectItem value="aprobado">Aprobadas</SelectItem>
-                    <SelectItem value="rechazado">Rechazadas</SelectItem>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="Pendiente por Aprobación">Pendientes</SelectItem>
+                    <SelectItem value="Cotización Aprobada">Aprobadas</SelectItem>
+                    <SelectItem value="Rechazada">Rechazadas</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className="flex items-center space-x-2">
+                  <Users className="h-4 w-4 text-slate-600" />
+                  <span className="text-sm font-semibold text-slate-700">Comercial:</span>
+                </div>
+                <Select value={filterComercial} onValueChange={setFilterComercial}>
+                  <SelectTrigger className="w-48 bg-white/90 border-slate-200/50 rounded-2xl shadow-sm hover:shadow-md transition-all">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white/95 backdrop-blur-xl border-white/20 rounded-2xl shadow-2xl">
+                    <SelectItem value="all">Todos los comerciales</SelectItem>
+                    {comerciales.map((comercial) => (
+                      <SelectItem key={comercial} value={comercial}>
+                        {comercial}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
 
@@ -464,15 +555,34 @@ export default function CotizacionesListPage() {
                     </div>
                   </div>
 
-                  {/* Botón de acción */}
-                  <div className="pt-2" onClick={(e) => e.stopPropagation()}>
-                    <Button 
-                      variant="outline" 
+                  {/* Botones de acción */}
+                  <div className="pt-2 space-y-2" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="outline"
                       onClick={() => nav(`/cotizador/${c.id}`)}
                       className="w-full bg-white hover:bg-slate-50 border-slate-200 hover:border-selecta-green/40 rounded-2xl transition-all duration-200 hover:shadow-md group/btn"
                     >
                       <Eye className="h-4 w-4 mr-2 group-hover/btn:text-selecta-green transition-colors" />
                       <span className="font-semibold">Abrir Cotización</span>
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => handleOpenPDFModal(c.id)}
+                      disabled={downloadingPdf === c.id}
+                      className="w-full bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border-blue-200 hover:border-blue-300 text-blue-700 hover:text-blue-800 rounded-2xl transition-all duration-200 hover:shadow-md group/btn"
+                    >
+                      {downloadingPdf === c.id ? (
+                        <>
+                          <div className="animate-spin w-4 h-4 border-2 border-blue-300 border-t-blue-700 rounded-full mr-2" />
+                          <span className="font-semibold">Generando PDF...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="h-4 w-4 mr-2 group-hover/btn:text-blue-600 transition-colors" />
+                          <span className="font-semibold">Propuesta Selecta</span>
+                        </>
+                      )}
                     </Button>
                   </div>
                 </CardContent>
@@ -502,6 +612,21 @@ export default function CotizacionesListPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal para selección de opciones PDF */}
+      {selectedCotizacion && (
+        <CotizacionPDFModal
+          isOpen={pdfModalOpen}
+          onClose={() => {
+            setPdfModalOpen(false);
+            setSelectedCotizacion(null);
+          }}
+          versiones={selectedCotizacion.versiones}
+          cotizacionName={selectedCotizacion.cotizacion.nombre_cotizacion}
+          onDownload={handleGeneratePDF}
+          isGenerating={downloadingPdf === selectedCotizacion.cotizacion.id}
+        />
+      )}
     </div>
   );
 }
