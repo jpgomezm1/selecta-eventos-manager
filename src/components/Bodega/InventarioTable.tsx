@@ -33,6 +33,7 @@ export default function InventarioTable() {
     categoria: "",
     unidad: "unidad",
     stock_total: 0,
+    precio_alquiler: 0,
     activo: true,
   });
 
@@ -60,7 +61,7 @@ export default function InventarioTable() {
     mutationFn: () => menajeCatalogoCreate(newItem as any),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["menaje-catalogo"] });
-      setNewItem({ nombre: "", categoria: "", unidad: "unidad", stock_total: 0, activo: true });
+      setNewItem({ nombre: "", categoria: "", unidad: "unidad", stock_total: 0, precio_alquiler: 0, activo: true });
       toast({ 
         title: "¡Elemento creado!",
         description: "El nuevo elemento se agregó al inventario correctamente."
@@ -98,11 +99,11 @@ export default function InventarioTable() {
     <div className="space-y-6">
       {/* Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+        <Card className="bg-blue-50 border-blue-200">
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-500 rounded-xl">
-                <Package className="h-5 w-5 text-white" />
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Package className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-blue-800">{totalItems}</div>
@@ -112,11 +113,11 @@ export default function InventarioTable() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-amber-50 to-orange-100 border-amber-200">
+        <Card className="bg-amber-50 border-amber-200">
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-amber-500 rounded-xl">
-                <AlertTriangle className="h-5 w-5 text-white" />
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-amber-800">{lowStockItems}</div>
@@ -126,11 +127,11 @@ export default function InventarioTable() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-emerald-50 to-green-100 border-emerald-200">
+        <Card className="bg-emerald-50 border-emerald-200">
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-emerald-500 rounded-xl">
-                <TrendingUp className="h-5 w-5 text-white" />
+              <div className="p-2 bg-emerald-100 rounded-lg">
+                <TrendingUp className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-emerald-800">{totalValue}</div>
@@ -142,7 +143,7 @@ export default function InventarioTable() {
       </div>
 
       {/* Formulario de creación */}
-      <Card className="bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200">
+      <Card className="border-slate-200">
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center space-x-2 text-slate-800">
             <Plus className="h-5 w-5" />
@@ -150,12 +151,12 @@ export default function InventarioTable() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Nombre</label>
-              <Input 
-                placeholder="Ej: Platos hondos" 
-                value={newItem.nombre ?? ""} 
+              <Input
+                placeholder="Ej: Platos hondos"
+                value={newItem.nombre ?? ""}
                 onChange={(e) => setNewItem((p) => ({ ...p, nombre: e.target.value }))}
                 className="bg-white border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
               />
@@ -163,9 +164,9 @@ export default function InventarioTable() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Categoría</label>
-              <Input 
-                placeholder="Ej: Vajilla" 
-                value={newItem.categoria ?? ""} 
+              <Input
+                placeholder="Ej: Vajilla"
+                value={newItem.categoria ?? ""}
                 onChange={(e) => setNewItem((p) => ({ ...p, categoria: e.target.value }))}
                 className="bg-white border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
               />
@@ -173,9 +174,9 @@ export default function InventarioTable() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Unidad</label>
-              <Input 
-                placeholder="unidad" 
-                value={newItem.unidad ?? "unidad"} 
+              <Input
+                placeholder="unidad"
+                value={newItem.unidad ?? "unidad"}
                 onChange={(e) => setNewItem((p) => ({ ...p, unidad: e.target.value }))}
                 className="bg-white border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
               />
@@ -183,12 +184,24 @@ export default function InventarioTable() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Stock inicial</label>
-              <Input 
-                type="number" 
+              <Input
+                type="number"
                 min="0"
-                placeholder="0" 
-                value={newItem.stock_total ?? 0} 
+                placeholder="0"
+                value={newItem.stock_total ?? 0}
                 onChange={(e) => setNewItem((p) => ({ ...p, stock_total: Number(e.target.value) }))}
+                className="bg-white border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Precio alquiler</label>
+              <Input
+                type="number"
+                min="0"
+                placeholder="0"
+                value={newItem.precio_alquiler ?? 0}
+                onChange={(e) => setNewItem((p) => ({ ...p, precio_alquiler: Number(e.target.value) }))}
                 className="bg-white border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
               />
             </div>
@@ -196,7 +209,7 @@ export default function InventarioTable() {
             <Button 
               onClick={() => createMut.mutate()} 
               disabled={createMut.isPending || !newItem.nombre || !newItem.categoria}
-              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {createMut.isPending ? (
                 <div className="flex items-center space-x-2">
@@ -259,6 +272,7 @@ export default function InventarioTable() {
                 <TableHead className="font-semibold text-slate-700">Categoría</TableHead>
                 <TableHead className="font-semibold text-slate-700">Unidad</TableHead>
                 <TableHead className="font-semibold text-slate-700 text-center">Stock</TableHead>
+                <TableHead className="font-semibold text-slate-700 text-right">Precio Alquiler</TableHead>
                 <TableHead className="font-semibold text-slate-700 text-center">Estado</TableHead>
                 <TableHead className="font-semibold text-slate-700 text-right">Acciones</TableHead>
               </TableRow>
@@ -266,16 +280,16 @@ export default function InventarioTable() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12">
+                  <TableCell colSpan={7} className="text-center py-12">
                     <div className="flex flex-col items-center space-y-3">
-                      <div className="animate-spin w-8 h-8 border-2 border-blue-200 border-t-blue-500 rounded-full" />
+                      <div className="animate-spin w-8 h-8 border-2 border-slate-200 border-t-selecta-green rounded-full" />
                       <span className="text-slate-500">Cargando inventario...</span>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12">
+                  <TableCell colSpan={7} className="text-center py-12">
                     <div className="flex flex-col items-center space-y-3">
                       <Package className="h-12 w-12 text-slate-300" />
                       <div>
@@ -353,6 +367,22 @@ export default function InventarioTable() {
                             status.color === "green" && "text-green-600"
                           )}>
                             {item.stock_total}
+                          </span>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="text-right">
+                        {isEditing ? (
+                          <Input
+                            type="number"
+                            min="0"
+                            value={item.precio_alquiler}
+                            onChange={(e) => updateField(item.id, { precio_alquiler: Number(e.target.value) })}
+                            className="w-24 text-right"
+                          />
+                        ) : (
+                          <span className="text-slate-600 font-medium">
+                            ${item.precio_alquiler.toLocaleString()}
                           </span>
                         )}
                       </TableCell>

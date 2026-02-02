@@ -161,11 +161,11 @@ export default function MovimientosPanel() {
     <div className="space-y-6">
       {/* Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+        <Card className="bg-blue-50 border-blue-200">
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-500 rounded-xl">
-                <ArrowUpDown className="h-5 w-5 text-white" />
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <ArrowUpDown className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-blue-800">{stats.total}</div>
@@ -175,11 +175,11 @@ export default function MovimientosPanel() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-green-50 to-emerald-100 border-green-200">
+        <Card className="bg-green-50 border-green-200">
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-green-500 rounded-xl">
-                <ArrowUp className="h-5 w-5 text-white" />
+              <div className="p-2 bg-green-100 rounded-lg">
+                <ArrowUp className="h-5 w-5 text-green-600" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-green-800">{stats.ingresos}</div>
@@ -189,11 +189,11 @@ export default function MovimientosPanel() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-red-50 to-rose-100 border-red-200">
+        <Card className="bg-red-50 border-red-200">
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-red-500 rounded-xl">
-                <ArrowDown className="h-5 w-5 text-white" />
+              <div className="p-2 bg-red-100 rounded-lg">
+                <ArrowDown className="h-5 w-5 text-red-600" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-red-800">{stats.salidas}</div>
@@ -203,11 +203,11 @@ export default function MovimientosPanel() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-amber-50 to-orange-100 border-amber-200">
+        <Card className="bg-amber-50 border-amber-200">
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-amber-500 rounded-xl">
-                <Clock className="h-5 w-5 text-white" />
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <Clock className="h-5 w-5 text-amber-600" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-amber-800">{stats.pendientes}</div>
@@ -219,14 +219,14 @@ export default function MovimientosPanel() {
       </div>
 
       {/* Controles */}
-      <Card className="bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200">
+      <Card className="bg-slate-50 border-slate-200">
         <CardContent className="p-6">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
             {/* Botones de acción */}
             <div className="flex gap-3">
               <Button 
                 onClick={() => handleNew("salida")}
-                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                className="bg-red-600 hover:bg-red-700 text-white"
               >
                 <ArrowDown className="h-4 w-4 mr-2" />
                 Nueva Salida
@@ -301,7 +301,7 @@ export default function MovimientosPanel() {
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-12">
                     <div className="flex flex-col items-center space-y-3">
-                      <div className="animate-spin w-8 h-8 border-2 border-blue-200 border-t-blue-500 rounded-full" />
+                      <div className="animate-spin w-8 h-8 border-2 border-slate-200 border-t-selecta-green rounded-full" />
                       <span className="text-slate-500">Cargando movimientos...</span>
                     </div>
                   </TableCell>

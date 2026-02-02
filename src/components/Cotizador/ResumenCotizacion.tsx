@@ -4,17 +4,18 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Trash2, 
-  Plus, 
-  Minus, 
-  Save, 
-  Calculator, 
-  Users, 
+import {
+  Trash2,
+  Plus,
+  Minus,
+  Save,
+  Calculator,
+  Users,
   DollarSign,
   Utensils,
   Truck,
   ChefHat,
+  Package,
   CheckCircle2,
   AlertCircle,
   Sparkles,
@@ -30,7 +31,7 @@ type Props = {
   invitados: number;
   items: CotizacionItemsState;
   total: number;
-  subtotales: { platos: number; personal: number; transportes: number };
+  subtotales: { platos: number; personal: number; transportes: number; menaje: number };
   onQtyChange: (tipo: keyof CotizacionItemsState, id: string, qty: number) => void;
   onRemove: (tipo: keyof CotizacionItemsState, id: string) => void;
   onGuardar: () => void;
@@ -57,10 +58,18 @@ const SECTION_CONFIG = {
   transportes: {
     icon: Truck,
     color: "green",
-    label: "Logística y Transporte", 
+    label: "Logística y Transporte",
     bgColor: "bg-green-50",
     textColor: "text-green-700",
     borderColor: "border-green-200"
+  },
+  menaje: {
+    icon: Package,
+    color: "purple",
+    label: "Menaje y Alquiler",
+    bgColor: "bg-purple-50",
+    textColor: "text-purple-700",
+    borderColor: "border-purple-200"
   }
 };
 
@@ -75,11 +84,12 @@ export function ResumenCotizacion({
   guardando,
 }: Props) {
   // Calcular estadísticas
-  const totalItems = items.platos.length + items.personal.length + items.transportes.length;
+  const totalItems = items.platos.length + items.personal.length + items.transportes.length + (items.menaje ?? []).length;
   const totalQuantity = [
     ...items.platos.map(p => p.cantidad),
-    ...items.personal.map(p => p.cantidad), 
-    ...items.transportes.map(t => t.cantidad)
+    ...items.personal.map(p => p.cantidad),
+    ...items.transportes.map(t => t.cantidad),
+    ...(items.menaje ?? []).map(m => m.cantidad)
   ].reduce((sum, qty) => sum + qty, 0);
 
   const costPerGuest = invitados > 0 ? total / invitados : 0;
@@ -89,6 +99,7 @@ export function ResumenCotizacion({
   const platosPercentage = total > 0 ? (subtotales.platos / total) * 100 : 0;
   const personalPercentage = total > 0 ? (subtotales.personal / total) * 100 : 0;
   const transportesPercentage = total > 0 ? (subtotales.transportes / total) * 100 : 0;
+  const menajePercentage = total > 0 ? ((subtotales.menaje ?? 0) / total) * 100 : 0;
 
   // Preparar datos por sección
   const sections = [
@@ -133,6 +144,20 @@ export function ResumenCotizacion({
       })),
       subtotal: subtotales.transportes,
       percentage: transportesPercentage
+    },
+    {
+      key: "menaje" as const,
+      ...SECTION_CONFIG.menaje,
+      items: (items.menaje ?? []).map(m => ({
+        tipo: "menaje" as const,
+        id: m.menaje_id,
+        nombre: m.nombre,
+        precio: m.precio_alquiler,
+        cantidad: m.cantidad,
+        subtotal: m.cantidad * m.precio_alquiler
+      })),
+      subtotal: subtotales.menaje ?? 0,
+      percentage: menajePercentage
     }
   ].filter(section => section.items.length > 0);
 
@@ -206,13 +231,13 @@ export function ResumenCotizacion({
   );
 
   return (
-    <Card className="sticky top-4 shadow-xl border-slate-200 overflow-hidden">
+    <Card className="sticky top-4">
       {/* Header mejorado */}
-      <CardHeader className="bg-gradient-to-r from-emerald-50 via-green-50 to-emerald-50 border-b border-emerald-200 pb-4">
+      <CardHeader className="bg-emerald-50 border-b border-emerald-200 pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-emerald-500 rounded-xl shadow-lg">
-              <Calculator className="h-5 w-5 text-white" />
+            <div className="p-2 bg-emerald-100 rounded-lg">
+              <Calculator className="h-5 w-5 text-emerald-700" />
             </div>
             <div>
               <CardTitle className="text-emerald-800 text-lg">Resumen de Cotización</CardTitle>
@@ -229,7 +254,7 @@ export function ResumenCotizacion({
 
         {/* Estadísticas del evento */}
         <div className="grid grid-cols-2 gap-4 mt-4">
-          <div className="text-center p-3 bg-white/60 rounded-xl">
+          <div className="text-center p-3 bg-white rounded-xl">
             <div className="flex items-center justify-center mb-1">
               <Users className="h-4 w-4 text-emerald-600" />
             </div>
@@ -237,7 +262,7 @@ export function ResumenCotizacion({
             <div className="text-xs text-emerald-600">Invitados</div>
           </div>
           
-          <div className="text-center p-3 bg-white/60 rounded-xl">
+          <div className="text-center p-3 bg-white rounded-xl">
             <div className="flex items-center justify-center mb-1">
               <TrendingUp className="h-4 w-4 text-emerald-600" />
             </div>
@@ -337,19 +362,12 @@ export function ResumenCotizacion({
 
             {/* Total final */}
             <div className="space-y-4">
-              <div className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-2xl p-6 border border-slate-200">
+              <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-2">
                     <DollarSign className="h-5 w-5 text-emerald-600" />
                     <span className="text-slate-600 font-medium">Total de la Cotización</span>
                   </div>
-                  
-                  {total > 100000 && (
-                    <Badge className="bg-purple-100 text-purple-700 border-purple-200">
-                      <Sparkles className="h-3 w-3 mr-1" />
-                      Premium
-                    </Badge>
-                  )}
                 </div>
                 
                 <div className="text-3xl font-bold text-emerald-600 mb-2">
@@ -400,12 +418,10 @@ export function ResumenCotizacion({
         )}
 
         {/* Botón de guardar mejorado */}
-        <Button 
+        <Button
           className={cn(
             "w-full h-12 font-semibold text-base transition-all duration-200",
-            "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700",
-            "shadow-lg hover:shadow-xl transform hover:scale-[1.02]",
-            guardando && "animate-pulse"
+            "bg-emerald-600 hover:bg-emerald-700"
           )}
           onClick={onGuardar} 
           disabled={guardando || !hasItems}
@@ -423,12 +439,6 @@ export function ResumenCotizacion({
           )}
         </Button>
 
-        {/* Footer informativo */}
-        <div className="text-center pt-2">
-          <p className="text-xs text-slate-500">
-            Los cálculos se actualizan automáticamente
-          </p>
-        </div>
       </CardContent>
     </Card>
   );

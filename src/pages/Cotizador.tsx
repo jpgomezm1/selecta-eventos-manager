@@ -15,7 +15,9 @@ import {
   getTransporteTarifas,
   getPersonalCostosCatalogo,
   createCotizacionWithVersions,
+  savePersonalAsignaciones,
 } from "@/integrations/supabase/apiCotizador";
+import { menajeCatalogoList } from "@/integrations/supabase/apiMenaje";
 
 import type {
   CotizacionWithVersionsDraft,
@@ -23,13 +25,14 @@ import type {
   PlatoCatalogo,
   PersonalCosto,
   TransporteTarifa,
+  PersonalAsignacion,
 } from "@/types/cotizador";
+import type { MenajeCatalogo } from "@/types/menaje";
 
 import { ResumenCotizacion } from "@/components/Cotizador/ResumenCotizacion";
 import BuilderTabs from "@/components/Cotizador/BuilderTabs";
 
 import {
-  Calculator,
   Users,
   Calendar,
   Plus,
@@ -38,11 +41,7 @@ import {
   Check,
   X,
   Save,
-  Sparkles,
-  DollarSign,
-  FileText,
   Copy,
-  Settings,
 } from "lucide-react";
 
 type FormValues = {
@@ -92,13 +91,17 @@ export default function Cotizador() {
     queryKey: ["personalCostosCatalogo"],
     queryFn: getPersonalCostosCatalogo,
   });
+  const { data: menajeCatalogo } = useQuery({
+    queryKey: ["menaje-catalogo"],
+    queryFn: menajeCatalogoList,
+  });
 
   // Opciones de cotización (al menos una)
   const [opciones, setOpciones] = useState<OpcionState[]>([
     {
       key: crypto.randomUUID(),
       nombre_opcion: "Opción A",
-      items: { platos: [], personal: [], transportes: [] },
+      items: { platos: [], personal: [], transportes: [], menaje: [] },
     },
   ]);
   const [activeKey, setActiveKey] = useState(opciones[0].key);
@@ -106,7 +109,7 @@ export default function Cotizador() {
   const [editingName, setEditingName] = useState("");
 
   // pestaña interna del builder (platos/personal/transporte)
-  const [builderTab, setBuilderTab] = useState<"platos" | "personal" | "transporte">("platos");
+  const [builderTab, setBuilderTab] = useState<"platos" | "personal" | "transporte" | "menaje">("platos");
 
   const current = opciones.find((o) => o.key === activeKey)!;
 
@@ -115,7 +118,8 @@ export default function Cotizador() {
     const platos = it.platos.reduce((a, p) => a + p.precio_unitario * p.cantidad, 0);
     const personal = it.personal.reduce((a, p) => a + p.tarifa_estimada_por_persona * p.cantidad, 0);
     const transportes = it.transportes.reduce((a, t) => a + t.tarifa_unitaria * t.cantidad, 0);
-    return { platos, personal, transportes, total: platos + personal + transportes };
+    const menaje = (it.menaje ?? []).reduce((a, m) => a + m.precio_alquiler * m.cantidad, 0);
+    return { platos, personal, transportes, menaje, total: platos + personal + transportes + menaje };
   };
 
   const addOpcion = () => {
@@ -127,7 +131,7 @@ export default function Cotizador() {
       {
         key,
         nombre_opcion: `Opción ${letra}`,
-        items: { platos: [], personal: [], transportes: [] },
+        items: { platos: [], personal: [], transportes: [], menaje: [] },
       },
     ]);
     setActiveKey(key);
@@ -262,6 +266,24 @@ export default function Cotizador() {
       };
     });
 
+  const addMenaje = (m: MenajeCatalogo) =>
+    mutateAdd((it) => {
+      const menaje = it.menaje ?? [];
+      const idx = menaje.findIndex((x) => x.menaje_id === m.id);
+      if (idx >= 0) {
+        const copy = [...menaje];
+        copy[idx] = { ...copy[idx], cantidad: copy[idx].cantidad + 1 };
+        return { ...it, menaje: copy };
+      }
+      return {
+        ...it,
+        menaje: [
+          ...menaje,
+          { menaje_id: m.id, nombre: m.nombre, precio_alquiler: Number(m.precio_alquiler), cantidad: 1 },
+        ],
+      };
+    });
+
   const updateQty = (tipo: keyof CotizacionItemsState, id: string, qty: number) =>
     mutateAdd((it) => {
       if (qty < 1) return it;
@@ -272,6 +294,13 @@ export default function Cotizador() {
           ...it,
           personal: it.personal.map((x) =>
             x.personal_costo_id === id ? { ...x, cantidad: qty } : x
+          ),
+        };
+      if (tipo === "menaje")
+        return {
+          ...it,
+          menaje: (it.menaje ?? []).map((x) =>
+            x.menaje_id === id ? { ...x, cantidad: qty } : x
           ),
         };
       return {
@@ -287,11 +316,42 @@ export default function Cotizador() {
       if (tipo === "platos") return { ...it, platos: it.platos.filter((x) => x.plato_id !== id) };
       if (tipo === "personal")
         return { ...it, personal: it.personal.filter((x) => x.personal_costo_id !== id) };
+      if (tipo === "menaje")
+        return { ...it, menaje: (it.menaje ?? []).filter((x) => x.menaje_id !== id) };
       return { ...it, transportes: it.transportes.filter((x) => x.transporte_id !== id) };
     });
 
+  const toggleAsignacion = (costoId: string, persona: PersonalAsignacion) =>
+    mutateAdd((it) => ({
+      ...it,
+      personal: it.personal.map((p) => {
+        if (p.personal_costo_id !== costoId) return p;
+        const current = p.asignados ?? [];
+        const exists = current.some((a) => a.personal_id === persona.personal_id);
+        return {
+          ...p,
+          asignados: exists
+            ? current.filter((a) => a.personal_id !== persona.personal_id)
+            : [...current, persona],
+        };
+      }),
+    }));
+
   const { mutate: crear, isPending } = useMutation({
-    mutationFn: (payload: CotizacionWithVersionsDraft) => createCotizacionWithVersions(payload),
+    mutationFn: async (payload: CotizacionWithVersionsDraft) => {
+      const res = await createCotizacionWithVersions(payload);
+      // Save personal asignaciones for each version
+      const { getCotizacionDetalle } = await import("@/integrations/supabase/apiCotizador");
+      const detail = await getCotizacionDetalle(res.id);
+      for (let i = 0; i < detail.versiones.length; i++) {
+        const personalItems = opciones[i]?.items.personal ?? [];
+        const hasAsignados = personalItems.some((p) => (p.asignados?.length ?? 0) > 0);
+        if (hasAsignados) {
+          await savePersonalAsignaciones(detail.versiones[i].id, personalItems);
+        }
+      }
+      return res;
+    },
     onSuccess: (res) => {
       toast({
         title: "¡Cotización creada exitosamente!",
@@ -381,427 +441,332 @@ export default function Cotizador() {
   }, [nombreCotizacion, clienteNombre, invitados, current.items]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 relative overflow-hidden">
-      {/* Background decorativo */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-selecta-green/8 to-primary/8 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-blue-100/30 to-selecta-green/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/3 left-1/4 w-32 h-32 bg-gradient-to-r from-purple-100/40 to-pink-100/40 rounded-full blur-2xl" />
-      </div>
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-slate-900">Nueva Cotización</h1>
+        <p className="text-slate-500 mt-1">Crea presupuestos profesionales con múltiples opciones</p>
 
-      <div className="relative z-10 container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center space-x-4 mb-6">
-            <div className="relative">
-              <div className="w-16 h-16 bg-gradient-to-r from-selecta-green via-primary to-selecta-green rounded-3xl flex items-center justify-center shadow-2xl transform rotate-3">
-                <Calculator className="h-8 w-8 text-white" />
-              </div>
-              <div className="absolute inset-0 w-16 h-16 bg-gradient-to-r from-selecta-green/20 to-primary/20 rounded-3xl blur-xl" />
-            </div>
-            <div>
-              <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-selecta-green via-primary to-selecta-green bg-clip-text text-transparent leading-tight">
-                Nueva Cotización
-              </h1>
-              <p className="text-slate-600 text-lg font-medium mt-2">
-                Crea presupuestos profesionales con múltiples opciones
-              </p>
-            </div>
+        {/* Progreso */}
+        <div className="max-w-md mt-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-slate-600">Progreso</span>
+            <span className="text-sm font-medium text-slate-700">{formProgress}%</span>
           </div>
-
-          {/* Progreso */}
-          <div className="max-w-md mx-auto mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-slate-600">Progreso de la cotización</span>
-              <span className="text-sm font-bold text-selecta-green">{formProgress}%</span>
-            </div>
-            <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden shadow-inner">
-              <div
-                className="h-full bg-gradient-to-r from-selecta-green to-primary rounded-full transition-all duration-500 ease-out shadow-sm"
-                style={{ width: `${formProgress}%` }}
-              >
-                <div className="h-full w-full bg-white/20 animate-pulse rounded-full" />
-              </div>
-            </div>
-          </div>
-
-          {/* Línea decorativa */}
-          <div className="flex items-center justify-center space-x-2">
-            <div className="w-16 h-1 bg-gradient-to-r from-selecta-green to-primary rounded-full" />
-            <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-            <div className="w-8 h-1 bg-gradient-to-r from-primary to-selecta-green rounded-full" />
+          <div className="w-full bg-slate-200 rounded-full h-2">
+            <div
+              className="h-full bg-selecta-green rounded-full transition-all duration-500"
+              style={{ width: `${formProgress}%` }}
+            />
           </div>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* Columna principal */}
-          <div className="xl:col-span-2 space-y-8">
-            {/* Datos del evento */}
-            <Card className="bg-white/90 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-blue-50/80 to-blue-100/80 border-b border-blue-200/30 pb-6">
-                <div className="flex items-center space-x-3">
-                  <div className="p-3 bg-blue-500 rounded-2xl shadow-lg">
-                    <FileText className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-2xl font-bold text-blue-900">
-                      Información del Evento
-                    </CardTitle>
-                    <p className="text-blue-600 mt-1">Completa los datos básicos de la cotización</p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-8 space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 flex items-center space-x-2">
-                      <Sparkles className="h-4 w-4 text-selecta-green" />
-                      <span>Nombre de la Cotización *</span>
-                    </label>
-                    <Input
-                      placeholder="Ej: Boda María & Juan - Diciembre 2024"
-                      {...register("nombre_cotizacion")}
-                      className="h-12 bg-white border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-selecta-green" />
-                      <span>Cliente</span>
-                    </label>
-                    <Input
-                      placeholder="Nombre del cliente"
-                      {...register("cliente_nombre")}
-                      className="h-12 bg-white border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green"
-                    />
-                  </div>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        {/* Columna principal */}
+        <div className="xl:col-span-2 space-y-8">
+          {/* Datos del evento */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold text-slate-900">
+                Información del Evento
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-8 space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Nombre de la Cotización *
+                  </label>
+                  <Input
+                    placeholder="Ej: Boda María & Juan - Diciembre 2024"
+                    {...register("nombre_cotizacion")}
+                    className="h-12"
+                  />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-selecta-green" />
-                      <span>Número de Invitados</span>
-                    </label>
-                    <Input
-                      type="number"
-                      min={1}
-                      placeholder="50"
-                      {...register("numero_invitados", { valueAsNumber: true })}
-                      className="h-12 bg-white border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700 flex items-center space-x-2">
+                    <Users className="h-4 w-4 text-slate-400" />
+                    <span>Cliente</span>
+                  </label>
+                  <Input
+                    placeholder="Nombre del cliente"
+                    {...register("cliente_nombre")}
+                    className="h-12"
+                  />
+                </div>
+              </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-selecta-green" />
-                      <span>Fecha Estimada del Evento</span>
-                    </label>
-                    <Input
-                      type="date"
-                      {...register("fecha_evento_estimada")}
-                      className="h-12 bg-white border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green"
-                    />
-                  </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700 flex items-center space-x-2">
+                    <Users className="h-4 w-4 text-slate-400" />
+                    <span>Número de Invitados</span>
+                  </label>
+                  <Input
+                    type="number"
+                    min={1}
+                    placeholder="50"
+                    {...register("numero_invitados", { valueAsNumber: true })}
+                    className="h-12"
+                  />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-selecta-green" />
-                      <span>Comercial Encargado *</span>
-                    </label>
-                    <Input
-                      placeholder="Nombre del comercial responsable"
-                      {...register("comercial_encargado")}
-                      className="h-12 bg-white border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 flex items-center space-x-2">
-                      <Sparkles className="h-4 w-4 text-selecta-green" />
-                      <span>Ubicación del Evento</span>
-                    </label>
-                    <Input
-                      placeholder="Ej: Hacienda Los Robles, Chía"
-                      {...register("ubicacion_evento")}
-                      className="h-12 bg-white border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700 flex items-center space-x-2">
+                    <Calendar className="h-4 w-4 text-slate-400" />
+                    <span>Fecha Estimada del Evento</span>
+                  </label>
+                  <Input
+                    type="date"
+                    {...register("fecha_evento_estimada")}
+                    className="h-12"
+                  />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Opciones de cotización */}
-            <Card className="bg-white/90 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-selecta-green/10 to-primary/10 border-b border-selecta-green/20 pb-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-3 bg-selecta-green rounded-2xl shadow-lg">
-                      <Settings className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-2xl font-bold text-selecta-green">
-                        Opciones de Cotización
-                      </CardTitle>
-                      <p className="text-selecta-green/70 mt-1">
-                        Crea diferentes alternativas para tu cliente
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <div className="text-right">
-                      <div className="text-sm font-bold text-selecta-green">{opciones.length} opción(es)</div>
-                      <div className="text-xs text-selecta-green/70">creada(s)</div>
-                    </div>
-                  </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Comercial Encargado *
+                  </label>
+                  <Input
+                    placeholder="Nombre del comercial responsable"
+                    {...register("comercial_encargado")}
+                    className="h-12"
+                  />
                 </div>
-              </CardHeader>
 
-              <CardContent className="p-8">
-                <Tabs value={activeKey} onValueChange={(v) => setActiveKey(v)} className="w-full">
-                  <div className="flex items-center justify-between mb-6">
-                    <TabsList className="flex-1 mr-4 bg-slate-100/80 rounded-2xl p-2 shadow-inner">
-                      {opciones.map((o) => (
-                        <TabsTrigger
-                          key={o.key}
-                          value={o.key}
-                          className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-selecta-green rounded-xl font-semibold transition-all duration-200 hover:bg-white/50"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <div
-                              className={`w-2 h-2 rounded-full ${
-                                o.key === activeKey ? "bg-selecta-green animate-pulse" : "bg-slate-400"
-                              }`}
-                            />
-                            <span className="truncate">{o.nombre_opcion}</span>
-                          </div>
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Ubicación del Evento
+                  </label>
+                  <Input
+                    placeholder="Ej: Hacienda Los Robles, Chía"
+                    {...register("ubicacion_evento")}
+                    className="h-12"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-                    <div className="flex items-center space-x-2">
+          {/* Opciones de cotización */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-lg font-semibold text-slate-900">
+                Opciones de Cotización
+              </CardTitle>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-slate-500">{opciones.length} opción(es)</span>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-8">
+              <Tabs value={activeKey} onValueChange={(v) => setActiveKey(v)} className="w-full">
+                <div className="flex items-center justify-between mb-6">
+                  <TabsList className="flex-1 mr-4 bg-slate-100 rounded-lg p-1">
+                    {opciones.map((o) => (
+                      <TabsTrigger
+                        key={o.key}
+                        value={o.key}
+                        className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-selecta-green rounded-md font-semibold transition-all duration-200"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              o.key === activeKey ? "bg-selecta-green" : "bg-slate-400"
+                            }`}
+                          />
+                          <span className="truncate">{o.nombre_opcion}</span>
+                        </div>
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={addOpcion}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Agregar
+                    </Button>
+
+                    {opciones.length >= 1 && (
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={addOpcion}
-                        className="bg-white hover:bg-selecta-green hover:text-white border-selecta-green text-selecta-green rounded-2xl shadow-sm hover:shadow-md transition-all duration-200"
+                        onClick={() => duplicateOpcion(activeKey)}
                       >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Agregar
+                        <Copy className="h-4 w-4 mr-1" />
+                        Duplicar
                       </Button>
-
-                      {opciones.length >= 1 && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => duplicateOpcion(activeKey)}
-                          className="bg-white hover:bg-blue-500 hover:text-white border-blue-300 text-blue-600 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200"
-                        >
-                          <Copy className="h-4 w-4 mr-1" />
-                          Duplicar
-                        </Button>
-                      )}
-                    </div>
+                    )}
                   </div>
+                </div>
 
-                  {opciones.map((o) => (
-                    <TabsContent key={o.key} value={o.key} className="mt-0 space-y-6">
-                      {/* Header de la opción */}
-                      <div className="flex items-center justify-between p-6 bg-gradient-to-r from-slate-50/80 to-slate-100/80 rounded-2xl border border-slate-200/50">
-                        <div className="flex items-center space-x-4">
-                          {editingOption === o.key ? (
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                value={editingName}
-                                onChange={(e) => setEditingName(e.target.value)}
-                                className="max-w-xs h-10 rounded-xl"
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") saveOptionName();
-                                  if (e.key === "Escape") cancelEditingOption();
-                                }}
-                                autoFocus
-                              />
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={saveOptionName}
-                                className="text-green-600 hover:bg-green-50"
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={cancelEditingOption}
-                                className="text-red-600 hover:bg-red-50"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <>
-                              <h3 className="text-xl font-bold text-slate-800">{o.nombre_opcion}</h3>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => startEditingOption(o.key, o.nombre_opcion)}
-                                className="text-slate-500 hover:text-selecta-green hover:bg-selecta-green/10"
-                              >
-                                <Edit3 className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-
-                        <div className="flex items-center space-x-4">
-                          {/* Indicador de items */}
-                          <div className="flex items-center space-x-4 text-sm">
-                            <div className="flex items-center space-x-1 bg-white/70 px-3 py-1 rounded-xl">
-                              <div className="w-2 h-2 bg-orange-400 rounded-full" />
-                              <span className="text-slate-600 font-medium">{o.items.platos.length} platos</span>
-                            </div>
-                            <div className="flex items-center space-x-1 bg-white/70 px-3 py-1 rounded-xl">
-                              <div className="w-2 h-2 bg-blue-400 rounded-full" />
-                              <span className="text-slate-600 font-medium">{o.items.personal.length} personal</span>
-                            </div>
-                            <div className="flex items-center space-x-1 bg-white/70 px-3 py-1 rounded-xl">
-                              <div className="w-2 h-2 bg-green-400 rounded-full" />
-                              <span className="text-slate-600 font-medium">
-                                {o.items.transportes.length} transportes
-                              </span>
-                            </div>
-                          </div>
-
-                          {opciones.length > 1 && (
+                {opciones.map((o) => (
+                  <TabsContent key={o.key} value={o.key} className="mt-0 space-y-6">
+                    {/* Header de la opción */}
+                    <div className="flex items-center justify-between p-6 bg-slate-50 rounded-lg border border-slate-200">
+                      <div className="flex items-center space-x-4">
+                        {editingOption === o.key ? (
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              value={editingName}
+                              onChange={(e) => setEditingName(e.target.value)}
+                              className="max-w-xs h-10"
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") saveOptionName();
+                                if (e.key === "Escape") cancelEditingOption();
+                              }}
+                              autoFocus
+                            />
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => removeOpcion(o.key)}
-                              className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                              onClick={saveOptionName}
+                              className="text-green-600 hover:bg-green-50"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Check className="h-4 w-4" />
                             </Button>
-                          )}
-                        </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={cancelEditingOption}
+                              className="text-red-600 hover:bg-red-50"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <h3 className="text-xl font-bold text-slate-800">{o.nombre_opcion}</h3>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => startEditingOption(o.key, o.nombre_opcion)}
+                              className="text-slate-500 hover:text-selecta-green"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
 
-                      <Separator className="opacity-30" />
+                      <div className="flex items-center space-x-4">
+                        {/* Indicador de items */}
+                        <div className="flex items-center space-x-4 text-sm">
+                          <div className="flex items-center space-x-1 px-3 py-1 rounded-md bg-white border border-slate-200">
+                            <div className="w-2 h-2 bg-orange-400 rounded-full" />
+                            <span className="text-slate-600 font-medium">{o.items.platos.length} platos</span>
+                          </div>
+                          <div className="flex items-center space-x-1 px-3 py-1 rounded-md bg-white border border-slate-200">
+                            <div className="w-2 h-2 bg-blue-400 rounded-full" />
+                            <span className="text-slate-600 font-medium">{o.items.personal.length} personal</span>
+                          </div>
+                          <div className="flex items-center space-x-1 px-3 py-1 rounded-md bg-white border border-slate-200">
+                            <div className="w-2 h-2 bg-green-400 rounded-full" />
+                            <span className="text-slate-600 font-medium">
+                              {o.items.transportes.length} transportes
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-1 px-3 py-1 rounded-md bg-white border border-slate-200">
+                            <div className="w-2 h-2 bg-purple-400 rounded-full" />
+                            <span className="text-slate-600 font-medium">
+                              {(o.items.menaje ?? []).length} menaje
+                            </span>
+                          </div>
+                        </div>
 
-                      {/* Builder mejorado con tabs internas + búsqueda */}
-                      <BuilderTabs
-                        value={builderTab}
-                        onValueChange={(v) => setBuilderTab(v as any)}
-                        platos={platos ?? []}
-                        personal={personalCostos ?? []}
-                        transportes={transportes ?? []}
-                        items={o.items}
-                        invitados={invitados}
-                        onAddPlato={addPlato}
-                        onAddPersonal={addPersonal}
-                        onAddTransporte={addTransporte}
-                        onQtyChange={updateQty}
-                      />
-                    </TabsContent>
-                  ))}
-                </Tabs>
+                        {opciones.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeOpcion(o.key)}
+                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    <Separator className="opacity-30" />
+
+                    {/* Builder mejorado con tabs internas + búsqueda */}
+                    <BuilderTabs
+                      value={builderTab}
+                      onValueChange={(v) => setBuilderTab(v as any)}
+                      platos={platos ?? []}
+                      personal={personalCostos ?? []}
+                      transportes={transportes ?? []}
+                      menaje={menajeCatalogo ?? []}
+                      items={o.items}
+                      invitados={invitados}
+                      onAddPlato={addPlato}
+                      onAddPersonal={addPersonal}
+                      onAddTransporte={addTransporte}
+                      onAddMenaje={addMenaje}
+                      onQtyChange={updateQty}
+                      onToggleAsignacion={toggleAsignacion}
+                    />
+                  </TabsContent>
+                ))}
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Columna del resumen - Sidebar fijo */}
+        <div className="xl:col-span-1">
+          <div className="sticky top-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-slate-900">
+                  {current.nombre_opcion}
+                </CardTitle>
+                <p className="text-sm text-slate-500">Resumen de costos</p>
+              </CardHeader>
+
+              <CardContent className="p-0">
+                <ResumenCotizacion
+                  invitados={invitados}
+                  items={current.items}
+                  total={subt.total}
+                  subtotales={{
+                    platos: subt.platos,
+                    personal: subt.personal,
+                    transportes: subt.transportes,
+                    menaje: subt.menaje,
+                  }}
+                  onQtyChange={(tipo, id, qty) => updateQty(tipo, id, qty)}
+                  onRemove={(tipo, id) => removeItem(tipo, id)}
+                  onGuardar={handleSubmit(onSubmit)}
+                  guardando={isPending}
+                />
               </CardContent>
             </Card>
           </div>
-
-          {/* Columna del resumen - Sidebar fijo */}
-          <div className="xl:col-span-1">
-            <div className="sticky top-8">
-              <Card className="bg-white/95 backdrop-blur-xl shadow-2xl border-white/40 rounded-3xl overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-emerald-50/90 to-green-50/90 border-b border-emerald-200/40 pb-6">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-3 bg-emerald-500 rounded-2xl shadow-lg">
-                      <DollarSign className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl font-bold text-emerald-800">
-                        {current.nombre_opcion}
-                      </CardTitle>
-                      <p className="text-emerald-600 text-sm mt-1">Resumen de costos</p>
-                    </div>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="p-0">
-                  <ResumenCotizacion
-                    invitados={invitados}
-                    items={current.items}
-                    total={subt.total}
-                    subtotales={{
-                      platos: subt.platos,
-                      personal: subt.personal,
-                      transportes: subt.transportes,
-                    }}
-                    onQtyChange={(tipo, id, qty) => updateQty(tipo, id, qty)}
-                    onRemove={(tipo, id) => removeItem(tipo, id)}
-                    onGuardar={handleSubmit(onSubmit)}
-                    guardando={isPending}
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Información adicional */}
-              <div className="mt-6 p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30">
-                <div className="text-center space-y-3">
-                  <div className="flex items-center justify-center space-x-2 text-slate-600">
-                    <div className="w-2 h-2 bg-selecta-green rounded-full animate-pulse" />
-                    <span className="text-sm font-medium">Sistema de Cotizaciones</span>
-                  </div>
-
-                  {opciones.length > 1 && (
-                    <div className="text-xs text-slate-500 bg-slate-50 rounded-xl p-3">
-                      <p className="font-medium">💡 Consejo:</p>
-                      <p>Usa múltiples opciones para dar alternativas claras a tu cliente.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
+      </div>
 
-        {/* Botón flotante de guardar (solo mobile) */}
-        <div className="xl:hidden fixed bottom-6 right-6 z-50">
-          <Button
-            onClick={handleSubmit(onSubmit)}
-            disabled={isPending}
-            className="w-16 h-16 bg-gradient-to-r from-selecta-green to-primary hover:from-primary hover:to-selecta-green shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 rounded-full border-0 relative overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 hover:opacity-100 transition-opacity" />
-            {isPending ? (
-              <div className="animate-spin">
-                <Save className="h-6 w-6 relative z-10" />
-              </div>
-            ) : (
-              <Save className="h-6 w-6 relative z-10" />
-            )}
-          </Button>
-        </div>
-
-        {/* Footer informativo */}
-        <div className="text-center mt-12 pt-8">
-          <div className="inline-flex items-center justify-center space-x-4 bg-white/60 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg border border-white/30">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-sm font-medium text-slate-600">Cotizador profesional</span>
-            </div>
-            <div className="w-px h-4 bg-slate-300" />
-            <div className="flex items-center space-x-2">
-              <Calculator className="h-4 w-4 text-slate-500" />
-              <span className="text-sm text-slate-500">
-                {opciones.length} opción(es) • {invitados} invitados
-              </span>
-            </div>
-          </div>
-        </div>
+      {/* Botón flotante de guardar (solo mobile) */}
+      <div className="xl:hidden fixed bottom-6 right-6 z-50">
+        <Button
+          onClick={handleSubmit(onSubmit)}
+          disabled={isPending}
+          className="w-14 h-14 rounded-full shadow-lg"
+        >
+          {isPending ? (
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <Save className="h-5 w-5" />
+          )}
+        </Button>
       </div>
     </div>
   );

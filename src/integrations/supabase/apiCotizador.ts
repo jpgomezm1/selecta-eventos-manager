@@ -8,7 +8,12 @@ import type {
   CotizacionVersion,
   Cotizacion,
   CotizacionItemsState,
+  CotizacionPersonalLocal,
   EventoRequerimiento,
+  IngredienteCatalogo,
+  PlatoIngrediente,
+  IngredienteProveedor,
+  PersonalAsignacion,
 } from "@/types/cotizador";
 
 /** =====================
@@ -76,7 +81,7 @@ export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
 
   const versiones = await Promise.all(
     (vers ?? []).map(async (v: any) => {
-      const [{ data: p }, { data: t }, { data: pe }] = await Promise.all([
+      const [{ data: p }, { data: t }, { data: pe }, { data: me }] = await Promise.all([
         supabase
           .from("cotizacion_platos")
           .select(`
@@ -104,6 +109,15 @@ export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
             )
           `)
           .eq("cotizacion_version_id", v.id),
+        supabase
+          .from("cotizacion_menaje_items")
+          .select(`
+            *,
+            menaje_catalogo (
+              nombre
+            )
+          `)
+          .eq("cotizacion_version_id", v.id),
       ]);
 
       const items: CotizacionItemsState = {
@@ -123,6 +137,12 @@ export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
           personal_costo_id: x.personal_costo_id,
           rol: x.personal_costos_catalogo?.rol || "Rol sin especificar",
           tarifa_estimada_por_persona: Number(x.tarifa_estimada_por_persona),
+          cantidad: x.cantidad,
+        })),
+        menaje: (me ?? []).map((x: any) => ({
+          menaje_id: x.menaje_id,
+          nombre: x.menaje_catalogo?.nombre || "Menaje sin nombre",
+          precio_alquiler: Number(x.precio_alquiler),
           cantidad: x.cantidad,
         })),
       };
@@ -230,7 +250,8 @@ export async function updateVersionCotizacion(
   const total =
     items.platos.reduce((a, p) => a + p.precio_unitario * p.cantidad, 0) +
     items.personal.reduce((a, p) => a + p.tarifa_estimada_por_persona * p.cantidad, 0) +
-    items.transportes.reduce((a, t) => a + t.tarifa_unitaria * t.cantidad, 0);
+    items.transportes.reduce((a, t) => a + t.tarifa_unitaria * t.cantidad, 0) +
+    (items.menaje ?? []).reduce((a, m) => a + m.precio_alquiler * m.cantidad, 0);
 
   // Actualizar total de la versión
   const { error: updateError } = await supabase
@@ -244,6 +265,7 @@ export async function updateVersionCotizacion(
     supabase.from("cotizacion_platos").delete().eq("cotizacion_version_id", version_id),
     supabase.from("cotizacion_personal_items").delete().eq("cotizacion_version_id", version_id),
     supabase.from("cotizacion_transporte_items").delete().eq("cotizacion_version_id", version_id),
+    supabase.from("cotizacion_menaje_items").delete().eq("cotizacion_version_id", version_id),
   ]);
 
   // Insertar nuevos items
@@ -288,18 +310,20 @@ export async function ensureEventFromVersion(opts: {
   const evento_id = ev!.id as string;
 
   // cargar items de la versión
-  const [{ data: p }, { data: t }, { data: pe }] = await Promise.all([
+  const [{ data: p }, { data: t }, { data: pe }, { data: me }] = await Promise.all([
     supabase.from("cotizacion_platos").select("*").eq("cotizacion_version_id", opts.cotizacion_version_id),
     supabase.from("cotizacion_transporte_items").select("*").eq("cotizacion_version_id", opts.cotizacion_version_id),
     supabase.from("cotizacion_personal_items").select("*").eq("cotizacion_version_id", opts.cotizacion_version_id),
+    supabase.from("cotizacion_menaje_items").select("*").eq("cotizacion_version_id", opts.cotizacion_version_id),
   ]);
 
   // ===== Enriquecer con catálogos (para snapshot legible) =====
   const platoIds = (p ?? []).map((x: any) => x.plato_id);
   const transIds = (t ?? []).map((x: any) => x.transporte_id);
   const persIds  = (pe ?? []).map((x: any) => x.personal_costo_id);
+  const menajeIds = (me ?? []).map((x: any) => x.menaje_id);
 
-  const [{ data: platosCat }, { data: transCat }, { data: persCat }] = await Promise.all([
+  const [{ data: platosCat }, { data: transCat }, { data: persCat }, { data: menajeCat }] = await Promise.all([
     platoIds.length
       ? supabase.from("platos_catalogo").select("id,nombre").in("id", platoIds)
       : Promise.resolve({ data: [] as any[] } as any),
@@ -309,11 +333,15 @@ export async function ensureEventFromVersion(opts: {
     persIds.length
       ? supabase.from("personal_costos_catalogo").select("id,rol").in("id", persIds)
       : Promise.resolve({ data: [] as any[] } as any),
+    menajeIds.length
+      ? supabase.from("menaje_catalogo").select("id,nombre").in("id", menajeIds)
+      : Promise.resolve({ data: [] as any[] } as any),
   ]);
 
   const nameByPlato = new Map((platosCat ?? []).map((r: any) => [r.id, r.nombre]));
   const lugarByTrans = new Map((transCat ?? []).map((r: any) => [r.id, r.lugar]));
   const rolByPers = new Map((persCat ?? []).map((r: any) => [r.id, r.rol]));
+  const nameByMenaje = new Map((menajeCat ?? []).map((r: any) => [r.id, r.nombre]));
 
   // snapshot en tablas evento_requerimiento_*
   if ((p ?? []).length) {
@@ -353,20 +381,66 @@ export async function ensureEventFromVersion(opts: {
     if (error) throw error;
   }
 
+  // Snapshot menaje
+  if ((me ?? []).length) {
+    const rows = (me ?? []).map((x: any) => ({
+      evento_id,
+      menaje_id: x.menaje_id,
+      nombre: nameByMenaje.get(x.menaje_id) ?? "",
+      precio_alquiler: Number(x.precio_alquiler),
+      cantidad: x.cantidad,
+      subtotal: Number(x.precio_alquiler) * x.cantidad,
+    }));
+    const { error } = await supabase.from("evento_requerimiento_menaje").insert(rows);
+    if (error) throw error;
+
+    // Auto-crear reserva de menaje en borrador
+    const fechaEvento = opts.fecha_evento ?? new Date().toISOString().slice(0, 10);
+    const { data: reserva, error: resErr } = await supabase
+      .from("menaje_reservas")
+      .insert({
+        evento_id,
+        fecha_inicio: fechaEvento,
+        fecha_fin: fechaEvento,
+        estado: "borrador",
+      })
+      .select("id")
+      .single();
+    if (resErr) throw resErr;
+
+    const reservaItems = (me ?? []).map((x: any) => ({
+      reserva_id: reserva!.id,
+      menaje_id: x.menaje_id,
+      cantidad: x.cantidad,
+    }));
+    const { error: riErr } = await supabase.from("menaje_reserva_items").insert(reservaItems);
+    if (riErr) throw riErr;
+  }
+
   return { evento_id };
 }
 
 /** Leer snapshot del requerimiento de un evento (con enriquecimiento si faltan campos) */
 export async function getEventoRequerimiento(evento_id: string): Promise<EventoRequerimiento> {
-  const [p, t, pe] = await Promise.all([
+  const [p, t, pe, m] = await Promise.all([
     supabase.from("evento_requerimiento_platos").select("*").eq("evento_id", evento_id),
     supabase.from("evento_requerimiento_transporte").select("*").eq("evento_id", evento_id),
     supabase.from("evento_requerimiento_personal").select("*").eq("evento_id", evento_id),
+    supabase.from("evento_requerimiento_menaje").select("*").eq("evento_id", evento_id),
   ]);
 
   if (p.error) throw p.error;
   if (t.error) throw t.error;
   if (pe.error) throw pe.error;
+  if (m.error) throw m.error;
+
+  const mapMenaje = (data: any[]) => (data ?? []).map((x: any) => ({
+    menaje_id: x.menaje_id,
+    nombre: x.nombre ?? "",
+    precio_alquiler: Number(x.precio_alquiler),
+    cantidad: x.cantidad,
+    subtotal: Number(x.subtotal),
+  }));
 
   // Si detectamos snapshot antiguo con nombres vacíos, enriquecemos en caliente y devolvemos ya enriquecido
   const needsEnrich =
@@ -408,6 +482,7 @@ export async function getEventoRequerimiento(evento_id: string): Promise<EventoR
         cantidad: x.cantidad,
         subtotal: Number(x.subtotal),
       })),
+      menaje: mapMenaje(m.data),
     };
   }
 
@@ -434,6 +509,7 @@ export async function getEventoRequerimiento(evento_id: string): Promise<EventoR
       cantidad: x.cantidad,
       subtotal: Number(x.subtotal),
     })),
+    menaje: mapMenaje(m.data),
   };
 }
 
@@ -581,6 +657,19 @@ async function insertItemsForVersion(
     const { error } = await supabase.from("cotizacion_personal_items").insert(rows);
     if (error) throw error;
   }
+
+  if ((items.menaje ?? []).length > 0) {
+    const rows = (items.menaje ?? []).map((m) => ({
+      cotizacion_id,
+      cotizacion_version_id,
+      menaje_id: m.menaje_id,
+      cantidad: m.cantidad,
+      precio_alquiler: m.precio_alquiler,
+      subtotal: m.precio_alquiler * m.cantidad,
+    }));
+    const { error } = await supabase.from("cotizacion_menaje_items").insert(rows);
+    if (error) throw error;
+  }
 }
 
 /**
@@ -609,6 +698,13 @@ export async function deleteVersionCotizacion(versionId: string): Promise<void> 
 
   if (personalError) throw personalError;
 
+  const { error: menajeError } = await supabase
+    .from("cotizacion_menaje_items")
+    .delete()
+    .eq("cotizacion_version_id", versionId);
+
+  if (menajeError) throw menajeError;
+
   // Finalmente eliminar la versión
   const { error: versionError } = await supabase
     .from("cotizacion_versiones")
@@ -616,4 +712,323 @@ export async function deleteVersionCotizacion(versionId: string): Promise<void> 
     .eq("id", versionId);
 
   if (versionError) throw versionError;
+}
+
+/** =====================
+ *  INGREDIENTES CATÁLOGO
+ *  ===================== */
+
+export async function getIngredientesCatalogo(): Promise<IngredienteCatalogo[]> {
+  const { data, error } = await supabase
+    .from("ingredientes_catalogo")
+    .select("*")
+    .order("nombre", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((d: any) => ({ ...d, costo_por_unidad: Number(d.costo_por_unidad) }));
+}
+
+export async function createIngrediente(
+  ingrediente: Omit<IngredienteCatalogo, "id" | "created_at">
+): Promise<IngredienteCatalogo> {
+  const { data, error } = await supabase
+    .from("ingredientes_catalogo")
+    .insert(ingrediente)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return { ...data, costo_por_unidad: Number(data.costo_por_unidad) } as IngredienteCatalogo;
+}
+
+export async function updateIngrediente(
+  id: string,
+  updates: Partial<Omit<IngredienteCatalogo, "id" | "created_at">>
+): Promise<IngredienteCatalogo> {
+  const { data, error } = await supabase
+    .from("ingredientes_catalogo")
+    .update(updates)
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return { ...data, costo_por_unidad: Number(data.costo_por_unidad) } as IngredienteCatalogo;
+}
+
+export async function deleteIngrediente(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("ingredientes_catalogo")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+}
+
+/** Fetch a plato with its ingredients joined */
+export async function getPlatoConIngredientes(platoId: string): Promise<PlatoCatalogo & { ingredientes: PlatoIngrediente[] }> {
+  const { data: plato, error: e1 } = await supabase
+    .from("platos_catalogo")
+    .select("*")
+    .eq("id", platoId)
+    .single();
+  if (e1) throw e1;
+
+  const { data: items, error: e2 } = await supabase
+    .from("plato_ingredientes")
+    .select("*, ingredientes_catalogo(*)")
+    .eq("plato_id", platoId);
+  if (e2) throw e2;
+
+  const ingredientes: PlatoIngrediente[] = (items ?? []).map((row: any) => ({
+    id: row.id,
+    plato_id: row.plato_id,
+    ingrediente_id: row.ingrediente_id,
+    cantidad: Number(row.cantidad),
+    ingrediente: row.ingredientes_catalogo
+      ? { ...row.ingredientes_catalogo, costo_por_unidad: Number(row.ingredientes_catalogo.costo_por_unidad) }
+      : undefined,
+  }));
+
+  return {
+    ...(plato as any),
+    precio: Number((plato as any).precio),
+    ingredientes,
+  };
+}
+
+/** Upsert ingredients for a plato (replace all) */
+export async function upsertPlatoIngredientes(
+  platoId: string,
+  items: Array<{ ingrediente_id: string; cantidad: number }>
+): Promise<void> {
+  // Delete existing
+  const { error: delErr } = await supabase
+    .from("plato_ingredientes")
+    .delete()
+    .eq("plato_id", platoId);
+  if (delErr) throw delErr;
+
+  if (items.length === 0) return;
+
+  const rows = items.map((item) => ({
+    plato_id: platoId,
+    ingrediente_id: item.ingrediente_id,
+    cantidad: item.cantidad,
+  }));
+  const { error: insErr } = await supabase.from("plato_ingredientes").insert(rows);
+  if (insErr) throw insErr;
+}
+
+/** Actualizar campos de un plato */
+export async function updatePlato(
+  id: string,
+  updates: Partial<Omit<PlatoCatalogo, "id" | "created_at" | "ingredientes">>
+): Promise<PlatoCatalogo> {
+  const { data, error } = await supabase
+    .from("platos_catalogo")
+    .update(updates)
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return { ...data, precio: Number(data.precio) } as PlatoCatalogo;
+}
+
+/** Obtener TODOS los plato_ingredientes con join ingredientes_catalogo (para costos en bulk) */
+export async function getAllPlatoIngredientes(): Promise<PlatoIngrediente[]> {
+  const { data, error } = await supabase
+    .from("plato_ingredientes")
+    .select("*, ingredientes_catalogo(*)");
+  if (error) throw error;
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    plato_id: row.plato_id,
+    ingrediente_id: row.ingrediente_id,
+    cantidad: Number(row.cantidad),
+    ingrediente: row.ingredientes_catalogo
+      ? { ...row.ingredientes_catalogo, costo_por_unidad: Number(row.ingredientes_catalogo.costo_por_unidad) }
+      : undefined,
+  }));
+}
+
+/** =====================
+ *      CREAR PLATO
+ *  ===================== */
+export async function createPlato(
+  plato: Omit<PlatoCatalogo, "id" | "created_at" | "ingredientes">
+): Promise<PlatoCatalogo> {
+  const { data, error } = await supabase
+    .from("platos_catalogo")
+    .insert(plato)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return { ...data, precio: Number(data.precio) } as PlatoCatalogo;
+}
+
+/** =====================
+ *  PROVEEDORES INGREDIENTE
+ *  ===================== */
+
+/** Convertir cantidad de presentación a unidad base del ingrediente */
+export function convertirAUnidadBase(
+  presentacionCantidad: number,
+  presentacionUnidad: string,
+  unidadBase: string
+): number {
+  // kg → gr
+  if (presentacionUnidad === "kg" && unidadBase === "gr") return presentacionCantidad * 1000;
+  // lt → ml
+  if (presentacionUnidad === "lt" && unidadBase === "ml") return presentacionCantidad * 1000;
+  // misma unidad
+  return presentacionCantidad;
+}
+
+export async function getProveedoresByIngrediente(ingredienteId: string): Promise<IngredienteProveedor[]> {
+  const { data, error } = await supabase
+    .from("ingrediente_proveedores")
+    .select("*")
+    .eq("ingrediente_id", ingredienteId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((d: any) => ({
+    ...d,
+    presentacion_cantidad: Number(d.presentacion_cantidad),
+    precio_presentacion: Number(d.precio_presentacion),
+    costo_por_unidad_base: Number(d.costo_por_unidad_base),
+  }));
+}
+
+export async function createProveedor(
+  data: Omit<IngredienteProveedor, "id" | "created_at">
+): Promise<IngredienteProveedor> {
+  const { data: row, error } = await supabase
+    .from("ingrediente_proveedores")
+    .insert(data)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return {
+    ...row,
+    presentacion_cantidad: Number(row.presentacion_cantidad),
+    precio_presentacion: Number(row.precio_presentacion),
+    costo_por_unidad_base: Number(row.costo_por_unidad_base),
+  } as IngredienteProveedor;
+}
+
+export async function updateProveedor(
+  id: string,
+  updates: Partial<Omit<IngredienteProveedor, "id" | "created_at">>
+): Promise<IngredienteProveedor> {
+  const { data: row, error } = await supabase
+    .from("ingrediente_proveedores")
+    .update(updates)
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return {
+    ...row,
+    presentacion_cantidad: Number(row.presentacion_cantidad),
+    precio_presentacion: Number(row.precio_presentacion),
+    costo_por_unidad_base: Number(row.costo_por_unidad_base),
+  } as IngredienteProveedor;
+}
+
+export async function deleteProveedor(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("ingrediente_proveedores")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function setProveedorPrincipal(
+  ingredienteId: string,
+  proveedorId: string
+): Promise<void> {
+  // Desmarcar todos
+  const { error: e1 } = await supabase
+    .from("ingrediente_proveedores")
+    .update({ es_principal: false })
+    .eq("ingrediente_id", ingredienteId);
+  if (e1) throw e1;
+
+  // Marcar el seleccionado
+  const { data: prov, error: e2 } = await supabase
+    .from("ingrediente_proveedores")
+    .update({ es_principal: true })
+    .eq("id", proveedorId)
+    .select("costo_por_unidad_base")
+    .single();
+  if (e2) throw e2;
+
+  // Actualizar costo del ingrediente
+  const { error: e3 } = await supabase
+    .from("ingredientes_catalogo")
+    .update({ costo_por_unidad: Number(prov.costo_por_unidad_base) })
+    .eq("id", ingredienteId);
+  if (e3) throw e3;
+}
+
+/** =====================
+ *  PERSONAL ASIGNACIONES
+ *  ===================== */
+
+/** Guardar asignaciones de personal para una versión de cotización */
+export async function savePersonalAsignaciones(
+  cotizacion_version_id: string,
+  personalItems: CotizacionPersonalLocal[]
+): Promise<void> {
+  // Borrar asignaciones existentes de esta versión
+  const { error: delErr } = await supabase
+    .from("cotizacion_personal_asignaciones")
+    .delete()
+    .eq("cotizacion_version_id", cotizacion_version_id);
+  if (delErr) throw delErr;
+
+  // Recopilar todas las asignaciones
+  const rows: Array<{
+    cotizacion_version_id: string;
+    personal_costo_id: string;
+    personal_id: string;
+  }> = [];
+
+  for (const item of personalItems) {
+    if (item.asignados && item.asignados.length > 0) {
+      for (const asig of item.asignados) {
+        rows.push({
+          cotizacion_version_id,
+          personal_costo_id: item.personal_costo_id,
+          personal_id: asig.personal_id,
+        });
+      }
+    }
+  }
+
+  if (rows.length > 0) {
+    const { error: insErr } = await supabase
+      .from("cotizacion_personal_asignaciones")
+      .insert(rows);
+    if (insErr) throw insErr;
+  }
+}
+
+/** Cargar asignaciones de personal para una versión de cotización */
+export async function loadPersonalAsignaciones(
+  cotizacion_version_id: string
+): Promise<Record<string, PersonalAsignacion[]>> {
+  const { data, error } = await supabase
+    .from("cotizacion_personal_asignaciones")
+    .select("personal_costo_id, personal_id, personal(nombre_completo)")
+    .eq("cotizacion_version_id", cotizacion_version_id);
+  if (error) throw error;
+
+  const result: Record<string, PersonalAsignacion[]> = {};
+  for (const row of data ?? []) {
+    const costoId = row.personal_costo_id;
+    if (!result[costoId]) result[costoId] = [];
+    result[costoId].push({
+      personal_id: row.personal_id,
+      nombre_completo: (row as any).personal?.nombre_completo ?? "",
+    });
+  }
+  return result;
 }

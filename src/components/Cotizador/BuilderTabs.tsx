@@ -8,11 +8,14 @@ import { Separator } from "@/components/ui/separator";
 import { PlatosSelector } from "@/components/Cotizador/PlatosSelector";
 import { PersonalSelector } from "@/components/Cotizador/PersonalSelector";
 import { TransporteSelector } from "@/components/Cotizador/TransporteSelector";
-import type { CotizacionItemsState, PersonalCosto, PlatoCatalogo, TransporteTarifa } from "@/types/cotizador";
+import { MenajeSelector } from "@/components/Cotizador/MenajeSelector";
+import type { CotizacionItemsState, PersonalCosto, PlatoCatalogo, TransporteTarifa, PersonalAsignacion } from "@/types/cotizador";
+import type { MenajeCatalogo } from "@/types/menaje";
 import { 
-  Utensils, 
-  Users, 
-  Truck, 
+  Utensils,
+  Users,
+  Truck,
+  Package,
   Search, 
   Filter, 
   X, 
@@ -37,14 +40,17 @@ type Props = {
   platos: PlatoCatalogo[];
   personal: PersonalCosto[];
   transportes: TransporteTarifa[];
+  menaje?: MenajeCatalogo[];
   items: CotizacionItemsState;
   invitados: number;
 
   onAddPlato: (p: PlatoCatalogo) => void;
   onAddPersonal: (p: PersonalCosto) => void;
   onAddTransporte: (t: TransporteTarifa) => void;
+  onAddMenaje?: (m: MenajeCatalogo) => void;
 
   onQtyChange: (tipo: keyof CotizacionItemsState, id: string, qty: number) => void;
+  onToggleAsignacion?: (costoId: string, persona: PersonalAsignacion) => void;
 };
 
 type SortOption = "nombre" | "precio" | "categoria" | "seleccionados";
@@ -56,12 +62,15 @@ export default function BuilderTabs({
   platos,
   personal,
   transportes,
+  menaje = [],
   items,
   invitados,
   onAddPlato,
   onAddPersonal,
   onAddTransporte,
+  onAddMenaje,
   onQtyChange,
+  onToggleAsignacion,
 }: Props) {
   const [q, setQ] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("nombre");
@@ -103,7 +112,8 @@ export default function BuilderTabs({
       platos: items.platos.length,
       personal: items.personal.length,
       transportes: items.transportes.length,
-      total: items.platos.length + items.personal.length + items.transportes.length,
+      menaje: (items.menaje ?? []).length,
+      total: items.platos.length + items.personal.length + items.transportes.length + (items.menaje ?? []).length,
     }),
     [items]
   );
@@ -195,13 +205,19 @@ export default function BuilderTabs({
         items.personal.map(p => ({ id: p.personal_costo_id, cantidad: p.cantidad }))
       ),
       transportes: filterAndSort(
-        transportes, 
+        transportes,
         (x) => [x.lugar, x.tipo_evento],
         (x) => x.lugar,
         items.transportes.map(t => ({ id: t.transporte_id, cantidad: t.cantidad }))
       ),
+      menaje: filterAndSort(
+        menaje,
+        (x) => [x.nombre, x.categoria],
+        (x) => x.categoria,
+        (items.menaje ?? []).map(m => ({ id: m.menaje_id, cantidad: m.cantidad }))
+      ),
     };
-  }, [q, platos, personal, transportes, items, sortBy, sortOrder, selectedCategories, showOnlySelected]);
+  }, [q, platos, personal, transportes, menaje, items, sortBy, sortOrder, selectedCategories, showOnlySelected]);
 
   // Obtener categorías únicas para la tab actual
   const availableCategories = useMemo(() => {
@@ -212,10 +228,12 @@ export default function BuilderTabs({
         return [...new Set(personal.map(p => p.rol))].filter(Boolean).sort();
       case "transporte":
         return [...new Set(transportes.map(t => t.lugar))].filter(Boolean).sort();
+      case "menaje":
+        return [...new Set(menaje.map(m => m.categoria))].filter(Boolean).sort();
       default:
         return [];
     }
-  }, [value, platos, personal, transportes]);
+  }, [value, platos, personal, transportes, menaje]);
 
   const toggleCategory = (category: string) => {
     setSelectedCategories(prev => 
@@ -242,21 +260,22 @@ export default function BuilderTabs({
 
   const currentData = getFilteredData[value as keyof typeof getFilteredData] || [];
   const currentItemCount = currentData.length;
-  const totalItemCount = value === "platos" ? platos.length : 
-                         value === "personal" ? personal.length : 
+  const totalItemCount = value === "platos" ? platos.length :
+                         value === "personal" ? personal.length :
+                         value === "menaje" ? menaje.length :
                          transportes.length;
 
   return (
     <div className="relative space-y-6" onKeyDown={onKeyDown}>
       {/* Header principal mejorado */}
-      <Card className="bg-gradient-to-r from-slate-50 via-white to-slate-50 border-slate-200 overflow-hidden">
+      <Card className="border-slate-200 overflow-hidden">
         <CardContent className="p-6">
           <div className="space-y-6">
             {/* Header con estadísticas */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="p-3 bg-gradient-to-br from-selecta-green to-primary rounded-2xl shadow-lg">
-                  <ShoppingCart className="h-6 w-6 text-white" />
+                <div className="p-2 bg-selecta-green/10 rounded-lg">
+                  <ShoppingCart className="h-5 w-5 text-selecta-green" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-slate-800">Constructor de Cotización</h2>
@@ -315,10 +334,10 @@ export default function BuilderTabs({
 
             {/* Tabs principales */}
             <Tabs value={value} onValueChange={onValueChange} className="w-full">
-              <TabsList className="w-full grid grid-cols-3 bg-slate-100 p-1 rounded-2xl shadow-inner">
+              <TabsList className="w-full grid grid-cols-4 bg-slate-100 p-1 rounded-2xl">
                 <TabsTrigger 
                   value="platos" 
-                  className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200"
+                  className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200"
                 >
                   <div className="flex items-center gap-2">
                     <div className={cn(
@@ -346,7 +365,7 @@ export default function BuilderTabs({
 
                 <TabsTrigger 
                   value="personal" 
-                  className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200"
+                  className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200"
                 >
                   <div className="flex items-center gap-2">
                     <div className={cn(
@@ -374,7 +393,7 @@ export default function BuilderTabs({
 
                 <TabsTrigger 
                   value="transporte" 
-                  className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200"
+                  className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200"
                 >
                   <div className="flex items-center gap-2">
                     <div className={cn(
@@ -387,15 +406,43 @@ export default function BuilderTabs({
                       )} />
                     </div>
                     <span className="font-medium">Transporte</span>
-                    <Badge 
+                    <Badge
                       className={cn(
                         "text-xs",
-                        counters.transportes > 0 
-                          ? "bg-green-100 text-green-700 border-green-200" 
+                        counters.transportes > 0
+                          ? "bg-green-100 text-green-700 border-green-200"
                           : "bg-slate-200 text-slate-600"
                       )}
                     >
                       {counters.transportes}
+                    </Badge>
+                  </div>
+                </TabsTrigger>
+
+                <TabsTrigger
+                  value="menaje"
+                  className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-200"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "p-1.5 rounded-lg transition-colors",
+                      value === "menaje" ? "bg-purple-100" : "bg-transparent"
+                    )}>
+                      <Package className={cn(
+                        "h-4 w-4",
+                        value === "menaje" ? "text-purple-600" : "text-slate-500"
+                      )} />
+                    </div>
+                    <span className="font-medium">Menaje</span>
+                    <Badge
+                      className={cn(
+                        "text-xs",
+                        counters.menaje > 0
+                          ? "bg-purple-100 text-purple-700 border-purple-200"
+                          : "bg-slate-200 text-slate-600"
+                      )}
+                    >
+                      {counters.menaje}
                     </Badge>
                   </div>
                 </TabsTrigger>
@@ -563,6 +610,7 @@ export default function BuilderTabs({
               onQtyChange={(id, qty) => onQtyChange("personal", id, qty)}
               invitados={invitados}
               viewMode={viewMode}
+              onToggleAsignacion={onToggleAsignacion}
             />
           </TabsContent>
 
@@ -575,38 +623,49 @@ export default function BuilderTabs({
               viewMode={viewMode}
             />
           </TabsContent>
+
+          <TabsContent value="menaje" className="mt-0">
+            <MenajeSelector
+              data={getFilteredData.menaje}
+              onAdd={(m) => onAddMenaje?.(m)}
+              itemsSeleccionados={(items.menaje ?? []).map(m => ({ menaje_id: m.menaje_id, cantidad: m.cantidad }))}
+              onQtyChange={(id, qty) => onQtyChange("menaje", id, qty)}
+              viewMode={viewMode}
+            />
+          </TabsContent>
         </Tabs>
       </div>
 
-      {/* Dock flotante móvil mejorado */}
+      {/* Dock flotante móvil */}
       <div className="lg:hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-30">
-        <Card className="bg-white/95 backdrop-blur-md shadow-2xl border-white/40 rounded-2xl overflow-hidden">
+        <Card className="shadow-lg">
           <CardContent className="p-2">
             <div className="flex gap-1">
               {([
-                { key: "platos", icon: Utensils, color: "orange", count: counters.platos },
-                { key: "personal", icon: Users, color: "blue", count: counters.personal },
-                { key: "transporte", icon: Truck, color: "green", count: counters.transportes },
-              ] as const).map(({ key, icon: Icon, color, count }) => (
+                { key: "platos", icon: Utensils, count: counters.platos },
+                { key: "personal", icon: Users, count: counters.personal },
+                { key: "transporte", icon: Truck, count: counters.transportes },
+                { key: "menaje", icon: Package, count: counters.menaje },
+              ] as const).map(({ key, icon: Icon, count }) => (
                 <button
                   key={key}
                   onClick={() => onValueChange?.(key)}
                   className={cn(
                     "relative px-4 py-2 rounded-xl text-sm flex items-center gap-2 transition-all duration-200",
-                    value === key 
-                      ? `bg-${color}-500 text-white shadow-lg` 
+                    value === key
+                      ? "bg-selecta-green text-white"
                       : "hover:bg-slate-100 text-slate-600"
                   )}
                 >
                   <Icon className="h-4 w-4" />
                   <span className="capitalize font-medium">{key}</span>
                   {count > 0 && (
-                    <Badge 
+                    <Badge
                       className={cn(
                         "text-xs h-5 w-5 p-0 flex items-center justify-center",
-                        value === key 
-                          ? "bg-white text-slate-800" 
-                          : `bg-${color}-100 text-${color}-700`
+                        value === key
+                          ? "bg-white text-slate-800"
+                          : "bg-slate-100 text-slate-700"
                       )}
                     >
                       {count}
@@ -619,27 +678,17 @@ export default function BuilderTabs({
         </Card>
       </div>
 
-      {/* Indicador de progreso del filtro */}
+      {/* Indicador de filtro móvil */}
       {activeFiltersCount > 0 && (
         <div className="fixed top-4 right-4 z-40 lg:hidden">
-          <Card className="bg-selecta-green text-white shadow-lg">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <span className="text-sm font-medium">
-                  {activeFiltersCount} filtro(s)
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearAllFilters}
-                  className="h-6 w-6 p-0 text-white hover:bg-white/20"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <Badge
+            className="bg-selecta-green text-white px-3 py-1.5 text-sm cursor-pointer hover:bg-selecta-green/90"
+            onClick={clearAllFilters}
+          >
+            <Filter className="h-3 w-3 mr-1.5" />
+            {activeFiltersCount} filtro(s)
+            <X className="h-3 w-3 ml-1.5" />
+          </Badge>
         </div>
       )}
     </div>

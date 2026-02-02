@@ -9,20 +9,18 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
-import { useState, useMemo } from "react";
-import { 
-  Calculator, 
-  Plus, 
-  Search, 
-  Filter, 
-  Users, 
-  DollarSign, 
-  Calendar, 
-  Eye, 
-  FileText, 
-  Sparkles, 
-  TrendingUp, 
-  Clock, 
+import { useState, useMemo, useEffect } from "react";
+import {
+  Calculator,
+  Plus,
+  Search,
+  Filter,
+  Users,
+  DollarSign,
+  Calendar,
+  Eye,
+  FileText,
+  TrendingUp,
   CheckCircle,
   AlertTriangle,
   X,
@@ -40,11 +38,18 @@ export default function CotizacionesListPage() {
   const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const [selectedCotizacion, setSelectedCotizacion] = useState<any>(null);
-  
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["cotizaciones"],
     queryFn: listCotizaciones,
   });
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus, filterComercial, sortBy]);
 
   // Obtener lista de comerciales únicos
   const comerciales = useMemo(() => {
@@ -88,6 +93,9 @@ export default function CotizacionesListPage() {
 
     return filtered;
   }, [data, searchTerm, filterStatus, filterComercial, sortBy]);
+
+  const totalPages = Math.ceil(filteredAndSortedData.length / ITEMS_PER_PAGE);
+  const paginatedData = filteredAndSortedData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   // Estadísticas
   const stats = useMemo(() => {
@@ -154,31 +162,26 @@ export default function CotizacionesListPage() {
   const getStatusBadge = (estado: string) => {
     const configs = {
       "Pendiente por Aprobación": {
-        class: "bg-gradient-to-r from-yellow-50 to-yellow-100 text-yellow-700 border-yellow-200",
-        icon: <Clock className="h-3 w-3 mr-1" />,
+        class: "bg-yellow-50 text-yellow-700 border-yellow-200",
         label: "Pendiente"
       },
       "Cotización Aprobada": {
-        class: "bg-gradient-to-r from-green-50 to-green-100 text-green-700 border-green-200",
-        icon: <CheckCircle className="h-3 w-3 mr-1" />,
+        class: "bg-green-50 text-green-700 border-green-200",
         label: "Aprobada"
       },
       "Rechazada": {
-        class: "bg-gradient-to-r from-red-50 to-red-100 text-red-700 border-red-200",
-        icon: <AlertTriangle className="h-3 w-3 mr-1" />,
+        class: "bg-red-50 text-red-700 border-red-200",
         label: "Rechazada"
       },
       "Enviada": {
-        class: "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-200",
-        icon: <FileText className="h-3 w-3 mr-1" />,
+        class: "bg-blue-50 text-blue-700 border-blue-200",
         label: "Enviada"
       }
     };
-    
+
     const config = configs[estado as keyof typeof configs] || configs["Pendiente por Aprobación"];
     return (
-      <Badge className={`${config.class} shadow-sm font-semibold border`}>
-        {config.icon}
+      <Badge className={`${config.class} font-semibold border`}>
         {config.label}
       </Badge>
     );
@@ -186,25 +189,10 @@ export default function CotizacionesListPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 relative overflow-hidden">
-        {/* Elementos decorativos de fondo */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-selecta-green/8 to-primary/8 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-blue-100/30 to-selecta-green/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        </div>
-        
-        <div className="relative z-10 container mx-auto px-4 py-8">
-          <Card className="bg-white/70 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl">
-            <CardContent className="p-16 text-center">
-              <div className="w-24 h-24 bg-gradient-to-r from-selecta-green to-primary rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-2xl animate-bounce">
-                <Calculator className="h-12 w-12 text-white animate-pulse" />
-              </div>
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-selecta-green to-primary bg-clip-text text-transparent mb-3">
-                Cargando Cotizaciones
-              </h3>
-              <p className="text-slate-600 text-lg">Obteniendo lista de cotizaciones...</p>
-            </CardContent>
-          </Card>
+      <div className="flex items-center justify-center h-64">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-8 h-8 border-2 border-slate-200 border-t-selecta-green rounded-full animate-spin" />
+          <p className="text-slate-500">Cargando cotizaciones...</p>
         </div>
       </div>
     );
@@ -212,329 +200,249 @@ export default function CotizacionesListPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 relative overflow-hidden">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-red-100/20 to-orange-100/20 rounded-full blur-3xl"></div>
-        </div>
-        
-        <div className="relative z-10 container mx-auto px-4 py-8">
-          <Card className="bg-white/70 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl">
-            <CardContent className="p-16 text-center">
-              <div className="w-24 h-24 bg-gradient-to-r from-red-500 to-orange-500 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-2xl">
-                <AlertTriangle className="h-12 w-12 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-red-600 mb-3">Error al cargar cotizaciones</h3>
-              <p className="text-slate-600 text-lg mb-6">No se pudieron obtener las cotizaciones</p>
-              <Button 
-                onClick={() => window.location.reload()}
-                className="bg-gradient-to-r from-selecta-green to-primary hover:shadow-xl transition-all duration-300 rounded-2xl px-6 py-3"
-              >
-                Reintentar
-              </Button>
-            </CardContent>
-          </Card>
+      <div className="flex items-center justify-center h-64">
+        <div className="flex flex-col items-center space-y-4 text-center">
+          <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center">
+            <AlertTriangle className="h-6 w-6 text-red-500" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-800">Error al cargar cotizaciones</h3>
+          <p className="text-slate-500">No se pudieron obtener las cotizaciones</p>
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Reintentar
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 relative overflow-hidden">
-      {/* Elementos decorativos de fondo */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-selecta-green/8 to-primary/8 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-blue-100/30 to-selecta-green/10 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/3 right-1/4 w-32 h-32 bg-gradient-to-r from-purple-100/40 to-pink-100/40 rounded-full blur-2xl"></div>
+    <div className="container mx-auto px-4 py-8 space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Cotizaciones</h1>
+          <p className="text-slate-500 mt-1">Gestión de cotizaciones y presupuestos</p>
+        </div>
+        <Button onClick={() => nav("/cotizador/nueva")}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nueva Cotización
+        </Button>
       </div>
 
-      <div className="relative z-10 container mx-auto px-4 py-8 space-y-8">
-        {/* Header premium */}
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
-          <div className="text-center lg:text-left">
-            <div className="flex items-center justify-center lg:justify-start space-x-4 mb-6">
-              <div className="relative">
-                <div className="w-16 h-16 bg-gradient-to-r from-selecta-green via-primary to-selecta-green rounded-3xl flex items-center justify-center shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-300">
-                  <Calculator className="h-8 w-8 text-white" />
-                </div>
-                <div className="absolute inset-0 w-16 h-16 bg-gradient-to-r from-selecta-green/20 to-primary/20 rounded-3xl blur-xl"></div>
-              </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <Calculator className="h-5 w-5 text-blue-600" />
               <div>
-                <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-selecta-green via-primary to-selecta-green bg-clip-text text-transparent leading-tight">
-                  Cotizaciones
-                </h1>
-                <p className="text-slate-600 text-lg font-medium mt-2 max-w-md">
-                  Gestión completa de cotizaciones y presupuestos
-                </p>
+                <div className="text-2xl font-semibold text-slate-900">{stats.total}</div>
+                <p className="text-sm text-slate-500">Total</p>
               </div>
             </div>
-            
-            {/* Línea decorativa animada */}
-            <div className="flex items-center justify-center lg:justify-start space-x-2 mb-4">
-              <div className="w-16 h-1 bg-gradient-to-r from-selecta-green to-primary rounded-full"></div>
-              <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-              <div className="w-8 h-1 bg-gradient-to-r from-primary to-selecta-green rounded-full"></div>
-            </div>
-            
-            {/* Stats mejoradas */}
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3">
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl px-4 py-2 shadow-lg border border-white/30 hover:shadow-xl transition-shadow">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-bold text-slate-700">{stats.total} cotizaciones</span>
-                </div>
-              </div>
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl px-4 py-2 shadow-lg border border-white/30 hover:shadow-xl transition-shadow">
-                <div className="flex items-center space-x-2">
-                  <Sparkles className="w-3 h-3 text-selecta-green" />
-                  <span className="text-sm font-bold text-slate-700">${stats.totalValue.toLocaleString()}</span>
-                </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <FileText className="h-5 w-5 text-slate-600" />
+              <div>
+                <div className="text-2xl font-semibold text-slate-900">{stats.pendiente}</div>
+                <p className="text-sm text-slate-500">Pendientes</p>
               </div>
             </div>
-          </div>
-
-          {/* Botón Nueva Cotización */}
-          <Button 
-            onClick={() => nav("/cotizador/nueva")}
-            className="group bg-gradient-to-r from-selecta-green to-primary hover:from-primary hover:to-selecta-green shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 rounded-2xl px-8 py-4 border-0 relative overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <Plus className="h-5 w-5 mr-3 relative z-10" />
-            <span className="font-bold relative z-10">Nueva Cotización</span>
-          </Button>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <Card className="bg-white/70 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl overflow-hidden group hover:scale-105 transition-transform duration-300">
-            <CardHeader className="bg-gradient-to-r from-blue-50/80 to-blue-100/80 border-b border-blue-200/30 pb-3">
-              <div className="flex items-center justify-between">
-                <Calculator className="h-6 w-6 text-blue-600" />
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">{stats.total}</div>
-                <p className="text-xs text-blue-600 font-medium">Total</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/70 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl overflow-hidden group hover:scale-105 transition-transform duration-300">
-            <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/80 border-b border-slate-200/30 pb-3">
-              <div className="flex items-center justify-between">
-                <FileText className="h-6 w-6 text-slate-600" />
-                <div className="w-2 h-2 bg-slate-500 rounded-full animate-pulse"></div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-slate-600">{stats.pendiente}</div>
-                <p className="text-xs text-slate-600 font-medium">Pendientes</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/70 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl overflow-hidden group hover:scale-105 transition-transform duration-300">
-            <CardHeader className="bg-gradient-to-r from-green-50/80 to-green-100/80 border-b border-green-200/30 pb-3">
-              <div className="flex items-center justify-between">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-green-600">{stats.aprobado}</div>
-                <p className="text-xs text-green-600 font-medium">Aprobadas</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/70 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl overflow-hidden group hover:scale-105 transition-transform duration-300">
-            <CardHeader className="bg-gradient-to-r from-emerald-50/80 to-emerald-100/80 border-b border-emerald-200/30 pb-3">
-              <div className="flex items-center justify-between">
-                <TrendingUp className="h-6 w-6 text-emerald-600" />
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="text-xl font-bold text-emerald-600">${(stats.totalValue / 1000000).toFixed(1)}M</div>
-                <p className="text-xs text-emerald-600 font-medium">Valor Total</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Filtros y búsqueda premium */}
-        <Card className="bg-white/70 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl overflow-hidden">
-          <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-              {/* Búsqueda */}
-              <div className="flex items-center space-x-3 flex-1 lg:max-w-md">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-500" />
-                  <Input
-                    placeholder="Buscar cotizaciones o clientes..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-white/90 border-slate-200/50 rounded-2xl h-12 shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-selecta-green/20 focus:border-selecta-green"
-                  />
-                  {searchTerm && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSearchTerm("")}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-slate-100 rounded-full"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              {/* Filtros */}
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Filter className="h-4 w-4 text-slate-600" />
-                  <span className="text-sm font-semibold text-slate-700">Estado:</span>
-                </div>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-40 bg-white/90 border-slate-200/50 rounded-2xl shadow-sm hover:shadow-md transition-all">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white/95 backdrop-blur-xl border-white/20 rounded-2xl shadow-2xl">
-                    <SelectItem value="all">Todos los estados</SelectItem>
-                    <SelectItem value="Pendiente por Aprobación">Pendientes</SelectItem>
-                    <SelectItem value="Cotización Aprobada">Aprobadas</SelectItem>
-                    <SelectItem value="Rechazada">Rechazadas</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4 text-slate-600" />
-                  <span className="text-sm font-semibold text-slate-700">Comercial:</span>
-                </div>
-                <Select value={filterComercial} onValueChange={setFilterComercial}>
-                  <SelectTrigger className="w-48 bg-white/90 border-slate-200/50 rounded-2xl shadow-sm hover:shadow-md transition-all">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white/95 backdrop-blur-xl border-white/20 rounded-2xl shadow-2xl">
-                    <SelectItem value="all">Todos los comerciales</SelectItem>
-                    {comerciales.map((comercial) => (
-                      <SelectItem key={comercial} value={comercial}>
-                        {comercial}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <div className="flex items-center space-x-2">
-                  <ArrowUpDown className="h-4 w-4 text-slate-600" />
-                  <span className="text-sm font-semibold text-slate-700">Ordenar:</span>
-                </div>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-48 bg-white/90 border-slate-200/50 rounded-2xl shadow-sm hover:shadow-md transition-all">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white/95 backdrop-blur-xl border-white/20 rounded-2xl shadow-2xl">
-                    <SelectItem value="fecha_desc">Más recientes</SelectItem>
-                    <SelectItem value="fecha_asc">Más antiguos</SelectItem>
-                    <SelectItem value="total_desc">Mayor valor</SelectItem>
-                    <SelectItem value="total_asc">Menor valor</SelectItem>
-                    <SelectItem value="nombre">Por nombre</SelectItem>
-                  </SelectContent>
-                </Select>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <div>
+                <div className="text-2xl font-semibold text-slate-900">{stats.aprobado}</div>
+                <p className="text-sm text-slate-500">Aprobadas</p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <TrendingUp className="h-5 w-5 text-emerald-600" />
+              <div>
+                <div className="text-xl font-semibold text-slate-900">${(stats.totalValue / 1000000).toFixed(1)}M</div>
+                <p className="text-sm text-slate-500">Valor Total</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-            {/* Resultados de filtros */}
-            {(searchTerm || filterStatus !== 'all') && (
-              <div className="mt-4 p-3 bg-gradient-to-r from-blue-50/60 to-blue-100/60 rounded-2xl border border-blue-200/40">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-blue-800">
-                    {filteredAndSortedData.length} cotización(es) encontrada(s)
-                  </span>
+      {/* Filtros y búsqueda */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+            {/* Búsqueda */}
+            <div className="flex items-center space-x-3 flex-1 lg:max-w-md">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-500" />
+                <Input
+                  placeholder="Buscar cotizaciones o clientes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-12"
+                />
+                {searchTerm && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      setSearchTerm("");
-                      setFilterStatus("all");
-                    }}
-                    className="text-blue-700 hover:text-blue-800 hover:bg-blue-100 rounded-xl"
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-slate-100 rounded-full"
                   >
-                    Limpiar filtros
+                    <X className="h-4 w-4" />
                   </Button>
-                </div>
+                )}
               </div>
+            </div>
+
+            {/* Filtros */}
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Filter className="h-4 w-4 text-slate-600" />
+                <span className="text-sm font-semibold text-slate-700">Estado:</span>
+              </div>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los estados</SelectItem>
+                  <SelectItem value="Pendiente por Aprobación">Pendientes</SelectItem>
+                  <SelectItem value="Cotización Aprobada">Aprobadas</SelectItem>
+                  <SelectItem value="Rechazada">Rechazadas</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div className="flex items-center space-x-2">
+                <Users className="h-4 w-4 text-slate-600" />
+                <span className="text-sm font-semibold text-slate-700">Comercial:</span>
+              </div>
+              <Select value={filterComercial} onValueChange={setFilterComercial}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los comerciales</SelectItem>
+                  {comerciales.map((comercial) => (
+                    <SelectItem key={comercial} value={comercial}>
+                      {comercial}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <div className="flex items-center space-x-2">
+                <ArrowUpDown className="h-4 w-4 text-slate-600" />
+                <span className="text-sm font-semibold text-slate-700">Ordenar:</span>
+              </div>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fecha_desc">Más recientes</SelectItem>
+                  <SelectItem value="fecha_asc">Más antiguos</SelectItem>
+                  <SelectItem value="total_desc">Mayor valor</SelectItem>
+                  <SelectItem value="total_asc">Menor valor</SelectItem>
+                  <SelectItem value="nombre">Por nombre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Resultados de filtros */}
+          {(searchTerm || filterStatus !== 'all') && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200/40">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-blue-800">
+                  {filteredAndSortedData.length} cotización(es) encontrada(s)
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setFilterStatus("all");
+                  }}
+                  className="text-blue-700 hover:text-blue-800 hover:bg-blue-100"
+                >
+                  Limpiar filtros
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Grid de cotizaciones */}
+      {filteredAndSortedData.length === 0 ? (
+        <Card>
+          <CardContent className="p-16 text-center">
+            <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-8">
+              <Calculator className="h-12 w-12 text-slate-400" />
+            </div>
+            <h3 className="text-2xl font-bold text-slate-800 mb-3">
+              {searchTerm || filterStatus !== 'all' ? "Sin resultados" : "Sin cotizaciones"}
+            </h3>
+            <p className="text-slate-600 text-lg max-w-md mx-auto mb-8">
+              {searchTerm || filterStatus !== 'all'
+                ? "No se encontraron cotizaciones que coincidan con los filtros aplicados"
+                : "Comienza creando tu primera cotización para gestionar presupuestos"
+              }
+            </p>
+            {!searchTerm && filterStatus === 'all' && (
+              <Button
+                onClick={() => nav("/cotizador/nueva")}
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Crear Primera Cotización
+              </Button>
             )}
           </CardContent>
         </Card>
-
-        {/* Grid de cotizaciones premium */}
-        {filteredAndSortedData.length === 0 ? (
-          <Card className="bg-white/70 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl">
-            <CardContent className="p-16 text-center">
-              <div className="w-24 h-24 bg-gradient-to-r from-slate-100 to-slate-200 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl">
-                <Calculator className="h-12 w-12 text-slate-400" />
-              </div>
-              <h3 className="text-2xl font-bold text-slate-800 mb-3">
-                {searchTerm || filterStatus !== 'all' ? "Sin resultados" : "Sin cotizaciones"}
-              </h3>
-              <p className="text-slate-600 text-lg max-w-md mx-auto mb-8">
-                {searchTerm || filterStatus !== 'all' 
-                  ? "No se encontraron cotizaciones que coincidan con los filtros aplicados" 
-                  : "Comienza creando tu primera cotización para gestionar presupuestos"
-                }
-              </p>
-              {!searchTerm && filterStatus === 'all' && (
-                <Button 
-                  onClick={() => nav("/cotizador/nueva")}
-                  className="bg-gradient-to-r from-selecta-green to-primary hover:shadow-xl hover:scale-105 transition-all duration-300 rounded-2xl px-6 py-3"
-                >
-                  <Plus className="h-5 w-5 mr-2" />
-                  Crear Primera Cotización
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        ) : (
+      ) : (
+        <>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredAndSortedData.map((c, index) => (
-              <Card 
-                key={c.id} 
-                className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border-2 border-slate-200/40 hover:border-selecta-green/40 hover:shadow-2xl transition-all duration-300 group overflow-hidden cursor-pointer transform hover:scale-[1.02]"
+            {paginatedData.map((c) => (
+              <Card
+                key={c.id}
+                className="hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => nav(`/cotizador/${c.id}`)}
-                style={{
-                  animationDelay: `${index * 100}ms`
-                }}
               >
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between mb-3">
-                    <CardTitle className="text-lg font-bold text-slate-800 line-clamp-2 group-hover:text-selecta-green transition-colors flex-1 min-w-0">
+                    <CardTitle className="text-lg font-bold text-slate-800 line-clamp-2 flex-1 min-w-0">
                       {c.nombre_cotizacion}
                     </CardTitle>
                     {getStatusBadge(c.estado)}
                   </div>
                 </CardHeader>
-                
+
                 <CardContent className="space-y-4">
                   {/* Información del cliente */}
                   <div className="space-y-3">
-                    <div className="flex items-center text-sm text-slate-600 group/item hover:text-selecta-green transition-colors">
-                      <Users className="h-4 w-4 mr-3 text-selecta-green group-hover/item:scale-110 transition-transform" />
+                    <div className="flex items-center text-sm text-slate-600">
+                      <Users className="h-4 w-4 mr-3 text-selecta-green" />
                       <span className="font-semibold">Cliente: {c.cliente_nombre || "Sin especificar"}</span>
                     </div>
-                    
-                    <div className="flex items-center text-sm text-slate-600 group/item hover:text-selecta-green transition-colors">
-                      <Users className="h-4 w-4 mr-3 text-selecta-green group-hover/item:scale-110 transition-transform" />
+
+                    <div className="flex items-center text-sm text-slate-600">
+                      <Users className="h-4 w-4 mr-3 text-selecta-green" />
                       <span className="font-semibold">Invitados: {c.numero_invitados}</span>
                     </div>
 
                     {c.created_at && (
-                      <div className="flex items-center text-sm text-slate-600 group/item hover:text-selecta-green transition-colors">
-                        <Calendar className="h-4 w-4 mr-3 text-selecta-green group-hover/item:scale-110 transition-transform" />
+                      <div className="flex items-center text-sm text-slate-600">
+                        <Calendar className="h-4 w-4 mr-3 text-selecta-green" />
                         <span className="font-semibold">
                           {new Date(c.created_at).toLocaleDateString('es-CO')}
                         </span>
@@ -543,13 +451,13 @@ export default function CotizacionesListPage() {
                   </div>
 
                   {/* Total destacado */}
-                  <div className="p-4 bg-gradient-to-r from-emerald-50/80 to-green-50/80 rounded-2xl border border-emerald-200/60">
+                  <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200/60">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <DollarSign className="h-5 w-5 text-emerald-600" />
                         <span className="text-sm font-semibold text-emerald-700">Total Cotizado:</span>
                       </div>
-                      <div className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+                      <div className="text-xl font-bold text-emerald-600">
                         ${c.total_cotizado.toLocaleString()}
                       </div>
                     </div>
@@ -560,9 +468,9 @@ export default function CotizacionesListPage() {
                     <Button
                       variant="outline"
                       onClick={() => nav(`/cotizador/${c.id}`)}
-                      className="w-full bg-white hover:bg-slate-50 border-slate-200 hover:border-selecta-green/40 rounded-2xl transition-all duration-200 hover:shadow-md group/btn"
+                      className="w-full"
                     >
-                      <Eye className="h-4 w-4 mr-2 group-hover/btn:text-selecta-green transition-colors" />
+                      <Eye className="h-4 w-4 mr-2" />
                       <span className="font-semibold">Abrir Cotización</span>
                     </Button>
 
@@ -570,7 +478,7 @@ export default function CotizacionesListPage() {
                       variant="outline"
                       onClick={() => handleOpenPDFModal(c.id)}
                       disabled={downloadingPdf === c.id}
-                      className="w-full bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border-blue-200 hover:border-blue-300 text-blue-700 hover:text-blue-800 rounded-2xl transition-all duration-200 hover:shadow-md group/btn"
+                      className="w-full bg-blue-50 hover:bg-blue-100 border-blue-200 hover:border-blue-300 text-blue-700 hover:text-blue-800"
                     >
                       {downloadingPdf === c.id ? (
                         <>
@@ -579,7 +487,7 @@ export default function CotizacionesListPage() {
                         </>
                       ) : (
                         <>
-                          <Download className="h-4 w-4 mr-2 group-hover/btn:text-blue-600 transition-colors" />
+                          <Download className="h-4 w-4 mr-2" />
                           <span className="font-semibold">Propuesta Selecta</span>
                         </>
                       )}
@@ -589,29 +497,20 @@ export default function CotizacionesListPage() {
               </Card>
             ))}
           </div>
-        )}
 
-        {/* Footer informativo */}
-        <div className="text-center pt-8">
-          <div className="inline-flex items-center justify-center space-x-4 bg-white/60 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg border border-white/30">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium text-slate-600">Sistema de cotizaciones</span>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-4 pt-4">
+              <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
+                Anterior
+              </Button>
+              <span className="text-sm text-slate-600">Página {currentPage} de {totalPages}</span>
+              <Button variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
+                Siguiente
+              </Button>
             </div>
-            <div className="w-px h-4 bg-slate-300"></div>
-            <div className="flex items-center space-x-2">
-              <Calculator className="h-4 w-4 text-slate-500" />
-              <span className="text-sm text-slate-500">
-                Actualizado: {new Date().toLocaleTimeString('es-CO', { 
-                  hour: '2-digit', 
-                  minute: '2-digit',
-                  hour12: true 
-                })}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+          )}
+        </>
+      )}
 
       {/* Modal para selección de opciones PDF */}
       {selectedCotizacion && (

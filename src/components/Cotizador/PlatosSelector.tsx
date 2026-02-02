@@ -331,11 +331,11 @@ export function PlatosSelector({
     <div className="space-y-4">
       {/* Header con resumen */}
       {totalSelected > 0 && (
-        <Card className="bg-gradient-to-r from-selecta-green/10 to-selecta-green/5 border-selecta-green/20">
+        <Card className="bg-selecta-green/5 border-selecta-green/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-selecta-green rounded-lg">
+                <div className="p-2 bg-selecta-green/10 rounded-lg">
                   <Utensils className="h-5 w-5 text-white" />
                 </div>
                 <div>

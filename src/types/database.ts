@@ -1,9 +1,19 @@
+export type ModalidadCobro =
+  | 'por_hora'              // Cobro por hora trabajada
+  | 'jornada_9h'            // Jornada fija de 9 horas
+  | 'jornada_10h'           // Jornada fija de 10 horas
+  | 'jornada_hasta_10h'     // Jornada hasta 10 horas (si excede, cobra extra)
+  | 'jornada_nocturna'      // Jornada nocturna
+  | 'por_evento';           // Cobro fijo por evento completo
+
 export interface Personal {
   id: string;
   nombre_completo: string;
   numero_cedula: string;
   rol: 'Coordinador' | 'Mesero' | 'Chef' | 'Bartender' | 'Decorador' | 'Técnico de Sonido' | 'Fotógrafo' | 'Otro';
-  tarifa_hora: number;
+  tarifa: number; // Cambiado de tarifa_hora a tarifa (puede ser por hora, jornada o evento)
+  modalidad_cobro: ModalidadCobro;
+  tarifa_hora_extra?: number; // Para jornada_hasta_10h cuando se excede el límite
   created_at: string;
   updated_at: string;
 }
@@ -56,7 +66,9 @@ export interface PersonalFormData {
   nombre_completo: string;
   numero_cedula: string;
   rol: Personal['rol'];
-  tarifa_hora: number;
+  tarifa: number;
+  modalidad_cobro: ModalidadCobro;
+  tarifa_hora_extra?: number;
 }
 
 export interface EventoFormData {
@@ -64,7 +76,6 @@ export interface EventoFormData {
   ubicacion: string;
   fecha_evento: string;
   descripcion?: string;
-  personal_ids: string[];
 }
 
 export interface RegistroPago {
@@ -105,3 +116,12 @@ export const ROLES_PERSONAL = [
   'Fotógrafo',
   'Otro'
 ] as const;
+
+export const MODALIDADES_COBRO: { value: ModalidadCobro; label: string; descripcion: string }[] = [
+  { value: 'por_hora', label: 'Por Hora', descripcion: 'Cobro por cada hora trabajada' },
+  { value: 'jornada_9h', label: 'Jornada 9 Horas', descripcion: 'Tarifa fija por jornada de 9 horas' },
+  { value: 'jornada_10h', label: 'Jornada 10 Horas', descripcion: 'Tarifa fija por jornada de 10 horas' },
+  { value: 'jornada_hasta_10h', label: 'Jornada hasta 10 Horas', descripcion: 'Tarifa fija hasta 10h, luego cobra horas extras' },
+  { value: 'jornada_nocturna', label: 'Jornada Nocturna', descripcion: 'Tarifa fija para eventos nocturnos' },
+  { value: 'por_evento', label: 'Por Evento', descripcion: 'Tarifa fija por evento completo' }
+];

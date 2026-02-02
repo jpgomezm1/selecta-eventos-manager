@@ -137,9 +137,9 @@ export function CatalogoSelector<T extends Record<string, any>>({
       <Card 
         key={id} 
         className={cn(
-          "group relative overflow-hidden transition-all duration-300 hover:shadow-lg border-2",
-          isSelected 
-            ? "border-selecta-green bg-selecta-green/5 shadow-md" 
+          "group relative overflow-hidden transition-all hover:shadow-md border-2",
+          isSelected
+            ? "border-selecta-green bg-selecta-green/5"
             : "border-slate-200 hover:border-slate-300"
         )}
       >
@@ -156,9 +156,9 @@ export function CatalogoSelector<T extends Record<string, any>>({
             <img 
               src={image} 
               alt={title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+
           </div>
         )}
 
@@ -290,7 +290,7 @@ export function CatalogoSelector<T extends Record<string, any>>({
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200">
+      <Card className="border-slate-200">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">

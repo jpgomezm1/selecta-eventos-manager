@@ -16,6 +16,8 @@ import CotizacionesListPage from "./pages/Cotizaciones";
 import CotizacionEditorPage from "./pages/CotizacionEditor";
 import EventoDetallePage from "./pages/EventoDetalle";
 import BodegaPage from "./pages/Bodega"; // ⬅️ NUEVO
+import RecetarioPage from "./pages/Recetario";
+import InventarioPage from "./pages/Inventario";
 
 const queryClient = new QueryClient();
 
@@ -125,6 +127,26 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <BodegaPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Inventario de Insumos */}
+            <Route
+              path="/inventario"
+              element={
+                <ProtectedRoute>
+                  <InventarioPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Recetario */}
+            <Route
+              path="/recetario"
+              element={
+                <ProtectedRoute>
+                  <RecetarioPage />
                 </ProtectedRoute>
               }
             />

@@ -5,6 +5,7 @@ export type MenajeCatalogo = {
     categoria: string;
     unidad: string;
     stock_total: number;
+    precio_alquiler: number;
     activo: boolean;
   };
   

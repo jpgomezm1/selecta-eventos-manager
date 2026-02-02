@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EventoConPersonal } from "@/types/database";
+import { calcularPagoPersonal, getModalidadCobroLabel } from "@/lib/calcularPagoPersonal";
 
 interface LiquidacionDialogProps {
   evento: EventoConPersonal | null;
@@ -351,9 +352,12 @@ export function LiquidacionDialog({ evento, isOpen, onClose, onLiquidationComple
                               )}
                             </td>
                             <td className="px-6 py-4 text-right">
-                              <div className="flex items-center justify-end space-x-1">
-                                <DollarSign className="h-4 w-4 text-selecta-green" />
-                                <span className="font-semibold text-slate-800">{Number(person.tarifa_hora).toLocaleString()}</span>
+                              <div className="flex flex-col items-end">
+                                <div className="flex items-center space-x-1">
+                                  <DollarSign className="h-4 w-4 text-selecta-green" />
+                                  <span className="font-semibold text-slate-800">{Number(person.tarifa_hora).toLocaleString()}</span>
+                                </div>
+                                <span className="text-xs text-slate-500">{getModalidadCobroLabel(person.modalidad_cobro)}</span>
                               </div>
                             </td>
                             <td className="px-6 py-4 text-right">
@@ -409,9 +413,12 @@ export function LiquidacionDialog({ evento, isOpen, onClose, onLiquidationComple
                               </div>
                             </td>
                             <td className="px-6 py-4 text-right">
-                              <div className="flex items-center justify-end space-x-1">
-                                <DollarSign className="h-4 w-4 text-selecta-green" />
-                                <span className="font-semibold text-slate-600">{Number(person.tarifa_hora).toLocaleString()}</span>
+                              <div className="flex flex-col items-end">
+                                <div className="flex items-center space-x-1">
+                                  <DollarSign className="h-4 w-4 text-selecta-green" />
+                                  <span className="font-semibold text-slate-600">{Number(person.tarifa_hora).toLocaleString()}</span>
+                                </div>
+                                <span className="text-xs text-slate-500">{getModalidadCobroLabel(person.modalidad_cobro)}</span>
                               </div>
                             </td>
                             <td className="px-6 py-4 text-right">

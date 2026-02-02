@@ -164,10 +164,10 @@ export function TransporteSelector({
       <Card 
         key={transporte.id} 
         className={cn(
-          "relative transition-all duration-200 hover:shadow-lg group",
+          "relative transition-all duration-200 group",
           "h-full flex flex-col",
-          selected 
-            ? "border-2 border-selecta-green bg-gradient-to-br from-selecta-green/5 to-selecta-green/10 shadow-md" 
+          selected
+            ? "border-2 border-selecta-green bg-selecta-green/5"
             : "border border-slate-200 hover:border-selecta-green/30"
         )}
       >
@@ -215,7 +215,7 @@ export function TransporteSelector({
 
           {/* Precio - Siempre en la misma posición */}
           <div className="mb-4">
-            <div className="flex items-center justify-center p-3 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200">
+            <div className="flex items-center justify-center p-3 bg-slate-50 rounded-xl border border-slate-200">
               <div className="flex items-center space-x-1">
                 <DollarSign className="h-4 w-4 text-selecta-green" />
                 <span className="font-bold text-lg text-selecta-green">
@@ -267,7 +267,7 @@ export function TransporteSelector({
             ) : (
               <Button
                 onClick={() => onAdd(transporte)}
-                className="w-full bg-slate-800 hover:bg-selecta-green transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-md"
+                className="w-full bg-slate-800 hover:bg-selecta-green transition-colors"
                 size="sm"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -392,11 +392,11 @@ export function TransporteSelector({
     <div className="space-y-6">
       {/* Header con resumen */}
       {totalSelected > 0 && (
-        <Card className="bg-gradient-to-r from-green-50 via-emerald-50 to-green-50 border-green-200 shadow-lg">
+        <Card className="bg-green-50 border-green-200">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="p-3 bg-green-500 rounded-2xl shadow-lg">
+                <div className="p-2 bg-green-100 rounded-lg">
                   <Truck className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -553,7 +553,7 @@ export function TransporteSelector({
 
       {/* Mensaje inicial */}
       {totalSelected === 0 && !hasActiveFilters && (
-        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-md">
+        <Card className="bg-blue-50 border-blue-200">
           <CardContent className="p-6 text-center">
             <div className="space-y-3">
               <div className="flex items-center justify-center space-x-2">

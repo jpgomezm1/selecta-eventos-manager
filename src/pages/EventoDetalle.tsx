@@ -1,16 +1,22 @@
-import { useParams, Link } from "react-router-dom";
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { getEventoRequerimiento } from "@/integrations/supabase/apiCotizador";
+import { fetchChecklistData } from "@/integrations/supabase/apiEventoChecklist";
+import { computeChecklist } from "@/lib/eventoChecklist";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, ArrowLeft, Receipt, Users, Truck, UtensilsCrossed, DollarSign, FileText, Sparkles, TrendingUp, CheckCircle, Clock } from "lucide-react";
+import { Calendar, MapPin, ArrowLeft, Users, Truck, UtensilsCrossed, FileText, ShoppingCart, DollarSign, ClipboardList } from "lucide-react";
 import PersonalPanel from "@/components/Eventos/PersonalPanel";
 import MenajePanel from "@/components/Eventos/MenajePanel";
 import TransportePanel from "@/components/Eventos/TransportePanel";
+import OrdenCompraPanel from "@/components/Eventos/OrdenCompraPanel";
+import EventoChecklist from "@/components/Eventos/EventoChecklist";
+import CierreEventoPanel from "@/components/Eventos/CierreEventoPanel";
 
 type EventoHead = {
   id: string;
@@ -40,7 +46,6 @@ async function getEventoHead(id: string): Promise<EventoHead> {
 
   if (error) throw error;
 
-  // Extraer información de la cotización si existe
   const cotizacionInfo = data.cotizacion_versiones?.cotizaciones;
   const ubicacionEvento = cotizacionInfo?.ubicacion_evento || data.ubicacion;
   const comercialEncargado = cotizacionInfo?.comercial_encargado;
@@ -54,6 +59,8 @@ async function getEventoHead(id: string): Promise<EventoHead> {
 
 export default function EventoDetallePage() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("requerimientos");
 
   const { data: head, isLoading: loadingHead, error: errorHead } = useQuery({
     queryKey: ["evento-head", id],
@@ -61,40 +68,29 @@ export default function EventoDetallePage() {
     enabled: !!id,
   });
 
-  const {
-    data: req,
-    isLoading: loadingReq,
-    error: errorReq,
-  } = useQuery({
+  const { data: req, isLoading: loadingReq, error: errorReq } = useQuery({
     queryKey: ["evento-requerimiento", id],
     queryFn: () => getEventoRequerimiento(id!),
     enabled: !!id,
   });
+
+  const { data: checklistData, refetch: refetchChecklist } = useQuery({
+    queryKey: ["evento-checklist", id],
+    queryFn: () => fetchChecklistData(id!),
+    enabled: !!id,
+  });
+
+  const checklist = checklistData ? computeChecklist(checklistData) : null;
 
   const isLoading = loadingHead || loadingReq;
   const hasError = errorHead || errorReq;
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 relative overflow-hidden">
-        {/* Elementos decorativos de fondo */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-selecta-green/8 to-primary/8 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-blue-100/30 to-selecta-green/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        </div>
-        
-        <div className="relative z-10 container mx-auto px-4 py-8">
-          <Card className="bg-white/70 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl">
-            <CardContent className="p-12 text-center">
-              <div className="w-20 h-20 bg-gradient-to-r from-selecta-green to-primary rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl animate-bounce">
-                <Calendar className="h-10 w-10 text-white animate-pulse" />
-              </div>
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-selecta-green to-primary bg-clip-text text-transparent mb-3">
-                Cargando Evento
-              </h3>
-              <p className="text-slate-600 text-lg">Obteniendo detalles del evento...</p>
-            </CardContent>
-          </Card>
+      <div className="flex items-center justify-center h-64">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-slate-200 border-t-selecta-green rounded-full animate-spin"></div>
+          <p className="text-sm text-slate-500">Cargando evento...</p>
         </div>
       </div>
     );
@@ -102,27 +98,16 @@ export default function EventoDetallePage() {
 
   if (hasError || !head || !req) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 relative overflow-hidden">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-red-100/20 to-orange-100/20 rounded-full blur-3xl"></div>
+      <div className="flex flex-col items-center justify-center h-64">
+        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+          <FileText className="h-6 w-6 text-slate-400" />
         </div>
-        
-        <div className="relative z-10 container mx-auto px-4 py-8">
-          <Card className="bg-white/70 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl">
-            <CardContent className="p-12 text-center">
-              <div className="w-20 h-20 bg-gradient-to-r from-red-500 to-orange-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl">
-                <FileText className="h-10 w-10 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-red-600 mb-3">Error al cargar evento</h3>
-              <p className="text-slate-600 mb-6">No se pudo obtener la información del evento solicitado</p>
-              <Link to="/eventos">
-                <Button className="bg-gradient-to-r from-selecta-green to-primary hover:shadow-xl transition-all duration-300 rounded-2xl">
-                  Volver a Eventos
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
+        <p className="text-slate-900 font-medium">Error al cargar evento</p>
+        <p className="text-slate-500 text-sm mt-1 mb-4">No se pudo obtener la información del evento</p>
+        <Button onClick={() => navigate("/eventos")} variant="outline" size="sm">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Volver a Eventos
+        </Button>
       </div>
     );
   }
@@ -130,267 +115,214 @@ export default function EventoDetallePage() {
   const totalRequerimiento =
     req.platos.reduce((a, x) => a + x.subtotal, 0) +
     req.personal.reduce((a, x) => a + x.subtotal, 0) +
-    req.transportes.reduce((a, x) => a + x.subtotal, 0);
+    req.transportes.reduce((a, x) => a + x.subtotal, 0) +
+    (req.menaje ?? []).reduce((a, x) => a + x.subtotal, 0);
 
   const getEventStatus = (fechaEvento: string) => {
     const eventDate = new Date(fechaEvento);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     eventDate.setHours(0, 0, 0, 0);
-
-    if (eventDate < today) return { status: "Pasado", variant: "bg-gradient-to-r from-slate-50 to-slate-100 text-slate-700 border-slate-200", icon: <Clock className="h-3 w-3 mr-1" /> };
-    if (eventDate.getTime() === today.getTime()) return { status: "Hoy", variant: "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-200 animate-pulse", icon: <Sparkles className="h-3 w-3 mr-1" /> };
-    return { status: "Próximo", variant: "bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-200", icon: <TrendingUp className="h-3 w-3 mr-1" /> };
+    if (eventDate < today) return { status: "Pasado", className: "bg-slate-100 text-slate-700" };
+    if (eventDate.getTime() === today.getTime()) return { status: "Hoy", className: "bg-blue-50 text-blue-700" };
+    return { status: "Próximo", className: "bg-emerald-50 text-emerald-700" };
   };
 
   const eventStatus = getEventStatus(head.fecha_evento);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 relative overflow-hidden">
-      {/* Elementos decorativos de fondo */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-selecta-green/8 to-primary/8 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-blue-100/30 to-selecta-green/10 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/3 right-1/4 w-32 h-32 bg-gradient-to-r from-purple-100/40 to-pink-100/40 rounded-full blur-2xl"></div>
-      </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-start gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/eventos")} className="h-8 w-8 p-0 mt-1">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
 
-      <div className="relative z-10 container mx-auto px-4 py-8 space-y-8 max-w-7xl">
-        {/* Header premium */}
-        <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
-          <div className="flex items-start gap-4 flex-1">
-            <Link to="/eventos">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="bg-white/70 backdrop-blur-sm shadow-lg border-white/30 rounded-2xl hover:bg-white/90 hover:scale-110 transition-all duration-200"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            
-            <div className="flex-1">
-              <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-selecta-green to-primary bg-clip-text text-transparent mb-3">
-                {head.nombre_evento}
-              </h1>
-              
-              <div className="flex flex-wrap items-center gap-4 mb-4">
-                <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-2 shadow-sm border border-white/30">
-                  <Calendar className="h-5 w-5 text-selecta-green" />
-                  <span className="font-semibold text-slate-700">
-                    {new Date(head.fecha_evento).toLocaleDateString('es-CO', { 
-                      weekday: 'long', 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
-                  </span>
-                </div>
-                
-                <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-2 shadow-sm border border-white/30">
-                  <MapPin className="h-5 w-5 text-selecta-green" />
-                  <span className="font-semibold text-slate-700">{head.ubicacion || "Sin ubicación"}</span>
-                </div>
-
-                {head.comercial_encargado && (
-                  <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-2 shadow-sm border border-white/30">
-                    <Users className="h-5 w-5 text-primary" />
-                    <span className="font-semibold text-slate-700">Comercial: {head.comercial_encargado}</span>
+          <div className="flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-semibold text-slate-900">{head.nombre_evento}</h1>
+                <div className="flex flex-wrap items-center gap-3 mt-2">
+                  <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                    <Calendar className="h-4 w-4 text-slate-400" />
+                    <span>
+                      {new Date(head.fecha_evento).toLocaleDateString('es-CO', {
+                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                      })}
+                    </span>
                   </div>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <Badge className={`${eventStatus.variant} border font-semibold px-3 py-1 shadow-sm`}>
-                  {eventStatus.icon}
-                  {eventStatus.status}
-                </Badge>
-                
-                <Badge className={head.estado_liquidacion === "liquidado" 
-                  ? "bg-gradient-to-r from-green-50 to-green-100 text-green-700 border-green-200 shadow-sm font-semibold px-3 py-1"
-                  : "bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 border-orange-200 shadow-sm font-semibold px-3 py-1"
-                }>
-                  {head.estado_liquidacion === "liquidado" ? (
-                    <>
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Liquidado
-                    </>
-                  ) : (
-                    <>
-                      <Clock className="h-3 w-3 mr-1" />
-                      Pendiente
-                    </>
+                  <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                    <MapPin className="h-4 w-4 text-slate-400" />
+                    <span>{head.ubicacion || "Sin ubicación"}</span>
+                  </div>
+                  {head.comercial_encargado && (
+                    <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                      <Users className="h-4 w-4 text-slate-400" />
+                      <span>{head.comercial_encargado}</span>
+                    </div>
                   )}
-                </Badge>
-
-                {head.cotizacion_version_id && (
-                  <Badge className="bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 border-purple-200 shadow-sm font-semibold px-3 py-1">
-                    <Receipt className="h-3 w-3 mr-1" />
-                    Con Cotización
-                  </Badge>
-                )}
-              </div>
-
-              {head.descripcion && (
-                <div className="mt-4 p-4 bg-white/60 backdrop-blur-sm rounded-2xl border border-white/30 shadow-sm">
-                  <p className="text-slate-700 leading-relaxed">{head.descripcion}</p>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Stats rápidas */}
-          <div className="flex items-center space-x-4">
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white/30 shadow-lg text-center">
-              <div className="text-2xl font-bold bg-gradient-to-r from-selecta-green to-primary bg-clip-text text-transparent">
-                ${totalRequerimiento.toLocaleString()}
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  <Badge variant="secondary" className={eventStatus.className}>{eventStatus.status}</Badge>
+                  <Badge variant="secondary" className={head.estado_liquidacion === "liquidado" ? "bg-emerald-50 text-emerald-700" : "bg-orange-50 text-orange-700"}>
+                    {head.estado_liquidacion === "liquidado" ? "Liquidado" : "Pendiente"}
+                  </Badge>
+                </div>
               </div>
-              <div className="text-xs text-slate-600 font-semibold">Presupuesto Estimado</div>
+
+              <div className="text-right">
+                <p className="text-xs text-slate-500">Presupuesto Estimado</p>
+                <p className="text-2xl font-semibold text-slate-900">${totalRequerimiento.toLocaleString()}</p>
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Sección REQUERIMIENTO */}
-        <Card className="bg-white/70 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl overflow-hidden">
-          <CardHeader className="bg-gradient-to-r from-slate-50/50 to-white/50 backdrop-blur-sm border-b border-slate-200/30">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-              <CardTitle className="text-xl font-bold text-slate-800">Requerimiento del Evento</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="p-6 space-y-8">
-            {/* PLATOS */}
-            <SeccionTabla
-              titulo="Menú y Platos"
-              emptyHint="Este evento no tiene platos definidos en el requerimiento."
-              icon={<UtensilsCrossed className="h-5 w-5 text-orange-600" />}
-              rows={req.platos.map((p) => ({
-                nombre: p.nombre,
-                precio: p.precio_unitario,
-                cantidad: p.cantidad,
-                subtotal: p.subtotal,
-              }))}
-            />
-
-            <Separator className="my-6" />
-
-            {/* PERSONAL */}
-            <SeccionTabla
-              titulo="Personal Requerido"
-              emptyHint="No se definió personal en la cotización original."
-              icon={<Users className="h-5 w-5 text-blue-600" />}
-              rows={req.personal.map((p) => ({
-                nombre: p.rol,
-                precio: p.tarifa_estimada_por_persona,
-                cantidad: p.cantidad,
-                subtotal: p.subtotal,
-              }))}
-            />
-
-            <Separator className="my-6" />
-
-            {/* TRANSPORTE */}
-            <SeccionTabla
-              titulo="Logística y Transporte"
-              emptyHint="No se definió transporte en la cotización original."
-              icon={<Truck className="h-5 w-5 text-green-600" />}
-              rows={req.transportes.map((t) => ({
-                nombre: t.lugar,
-                precio: t.tarifa_unitaria,
-                cantidad: t.cantidad,
-                subtotal: t.subtotal,
-              }))}
-            />
-
-            {/* Total premium */}
-            <div className="flex justify-end pt-6">
-              <Card className="bg-gradient-to-r from-emerald-50/80 to-green-50/80 backdrop-blur-sm border-emerald-200/60 rounded-2xl shadow-lg">
-                <CardContent className="p-6 text-right">
-                  <div className="text-sm text-emerald-700 font-semibold mb-1">Total Estimado (Requerimiento)</div>
-                  <div className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
-                    ${totalRequerimiento.toLocaleString()}
-                  </div>
-                  <div className="text-xs text-emerald-600 mt-1">Basado en cotización original</div>
-                </CardContent>
-              </Card>
-            </div>
-          </CardContent>
+      {/* Checklist */}
+      {checklist && (
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <ClipboardList className="h-5 w-5 text-slate-600" />
+            <h2 className="font-semibold text-slate-900">Progreso del Evento</h2>
+          </div>
+          <EventoChecklist checklist={checklist} onItemClick={(tab) => setActiveTab(tab)} />
         </Card>
+      )}
 
-        {/* PANELES DE GESTIÓN - Layout horizontal en una sola fila */}
-        <div className="space-y-6">
-          {/* Panel Personal - Ocupa todo el ancho */}
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-slate-100 p-1 rounded-lg">
+          <TabsTrigger value="requerimientos" className="flex-1 min-w-[120px] text-xs sm:text-sm">
+            <FileText className="h-3.5 w-3.5 mr-1.5" />
+            Requerimientos
+          </TabsTrigger>
+          <TabsTrigger value="personal" className="flex-1 min-w-[100px] text-xs sm:text-sm">
+            <Users className="h-3.5 w-3.5 mr-1.5" />
+            Personal
+          </TabsTrigger>
+          <TabsTrigger value="menaje" className="flex-1 min-w-[90px] text-xs sm:text-sm">
+            <UtensilsCrossed className="h-3.5 w-3.5 mr-1.5" />
+            Menaje
+          </TabsTrigger>
+          <TabsTrigger value="compras" className="flex-1 min-w-[90px] text-xs sm:text-sm">
+            <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />
+            Compras
+          </TabsTrigger>
+          <TabsTrigger value="transporte" className="flex-1 min-w-[100px] text-xs sm:text-sm">
+            <Truck className="h-3.5 w-3.5 mr-1.5" />
+            Transporte
+          </TabsTrigger>
+          <TabsTrigger value="financiero" className="flex-1 min-w-[100px] text-xs sm:text-sm">
+            <DollarSign className="h-3.5 w-3.5 mr-1.5" />
+            Financiero
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab: Requerimientos */}
+        <TabsContent value="requerimientos" className="mt-4">
+          <Card>
+            <div className="p-4 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-slate-600" />
+                <h2 className="font-semibold text-slate-900">Requerimiento del Evento</h2>
+              </div>
+            </div>
+            <div className="p-4 space-y-6">
+              <SeccionTabla
+                titulo="Menú y Platos"
+                emptyHint="Este evento no tiene platos definidos en el requerimiento."
+                icon={<UtensilsCrossed className="h-4 w-4 text-orange-600" />}
+                rows={req.platos.map((p) => ({ nombre: p.nombre, precio: p.precio_unitario, cantidad: p.cantidad, subtotal: p.subtotal }))}
+              />
+              <SeccionTabla
+                titulo="Personal Requerido"
+                emptyHint="No se definió personal en la cotización original."
+                icon={<Users className="h-4 w-4 text-blue-600" />}
+                rows={req.personal.map((p) => ({ nombre: p.rol, precio: p.tarifa_estimada_por_persona, cantidad: p.cantidad, subtotal: p.subtotal }))}
+              />
+              <SeccionTabla
+                titulo="Logística y Transporte"
+                emptyHint="No se definió transporte en la cotización original."
+                icon={<Truck className="h-4 w-4 text-green-600" />}
+                rows={req.transportes.map((t) => ({ nombre: t.lugar, precio: t.tarifa_unitaria, cantidad: t.cantidad, subtotal: t.subtotal }))}
+              />
+              <SeccionTabla
+                titulo="Menaje"
+                emptyHint="No se definió menaje en la cotización original."
+                icon={<UtensilsCrossed className="h-4 w-4 text-purple-600" />}
+                rows={(req.menaje ?? []).map((m) => ({ nombre: m.nombre, precio: m.precio_alquiler, cantidad: m.cantidad, subtotal: m.subtotal }))}
+              />
+              <div className="flex justify-end pt-4 border-t border-slate-200">
+                <div className="bg-emerald-50 rounded-lg p-4 text-right">
+                  <p className="text-xs text-emerald-600 mb-1">Total Estimado</p>
+                  <p className="text-2xl font-semibold text-emerald-700">${totalRequerimiento.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* Tab: Personal */}
+        <TabsContent value="personal" className="mt-4">
           <PersonalPanel
             eventoId={head.id}
             fechaEvento={head.fecha_evento}
             estadoLiquidacion={head.estado_liquidacion}
           />
+        </TabsContent>
 
-          {/* Panel Menaje - Ocupa todo el ancho */}
-          <MenajePanel
-            eventoId={head.id}
-            fechaEvento={head.fecha_evento}
-          />
+        {/* Tab: Menaje */}
+        <TabsContent value="menaje" className="mt-4">
+          <MenajePanel eventoId={head.id} fechaEvento={head.fecha_evento} />
+        </TabsContent>
 
-          {/* Layout para Transporte + Info origen en dos columnas solo en pantallas grandes */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Panel Transporte - Ocupa 2 columnas */}
-            <div className="lg:col-span-2">
-              <TransportePanel eventoId={head.id} />
+        {/* Tab: Compras */}
+        <TabsContent value="compras" className="mt-4">
+          <Card>
+            <div className="p-4 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5 text-slate-600" />
+                <h2 className="font-semibold text-slate-900">Orden de Compra</h2>
+              </div>
             </div>
+            <div className="p-4">
+              <OrdenCompraPanel eventoId={head.id} onChanged={() => refetchChecklist()} />
+            </div>
+          </Card>
+        </TabsContent>
 
-            {/* Información de origen - Ocupa 1 columna */}
-            <div className="lg:col-span-1">
-              {head.cotizacion_version_id && (
-                <Card className="bg-gradient-to-r from-purple-50/80 to-purple-100/80 backdrop-blur-sm border-purple-200/60 rounded-3xl shadow-lg h-fit">
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                        <Receipt className="h-4 w-4 text-white" />
-                      </div>
-                      <h4 className="font-bold text-purple-800">Información de Origen</h4>
-                    </div>
-                    <p className="text-sm text-purple-700 leading-relaxed mb-3">
-                      Este evento fue generado desde una cotización aprobada
-                    </p>
-                    <div className="p-3 bg-white/60 rounded-xl border border-purple-200/50">
-                      <code className="text-sm font-mono text-purple-800 break-all">{head.cotizacion_version_id}</code>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* Tab: Transporte */}
+        <TabsContent value="transporte" className="mt-4">
+          <TransportePanel eventoId={head.id} />
+        </TabsContent>
 
-        {/* Footer informativo */}
-        <div className="text-center pt-8">
-          <div className="inline-flex items-center justify-center space-x-4 bg-white/60 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg border border-white/30">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium text-slate-600">Gestión integral de eventos</span>
+        {/* Tab: Financiero */}
+        <TabsContent value="financiero" className="mt-4">
+          <Card>
+            <div className="p-4 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-slate-600" />
+                <h2 className="font-semibold text-slate-900">Cierre Financiero</h2>
+              </div>
             </div>
-            <div className="w-px h-4 bg-slate-300"></div>
-            <div className="flex items-center space-x-2">
-              <Calendar className="h-4 w-4 text-slate-500" />
-              <span className="text-sm text-slate-500">
-                Actualizado: {new Date().toLocaleTimeString('es-CO', { 
-                  hour: '2-digit', 
-                  minute: '2-digit',
-                  hour12: true 
-                })}
-              </span>
+            <div className="p-4">
+              <CierreEventoPanel
+                eventoId={head.id}
+                totalRequerimiento={totalRequerimiento}
+                estadoLiquidacion={head.estado_liquidacion}
+              />
             </div>
-          </div>
-        </div>
-      </div>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
 
-/** =======================
- *   SUB-COMPONENTES UI MEJORADOS
+/* =======================
+ *   SUB-COMPONENTES
  *  ======================= */
 
 function SeccionTabla({
@@ -405,60 +337,43 @@ function SeccionTabla({
   rows: Array<{ nombre: string; precio: number; cantidad: number; subtotal: number }>;
 }) {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center space-x-3">
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
         {icon}
-        <h3 className="text-lg font-bold text-slate-800">{titulo}</h3>
-        <Badge className="bg-slate-100 text-slate-700 border-slate-200 text-xs font-semibold">
-          {rows.length} items
-        </Badge>
+        <h3 className="font-medium text-slate-900">{titulo}</h3>
+        <Badge variant="secondary" className="bg-slate-100 text-slate-600 text-xs">{rows.length}</Badge>
       </div>
-      
+
       {rows.length === 0 ? (
-        <Card className="bg-gradient-to-r from-slate-50/80 to-white/80 backdrop-blur-sm border-slate-200/60 rounded-2xl">
-          <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 bg-gradient-to-r from-slate-100 to-slate-200 rounded-3xl flex items-center justify-center mx-auto mb-4">
-              {icon}
-            </div>
-            <p className="text-sm text-slate-500 font-medium">{emptyHint}</p>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col items-center justify-center py-8 bg-slate-50 rounded-lg">
+          <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mb-3">{icon}</div>
+          <p className="text-sm text-slate-500">{emptyHint}</p>
+        </div>
       ) : (
-        <Card className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 overflow-hidden">
+        <div className="border border-slate-200 rounded-lg overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="bg-gradient-to-r from-slate-50/80 to-slate-100/80 border-b border-slate-200/60">
-                <TableHead className="font-bold text-slate-800">Item</TableHead>
-                <TableHead className="text-right font-bold text-slate-800">Precio Unit.</TableHead>
-                <TableHead className="text-center font-bold text-slate-800">Cant.</TableHead>
-                <TableHead className="text-right font-bold text-slate-800">Subtotal</TableHead>
+              <TableRow className="bg-slate-50 hover:bg-slate-50">
+                <TableHead className="font-medium">Item</TableHead>
+                <TableHead className="text-right font-medium">Precio Unit.</TableHead>
+                <TableHead className="text-center font-medium">Cant.</TableHead>
+                <TableHead className="text-right font-medium">Subtotal</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((r, i) => (
-                <TableRow key={i} className="hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-slate-100/50 transition-all duration-200">
-                  <TableCell className="font-semibold text-slate-800">{r.nombre}</TableCell>
-                  <TableCell className="text-right text-slate-700 font-medium">
-                    <div className="flex items-center justify-end space-x-1">
-                      <DollarSign className="h-3 w-3 text-selecta-green" />
-                      <span>{r.precio.toLocaleString()}</span>
-                    </div>
-                  </TableCell>
+                <TableRow key={i}>
+                  <TableCell className="font-medium text-slate-900">{r.nombre}</TableCell>
+                  <TableCell className="text-right text-slate-600">${r.precio.toLocaleString()}</TableCell>
                   <TableCell className="text-center">
-                    <Badge className="bg-blue-50 text-blue-700 border-blue-200 font-semibold">
-                      {r.cantidad}
-                    </Badge>
+                    <Badge variant="secondary" className="bg-blue-50 text-blue-700">{r.cantidad}</Badge>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <div className="bg-gradient-to-r from-emerald-50 to-green-50 px-3 py-1 rounded-xl border border-emerald-200/60">
-                      <span className="font-bold text-emerald-700">${r.subtotal.toLocaleString()}</span>
-                    </div>
-                  </TableCell>
+                  <TableCell className="text-right font-medium text-slate-900">${r.subtotal.toLocaleString()}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </Card>
+        </div>
       )}
     </div>
   );

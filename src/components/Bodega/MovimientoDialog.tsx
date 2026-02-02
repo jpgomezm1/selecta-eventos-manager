@@ -65,13 +65,13 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
         <DialogHeader className="border-b border-slate-200 pb-4">
           <DialogTitle className="flex items-center space-x-3">
             <div className={cn(
-              "p-2 rounded-xl",
-              mov.tipo === "ingreso" ? "bg-green-500" : "bg-red-500"
+              "p-2 rounded-lg",
+              mov.tipo === "ingreso" ? "bg-green-100" : "bg-red-100"
             )}>
               {mov.tipo === "ingreso" ? (
-                <ArrowUp className="h-5 w-5 text-white" />
+                <ArrowUp className="h-5 w-5 text-green-600" />
               ) : (
-                <ArrowDown className="h-5 w-5 text-white" />
+                <ArrowDown className="h-5 w-5 text-red-600" />
               )}
             </div>
             <div>
@@ -87,7 +87,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
 
         <div className="flex-1 overflow-y-auto space-y-6 p-1">
           {/* Información general */}
-          <Card className="bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200">
+          <Card className="border-slate-200">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center space-x-2 text-slate-800">
                 <Calendar className="h-4 w-4" />
@@ -365,7 +365,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
             <Button 
               onClick={() => onSave(mov, items)}
               disabled={!isValid}
-              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Save className="h-4 w-4 mr-2" />
               Guardar Movimiento

@@ -132,11 +132,11 @@ export default function ReservasCalendar() {
     <div className="space-y-6">
       {/* Estadísticas del período */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+        <Card className="bg-blue-50 border-blue-200">
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-500 rounded-xl">
-                <CalendarIcon className="h-5 w-5 text-white" />
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <CalendarIcon className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-blue-800">{stats.totalReservas}</div>
@@ -146,11 +146,11 @@ export default function ReservasCalendar() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-emerald-50 to-green-100 border-emerald-200">
+        <Card className="bg-emerald-50 border-emerald-200">
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-emerald-500 rounded-xl">
-                <Clock className="h-5 w-5 text-white" />
+              <div className="p-2 bg-emerald-100 rounded-lg">
+                <Clock className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-emerald-800">{stats.eventosActivos}</div>
@@ -160,11 +160,11 @@ export default function ReservasCalendar() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-purple-50 to-violet-100 border-purple-200">
+        <Card className="bg-purple-50 border-purple-200">
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-purple-500 rounded-xl">
-                <Package className="h-5 w-5 text-white" />
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Package className="h-5 w-5 text-purple-600" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-purple-800">{stats.totalItems}</div>
@@ -176,7 +176,7 @@ export default function ReservasCalendar() {
       </div>
 
       {/* Leyenda de colores */}
-      <Card className="bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200">
+      <Card className="bg-slate-50 border-slate-200">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -204,7 +204,7 @@ export default function ReservasCalendar() {
 
       {/* Calendario */}
       <Card className="bg-white border-slate-200 overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200 pb-4">
+        <CardHeader className="bg-slate-50 border-b border-slate-200 pb-4">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center space-x-2 text-slate-800">
               <CalendarIcon className="h-5 w-5" />
@@ -217,7 +217,7 @@ export default function ReservasCalendar() {
               </Badge>
               {isLoading && (
                 <div className="flex items-center space-x-2 text-sm text-slate-500">
-                  <div className="animate-spin w-4 h-4 border-2 border-slate-300 border-t-slate-500 rounded-full" />
+                  <div className="animate-spin w-4 h-4 border-2 border-slate-200 border-t-selecta-green rounded-full" />
                   <span>Cargando...</span>
                 </div>
               )}
@@ -296,7 +296,7 @@ export default function ReservasCalendar() {
 
       {/* Información adicional */}
       {!isLoading && reservas && reservas.length === 0 && (
-        <Card className="bg-gradient-to-r from-amber-50 to-orange-100 border-amber-200">
+        <Card className="bg-amber-50 border-amber-200">
           <CardContent className="p-6 text-center">
             <div className="flex flex-col items-center space-y-3">
               <AlertCircle className="h-12 w-12 text-amber-500" />

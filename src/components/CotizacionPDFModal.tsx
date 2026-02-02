@@ -72,11 +72,11 @@ export default function CotizacionPDFModal({
       <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden">
         <DialogHeader className="space-y-4 pb-6">
           <div className="flex items-center space-x-3">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
-              <FileText className="h-6 w-6 text-white" />
+            <div className="p-2 bg-slate-100 rounded-lg">
+              <FileText className="h-5 w-5 text-slate-700" />
             </div>
             <div>
-              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+              <DialogTitle className="text-xl font-semibold text-slate-900">
                 Generar Propuesta Selecta
               </DialogTitle>
               <p className="text-slate-600 font-medium">{cotizacionName}</p>
@@ -84,7 +84,7 @@ export default function CotizacionPDFModal({
           </div>
 
           {/* Controles de selección */}
-          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-2xl border border-slate-200">
+          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-200">
             <div className="flex items-center space-x-4">
               <Button
                 variant="outline"
@@ -119,9 +119,9 @@ export default function CotizacionPDFModal({
             return (
               <Card
                 key={version.id}
-                className={`transition-all duration-300 cursor-pointer hover:shadow-lg ${
+                className={`transition-all cursor-pointer ${
                   isSelected
-                    ? 'ring-2 ring-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
+                    ? 'ring-2 ring-blue-500 bg-blue-50 border-blue-200'
                     : 'hover:shadow-md border-slate-200'
                 }`}
                 onClick={() => toggleVersion(version.id)}
@@ -137,12 +137,12 @@ export default function CotizacionPDFModal({
 
                       <div className="flex items-center space-x-3">
                         {version.is_definitiva ? (
-                          <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-md">
-                            <Star className="h-5 w-5 text-white" />
+                          <div className="p-2 bg-green-100 rounded-lg">
+                            <Star className="h-5 w-5 text-green-600" />
                           </div>
                         ) : (
-                          <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl shadow-md">
-                            <Clock className="h-5 w-5 text-white" />
+                          <div className="p-2 bg-orange-100 rounded-lg">
+                            <Clock className="h-5 w-5 text-orange-600" />
                           </div>
                         )}
 
@@ -151,7 +151,7 @@ export default function CotizacionPDFModal({
                             {version.nombre_opcion}
                           </h3>
                           {version.is_definitiva && (
-                            <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-none">
+                            <Badge className="bg-green-50 text-green-700 border-green-200">
                               <Sparkles className="h-3 w-3 mr-1" />
                               Definitiva
                             </Badge>
@@ -161,7 +161,7 @@ export default function CotizacionPDFModal({
                     </div>
 
                     <div className="text-right">
-                      <div className="text-2xl font-bold bg-gradient-to-r from-selecta-green to-emerald-600 bg-clip-text text-transparent">
+                      <div className="text-emerald-600 font-bold text-xl">
                         {new Intl.NumberFormat('es-CO', {
                           style: 'currency',
                           currency: 'COP',
@@ -214,7 +214,7 @@ export default function CotizacionPDFModal({
             <Button
               onClick={handleDownload}
               disabled={selectedVersions.length === 0 || isGenerating}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl px-8 py-2 shadow-lg hover:shadow-xl transition-all duration-300"
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-8 py-2"
             >
               {isGenerating ? (
                 <>

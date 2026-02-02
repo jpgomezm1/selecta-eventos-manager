@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import type { PersonalCosto } from "@/types/cotizador";
+import type { PersonalCosto, PersonalAsignacion } from "@/types/cotizador";
+import { PersonalAsignacionPopover } from "@/components/Cotizador/PersonalAsignacionPopover";
 import { 
   Users, 
   Plus, 
@@ -33,10 +34,11 @@ import { cn } from "@/lib/utils";
 type Props = {
   data: PersonalCosto[];
   onAdd: (p: PersonalCosto) => void;
-  itemsSeleccionados: { personal_costo_id: string; cantidad: number }[];
+  itemsSeleccionados: { personal_costo_id: string; cantidad: number; asignados?: PersonalAsignacion[] }[];
   onQtyChange: (id: string, qty: number) => void;
   invitados: number;
   viewMode?: "grid" | "list";
+  onToggleAsignacion?: (costoId: string, persona: PersonalAsignacion) => void;
 };
 
 const ROLES_CONFIG: Record<string, { 
@@ -109,19 +111,21 @@ const CATEGORIES = [
   { key: "otro", label: "Otros", icon: Target },
 ] as const;
 
-export function PersonalSelector({ 
-  data, 
-  onAdd, 
-  itemsSeleccionados, 
-  onQtyChange, 
+export function PersonalSelector({
+  data,
+  onAdd,
+  itemsSeleccionados,
+  onQtyChange,
   invitados,
-  viewMode = "grid" 
+  viewMode = "grid",
+  onToggleAsignacion,
 }: Props) {
   const [q, setQ] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("todos");
   const [showSuggestions, setShowSuggestions] = useState(true);
 
   const getQty = (id: string) => itemsSeleccionados.find((x) => x.personal_costo_id === id)?.cantidad ?? 0;
+  const getAsignados = (id: string) => itemsSeleccionados.find((x) => x.personal_costo_id === id)?.asignados ?? [];
   const isSelected = (id: string) => getQty(id) > 0;
 
   // Calcular sugerencias inteligentes
@@ -196,9 +200,9 @@ export function PersonalSelector({
       <Card 
         key={person.id} 
         className={cn(
-          "group relative overflow-hidden transition-all duration-300 hover:shadow-lg border-2",
-          selected 
-            ? "border-selecta-green bg-selecta-green/5 shadow-md" 
+          "group relative overflow-hidden transition-all duration-300 border-2",
+          selected
+            ? "border-selecta-green bg-selecta-green/5"
             : "border-slate-200 hover:border-slate-300"
         )}
       >
@@ -214,7 +218,7 @@ export function PersonalSelector({
 
         {/* Badge de seleccionado */}
         {selected && (
-          <div className="absolute top-3 right-3 z-10 bg-selecta-green text-white rounded-full p-1.5 shadow-lg">
+          <div className="absolute top-3 right-3 z-10 bg-selecta-green text-white rounded-full p-1.5">
             <CheckCircle2 className="h-3 w-3" />
           </div>
         )}
@@ -222,7 +226,7 @@ export function PersonalSelector({
         <CardHeader className="pb-3">
           <div className="flex items-center space-x-3">
             <div className={cn(
-              "p-3 rounded-xl shadow-sm",
+              "p-3 rounded-xl",
               `bg-${config.color}-100`
             )}>
               <Icon className={cn("h-5 w-5", `text-${config.color}-600`)} />
@@ -324,6 +328,27 @@ export function PersonalSelector({
               </span>
             </div>
           )}
+
+          {/* Asignación de personal */}
+          {qty > 0 && onToggleAsignacion && (
+            <div className="space-y-2">
+              <PersonalAsignacionPopover
+                rol={person.rol}
+                asignados={getAsignados(person.id)}
+                onToggle={(persona) => onToggleAsignacion(person.id, persona)}
+                max={qty}
+              />
+              {getAsignados(person.id).length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {getAsignados(person.id).map((a) => (
+                    <Badge key={a.personal_id} variant="secondary" className="text-xs">
+                      {a.nombre_completo}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -423,6 +448,27 @@ export function PersonalSelector({
               </div>
             </div>
           </div>
+
+          {/* Asignación de personal en vista lista */}
+          {qty > 0 && onToggleAsignacion && (
+            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100">
+              <PersonalAsignacionPopover
+                rol={person.rol}
+                asignados={getAsignados(person.id)}
+                onToggle={(persona) => onToggleAsignacion(person.id, persona)}
+                max={qty}
+              />
+              {getAsignados(person.id).length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {getAsignados(person.id).map((a) => (
+                    <Badge key={a.personal_id} variant="secondary" className="text-xs">
+                      {a.nombre_completo}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -431,11 +477,11 @@ export function PersonalSelector({
   return (
     <div className="space-y-6">
       {/* Header con estadísticas */}
-      <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+      <Card className="bg-blue-50 border-blue-200">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
-              <div className="p-3 bg-blue-500 rounded-2xl shadow-lg">
+              <div className="p-2 bg-blue-100 rounded-lg">
                 <Users className="h-6 w-6 text-white" />
               </div>
               <div>
@@ -484,10 +530,10 @@ export function PersonalSelector({
 
       {/* Sugerencias inteligentes */}
       {showSuggestions && invitados > 0 && Object.keys(suggestions).length > 0 && (
-        <Card className="bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200">
+        <Card className="bg-amber-50 border-amber-200">
           <CardContent className="p-6">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="p-2 bg-amber-500 rounded-xl">
+              <div className="p-2 bg-amber-100 rounded-lg">
                 <Calculator className="h-5 w-5 text-white" />
               </div>
               <div>
