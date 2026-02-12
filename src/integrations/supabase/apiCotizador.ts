@@ -182,6 +182,12 @@ export async function createCotizacionWithVersions(payload: CotizacionWithVersio
       comercial_encargado: payload.cotizacion.comercial_encargado,
       total_cotizado: payload.cotizacion.total_cotizado,
       estado: payload.cotizacion.estado,
+      contacto_telefono: payload.cotizacion.contacto_telefono || null,
+      contacto_correo: payload.cotizacion.contacto_correo || null,
+      hora_inicio: payload.cotizacion.hora_inicio || null,
+      hora_fin: payload.cotizacion.hora_fin || null,
+      hora_montaje_inicio: payload.cotizacion.hora_montaje_inicio || null,
+      hora_montaje_fin: payload.cotizacion.hora_montaje_fin || null,
     })
     .select("id")
     .single();
@@ -873,11 +879,24 @@ export function convertirAUnidadBase(
   presentacionUnidad: string,
   unidadBase: string
 ): number {
-  // kg → gr
-  if (presentacionUnidad === "kg" && unidadBase === "gr") return presentacionCantidad * 1000;
-  // lt → ml
-  if (presentacionUnidad === "lt" && unidadBase === "ml") return presentacionCantidad * 1000;
-  // misma unidad
+  if (presentacionUnidad === unidadBase) return presentacionCantidad;
+
+  // Conversiones de peso → gr como pivot
+  const pesoAGr: Record<string, number> = { gr: 1, kg: 1000, lb: 453.592, oz: 28.3495 };
+  // Conversiones de volumen → ml como pivot
+  const volAMl: Record<string, number> = { ml: 1, lt: 1000 };
+
+  if (pesoAGr[presentacionUnidad] && pesoAGr[unidadBase]) {
+    const enGr = presentacionCantidad * pesoAGr[presentacionUnidad];
+    return enGr / pesoAGr[unidadBase];
+  }
+
+  if (volAMl[presentacionUnidad] && volAMl[unidadBase]) {
+    const enMl = presentacionCantidad * volAMl[presentacionUnidad];
+    return enMl / volAMl[unidadBase];
+  }
+
+  // Unidades incompatibles o und → devolver sin convertir
   return presentacionCantidad;
 }
 

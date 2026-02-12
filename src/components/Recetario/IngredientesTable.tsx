@@ -40,12 +40,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import { Search, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronRight, ChevronLeft, Star, TrendingDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
-const UNIDADES_BASE = ["gr", "ml", "und"];
-const UNIDADES_PRESENTACION = ["gr", "kg", "ml", "lt", "und"];
+const UNIDADES_BASE = ["gr", "kg", "ml", "lt", "und", "lb", "oz"];
+const UNIDADES_PRESENTACION = ["gr", "kg", "ml", "lt", "und", "lb", "oz"];
 
 export default function IngredientesTable() {
   const queryClient = useQueryClient();
@@ -54,28 +63,14 @@ export default function IngredientesTable() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<Partial<IngredienteCatalogo>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const [page, setPage] = useState(0);
   const pageSize = 20;
 
-  // Form para nuevo ingrediente (solo nombre + unidad)
-  const [newNombre, setNewNombre] = useState("");
-  const [newUnidad, setNewUnidad] = useState("gr");
-
   const { data: ingredientes = [], isLoading } = useQuery({
     queryKey: ["ingredientes-catalogo"],
     queryFn: getIngredientesCatalogo,
-  });
-
-  const createMut = useMutation({
-    mutationFn: createIngrediente,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ingredientes-catalogo"] });
-      toast({ title: "Ingrediente creado" });
-      setNewNombre("");
-      setNewUnidad("gr");
-    },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const updateMut = useMutation({
@@ -103,16 +98,6 @@ export default function IngredientesTable() {
   );
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
-
-  const handleCreate = () => {
-    if (!newNombre.trim()) return;
-    createMut.mutate({
-      nombre: newNombre.trim(),
-      unidad: newUnidad,
-      costo_por_unidad: 0,
-      proveedor: null,
-    });
-  };
 
   const startEdit = (ing: IngredienteCatalogo) => {
     setEditingId(ing.id);
@@ -147,25 +132,11 @@ export default function IngredientesTable() {
         />
       </div>
 
-      {/* Form agregar */}
-      <div className="flex flex-wrap items-end gap-3 p-4 bg-slate-50 rounded-lg border">
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-slate-500">Nombre</label>
-          <Input value={newNombre} onChange={(e) => setNewNombre(e.target.value)} placeholder="Nombre" className="w-48" />
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-slate-500">Unidad base</label>
-          <Select value={newUnidad} onValueChange={setNewUnidad}>
-            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {UNIDADES_BASE.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <Button onClick={handleCreate} disabled={createMut.isPending || !newNombre.trim()} size="sm">
-          <Plus className="h-4 w-4 mr-1" /> Agregar
-        </Button>
-      </div>
+      {/* Botón nuevo ingrediente + Dialog */}
+      <Button onClick={() => setDialogOpen(true)} size="sm">
+        <Plus className="h-4 w-4 mr-1" /> Nuevo ingrediente
+      </Button>
+      <NuevoIngredienteDialog open={dialogOpen} onOpenChange={setDialogOpen} />
 
       {/* Tabla */}
       <div className="rounded-md border overflow-auto">
@@ -273,6 +244,144 @@ export default function IngredientesTable() {
         )}
       </div>
     </div>
+  );
+}
+
+/** Dialog for creating a new ingredient with optional first supplier */
+function NuevoIngredienteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const [nombre, setNombre] = useState("");
+  const [unidad, setUnidad] = useState("gr");
+  const [proveedor, setProveedor] = useState("");
+  const [cantidad, setCantidad] = useState("");
+  const [unidadPres, setUnidadPres] = useState("kg");
+  const [precio, setPrecio] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const resetForm = () => {
+    setNombre("");
+    setUnidad("gr");
+    setProveedor("");
+    setCantidad("");
+    setUnidadPres("kg");
+    setPrecio("");
+  };
+
+  const hasProveedor = proveedor.trim() && cantidad && precio;
+
+  const handleSave = async () => {
+    if (!nombre.trim()) return;
+    setSaving(true);
+    try {
+      const ing = await createIngrediente({
+        nombre: nombre.trim(),
+        unidad,
+        costo_por_unidad: 0,
+        proveedor: null,
+      });
+
+      if (hasProveedor) {
+        const cantNum = Number(cantidad);
+        const precioNum = Number(precio);
+        const cantEnBase = convertirAUnidadBase(cantNum, unidadPres, unidad);
+        const costoBase = precioNum / cantEnBase;
+
+        await createProveedor({
+          ingrediente_id: ing.id,
+          proveedor: proveedor.trim(),
+          presentacion_cantidad: cantNum,
+          presentacion_unidad: unidadPres,
+          precio_presentacion: precioNum,
+          costo_por_unidad_base: costoBase,
+          es_principal: true,
+        });
+
+        await updateIngrediente(ing.id, {
+          costo_por_unidad: costoBase,
+          proveedor: proveedor.trim(),
+        });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["ingredientes-catalogo"] });
+      queryClient.invalidateQueries({ queryKey: ["ingrediente-proveedores", ing.id] });
+      toast({ title: "Ingrediente creado" });
+      resetForm();
+      onOpenChange(false);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); onOpenChange(v); }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Nuevo ingrediente</DialogTitle>
+          <DialogDescription>Agrega un ingrediente y opcionalmente su primer proveedor</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {/* Sección ingrediente */}
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ingrediente</p>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Nombre *</label>
+              <Input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej: Harina de trigo" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Unidad base *</label>
+              <Select value={unidad} onValueChange={setUnidad}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {UNIDADES_BASE.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Sección proveedor */}
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Primer proveedor (opcional)</p>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Proveedor</label>
+              <Input value={proveedor} onChange={(e) => setProveedor(e.target.value)} placeholder="Ej: Makro" />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Cantidad</label>
+                <Input type="number" value={cantidad} onChange={(e) => setCantidad(e.target.value)} placeholder="1" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Unidad</label>
+                <Select value={unidadPres} onValueChange={setUnidadPres}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {UNIDADES_PRESENTACION.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Precio</label>
+                <Input type="number" value={precio} onChange={(e) => setPrecio(e.target.value)} placeholder="20000" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { resetForm(); onOpenChange(false); }}>Cancelar</Button>
+          <Button onClick={handleSave} disabled={saving || !nombre.trim()}>
+            {saving ? "Creando..." : "Crear ingrediente"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

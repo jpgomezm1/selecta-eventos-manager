@@ -108,10 +108,16 @@ export interface IngredienteCatalogo {
     comercial_encargado: string;
     total_cotizado: number;
     estado: EstadoCotizacion;
+    contacto_telefono?: string | null;
+    contacto_correo?: string | null;
+    hora_inicio?: string | null;
+    hora_fin?: string | null;
+    hora_montaje_inicio?: string | null;
+    hora_montaje_fin?: string | null;
     created_at?: string | null;
     updated_at?: string | null;
   }
-  
+
   /** Nueva: versión/opción */
   export interface CotizacionVersion {
     id: string;
@@ -176,6 +182,12 @@ export interface IngredienteCatalogo {
     comercial_encargado: string;
     total_cotizado: number;
     estado: EstadoCotizacion;
+    contacto_telefono?: string | null;
+    contacto_correo?: string | null;
+    hora_inicio?: string | null;
+    hora_fin?: string | null;
+    hora_montaje_inicio?: string | null;
+    hora_montaje_fin?: string | null;
   }
   
   /** Nueva: crear cotización con N versiones */

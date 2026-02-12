@@ -24,19 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import IngredienteBuscador from "./IngredienteBuscador";
 import {
   Table,
   TableBody,
@@ -45,7 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Save, X, Plus, ChevronsUpDown, Sparkles, Loader2 } from "lucide-react";
+import { Save, X, Sparkles, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { generateRecipeFromDescription } from "@/services/anthropic";
 
@@ -87,9 +75,6 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
   // Editable plato fields
   const [form, setForm] = useState<Partial<PlatoCatalogo>>({});
   const [ingredientes, setIngredientes] = useState<Array<PlatoIngrediente>>([]);
-  const [addIngId, setAddIngId] = useState("");
-  const [addCantidad, setAddCantidad] = useState("");
-  const [comboOpen, setComboOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
@@ -116,10 +101,25 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
 
   const createMut = useMutation({
     mutationFn: (data: Omit<PlatoCatalogo, "id" | "created_at" | "ingredientes">) => createPlato(data),
-    onSuccess: (created) => {
+    onSuccess: async (created) => {
       queryClient.invalidateQueries({ queryKey: ["platos-catalogo"] });
       setInternalPlatoId(created.id);
-      toast({ title: "Plato creado" });
+      // Auto-guardar ingredientes pendientes (ej: generados por AI)
+      if (ingredientes.length > 0) {
+        try {
+          await upsertPlatoIngredientes(
+            created.id,
+            ingredientes.map((i) => ({ ingrediente_id: i.ingrediente_id, cantidad: i.cantidad }))
+          );
+          queryClient.invalidateQueries({ queryKey: ["plato-detail", created.id] });
+          queryClient.invalidateQueries({ queryKey: ["plato-ingredientes-all"] });
+          toast({ title: "Plato creado con ingredientes" });
+        } catch {
+          toast({ title: "Plato creado", description: "Pero hubo un error guardando los ingredientes. Guárdalos manualmente." });
+        }
+      } else {
+        toast({ title: "Plato creado" });
+      }
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -146,6 +146,13 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  // Compute ingredient costs (must be before precioCalculado)
+  const costoTotal = useMemo(
+    () => ingredientes.reduce((sum, i) => sum + i.cantidad * (i.ingrediente?.costo_por_unidad ?? 0), 0),
+    [ingredientes]
+  );
+  const costoPorcion = form.porciones_receta ? costoTotal / form.porciones_receta : 0;
+
   // Auto-calculate precio from margen + costoPorcion
   const precioCalculado = (form.margen_ganancia != null && costoPorcion > 0)
     ? Math.round(costoPorcion * (1 + form.margen_ganancia / 100))
@@ -171,34 +178,30 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
       } as any);
     } else {
       const { ingredientes: _, ...updates } = form as any;
-      updateMut.mutate({ ...updates, precio: precioFinal });
+      updateMut.mutate({ ...updates, precio: precioFinal }, {
+        onSuccess: () => {
+          // Also save ingredients when updating plato
+          upsertIngMut.mutate(
+            ingredientes.map((i) => ({ ingrediente_id: i.ingrediente_id, cantidad: i.cantidad }))
+          );
+        },
+      });
     }
   };
 
-  const handleSaveIngredientes = () => {
-    upsertIngMut.mutate(ingredientes.map((i) => ({ ingrediente_id: i.ingrediente_id, cantidad: i.cantidad })));
-  };
-
-  const handleAddIngrediente = () => {
-    if (!addIngId || !addCantidad) return;
-    const ing = allIngredientes.find((i) => i.id === addIngId);
+  const handleAddIngrediente = (ingredienteId: string, cantidad: number) => {
+    const ing = allIngredientes.find((i) => i.id === ingredienteId);
     if (!ing) return;
-    if (ingredientes.some((i) => i.ingrediente_id === addIngId)) {
-      toast({ title: "Ya existe", description: "Este ingrediente ya está en la lista", variant: "destructive" });
-      return;
-    }
     setIngredientes([
       ...ingredientes,
       {
         id: `temp-${Date.now()}`,
-        plato_id: effectiveId!,
-        ingrediente_id: addIngId,
-        cantidad: Number(addCantidad),
+        plato_id: effectiveId ?? "",
+        ingrediente_id: ingredienteId,
+        cantidad,
         ingrediente: ing,
       },
     ]);
-    setAddIngId("");
-    setAddCantidad("");
   };
 
   const handleGenerateAI = async () => {
@@ -246,20 +249,12 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
     setIngredientes(ingredientes.map((i) => i.ingrediente_id === ingredienteId ? { ...i, cantidad } : i));
   };
 
-  const costoTotal = useMemo(
-    () => ingredientes.reduce((sum, i) => sum + i.cantidad * (i.ingrediente?.costo_por_unidad ?? 0), 0),
-    [ingredientes]
-  );
-  const costoPorcion = form.porciones_receta ? costoTotal / form.porciones_receta : 0;
-
   const fmt = (n: number) => `$ ${Math.round(n).toLocaleString("es-CO")}`;
 
   // Ingredientes available for adding (not already in list)
   const availableIngredientes = allIngredientes.filter(
     (i) => !ingredientes.some((pi) => pi.ingrediente_id === i.id)
   );
-
-  const showIngredientesSection = !!effectiveId;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -357,147 +352,106 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
                   <Textarea value={form.notas ?? ""} onChange={(e) => setForm({ ...form, notas: e.target.value })} rows={2} />
                 </div>
               </div>
-              <Button onClick={handleSavePlato} disabled={updateMut.isPending || createMut.isPending} size="sm">
-                <Save className="h-4 w-4 mr-1" /> {effectiveId ? "Guardar plato" : "Crear plato"}
-              </Button>
             </section>
 
-            {/* Ingredientes — only after plato exists */}
-            {showIngredientesSection && (
-              <>
-                <section className="space-y-4">
-                  <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Ingredientes</h3>
-                  <div className="rounded-md border overflow-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Ingrediente</TableHead>
-                          <TableHead className="w-24">Cantidad</TableHead>
-                          <TableHead>Unidad</TableHead>
-                          <TableHead className="text-right">Costo unit.</TableHead>
-                          <TableHead className="text-right">Subtotal</TableHead>
-                          <TableHead className="w-10"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {ingredientes.map((pi) => (
-                          <TableRow key={pi.ingrediente_id}>
-                            <TableCell className="font-medium">{pi.ingrediente?.nombre ?? "—"}</TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                value={pi.cantidad}
-                                onChange={(e) => updateCantidad(pi.ingrediente_id, Number(e.target.value))}
-                                className="h-7 w-20"
-                              />
-                            </TableCell>
-                            <TableCell className="text-slate-500">{pi.ingrediente?.unidad ?? ""}</TableCell>
-                            <TableCell className="text-right">{fmt(pi.ingrediente?.costo_por_unidad ?? 0)}</TableCell>
-                            <TableCell className="text-right font-medium">{fmt(pi.cantidad * (pi.ingrediente?.costo_por_unidad ?? 0))}</TableCell>
-                            <TableCell>
-                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => removeIngrediente(pi.ingrediente_id)}>
-                                <X className="h-4 w-4 text-red-500" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                        {ingredientes.length === 0 && (
-                          <TableRow><TableCell colSpan={6} className="text-center text-slate-400 py-4">Sin ingredientes</TableCell></TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-
-                  {/* Add ingrediente */}
-                  <div className="flex items-end gap-2">
-                    <div className="flex-1 space-y-1">
-                      <label className="text-xs font-medium text-slate-500">Ingrediente</label>
-                      <Popover open={comboOpen} onOpenChange={setComboOpen}>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" role="combobox" className="w-full justify-between h-9 font-normal">
-                            {addIngId ? allIngredientes.find((i) => i.id === addIngId)?.nombre : "Seleccionar ingrediente..."}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            {/* Ingredientes */}
+            <section className="space-y-4">
+              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Ingredientes</h3>
+              <div className="rounded-md border overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ingrediente</TableHead>
+                      <TableHead className="w-24">Cantidad</TableHead>
+                      <TableHead>Unidad</TableHead>
+                      <TableHead className="text-right">Costo unit.</TableHead>
+                      <TableHead className="text-right">Subtotal</TableHead>
+                      <TableHead className="w-10"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {ingredientes.map((pi) => (
+                      <TableRow key={pi.ingrediente_id}>
+                        <TableCell className="font-medium">{pi.ingrediente?.nombre ?? "—"}</TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={pi.cantidad}
+                            onChange={(e) => updateCantidad(pi.ingrediente_id, Number(e.target.value))}
+                            className="h-7 w-20"
+                          />
+                        </TableCell>
+                        <TableCell className="text-slate-500">{pi.ingrediente?.unidad ?? ""}</TableCell>
+                        <TableCell className="text-right">{fmt(pi.ingrediente?.costo_por_unidad ?? 0)}</TableCell>
+                        <TableCell className="text-right font-medium">{fmt(pi.cantidad * (pi.ingrediente?.costo_por_unidad ?? 0))}</TableCell>
+                        <TableCell>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => removeIngrediente(pi.ingrediente_id)}>
+                            <X className="h-4 w-4 text-red-500" />
                           </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-72 p-0">
-                          <Command>
-                            <CommandInput placeholder="Buscar ingrediente..." />
-                            <CommandList>
-                              <CommandEmpty>No encontrado</CommandEmpty>
-                              <CommandGroup>
-                                {availableIngredientes.map((ing) => (
-                                  <CommandItem
-                                    key={ing.id}
-                                    value={ing.nombre}
-                                    onSelect={() => { setAddIngId(ing.id); setComboOpen(false); }}
-                                  >
-                                    {ing.nombre} <span className="ml-auto text-xs text-slate-400">{ing.unidad}</span>
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <div className="w-24 space-y-1">
-                      <label className="text-xs font-medium text-slate-500">Cantidad</label>
-                      <Input type="number" value={addCantidad} onChange={(e) => setAddCantidad(e.target.value)} className="h-9" />
-                    </div>
-                    <Button size="sm" onClick={handleAddIngrediente} disabled={!addIngId || !addCantidad} className="h-9">
-                      <Plus className="h-4 w-4 mr-1" /> Agregar
-                    </Button>
-                  </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {ingredientes.length === 0 && (
+                      <TableRow><TableCell colSpan={6} className="text-center text-slate-400 py-4">Sin ingredientes</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
 
-                  <Button onClick={handleSaveIngredientes} disabled={upsertIngMut.isPending} size="sm" variant="outline">
-                    <Save className="h-4 w-4 mr-1" /> Guardar ingredientes
-                  </Button>
-                </section>
+              {/* Add ingrediente */}
+              <IngredienteBuscador
+                availableIngredientes={availableIngredientes}
+                onAdd={handleAddIngrediente}
+              />
 
-                {/* Resumen costos + margen */}
-                <section className="p-4 bg-slate-50 rounded-lg border space-y-3">
-                  <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Costos y precio de venta</h3>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-600">Costo total receta</span>
-                    <span className="font-semibold">{fmt(costoTotal)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-600">Costo por porción</span>
-                    <span className="font-semibold">{form.porciones_receta ? fmt(costoPorcion) : "—"}</span>
-                  </div>
-                  <div className="border-t pt-3 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-slate-600">Margen de ganancia</span>
-                      <div className="flex items-center gap-1">
-                        <Input
-                          type="number"
-                          value={form.margen_ganancia ?? ""}
-                          onChange={(e) => setForm({ ...form, margen_ganancia: e.target.value ? Number(e.target.value) : null })}
-                          placeholder="Ej: 40"
-                          className="h-8 w-20 text-right"
-                        />
-                        <span className="text-sm text-slate-500">%</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex justify-between border-t pt-3">
-                    <span className="text-sm font-semibold text-slate-700">Precio de venta</span>
-                    <span className="text-lg font-bold text-green-700">{fmt(precioCalculado)}</span>
-                  </div>
-                  {costoPorcion > 0 && precioCalculado > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-sm text-slate-600">Ganancia por porción</span>
-                      <span className="font-semibold">{fmt(precioCalculado - costoPorcion)}</span>
-                    </div>
-                  )}
-                  <p className="text-[10px] text-slate-400">El precio de venta se guarda automáticamente al guardar el plato y se usa en las cotizaciones.</p>
-                </section>
-              </>
-            )}
+              {ingredientes.length > 0 && (
+                <p className="text-xs text-slate-400">Los ingredientes se guardarán al {effectiveId ? "guardar" : "crear"} el plato.</p>
+              )}
+            </section>
 
-            {!showIngredientesSection && (
-              <p className="text-sm text-slate-400 text-center py-4">Crea el plato primero para agregar ingredientes.</p>
-            )}
+            {/* Resumen costos + margen */}
+            <section className="p-4 bg-slate-50 rounded-lg border space-y-3">
+              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Costos y precio de venta</h3>
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-600">Costo total receta</span>
+                <span className="font-semibold">{fmt(costoTotal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-600">Costo por porción</span>
+                <span className="font-semibold">{form.porciones_receta ? fmt(costoPorcion) : "—"}</span>
+              </div>
+              <div className="border-t pt-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-600">Margen de ganancia</span>
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number"
+                      value={form.margen_ganancia ?? ""}
+                      onChange={(e) => setForm({ ...form, margen_ganancia: e.target.value ? Number(e.target.value) : null })}
+                      placeholder="Ej: 40"
+                      className="h-8 w-20 text-right"
+                    />
+                    <span className="text-sm text-slate-500">%</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-between border-t pt-3">
+                <span className="text-sm font-semibold text-slate-700">Precio de venta</span>
+                <span className="text-lg font-bold text-green-700">{fmt(precioCalculado)}</span>
+              </div>
+              {costoPorcion > 0 && precioCalculado > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-600">Ganancia por porción</span>
+                  <span className="font-semibold">{fmt(precioCalculado - costoPorcion)}</span>
+                </div>
+              )}
+              <p className="text-[10px] text-slate-400">El precio de venta se guarda automáticamente al guardar el plato y se usa en las cotizaciones.</p>
+            </section>
+
+            {/* Botón principal de guardar/crear */}
+            <Button onClick={handleSavePlato} disabled={updateMut.isPending || createMut.isPending || upsertIngMut.isPending} className="w-full">
+              <Save className="h-4 w-4 mr-2" /> {effectiveId ? "Guardar todo" : "Crear plato"}
+            </Button>
           </div>
         )}
       </SheetContent>

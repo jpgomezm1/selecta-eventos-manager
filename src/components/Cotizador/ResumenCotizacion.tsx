@@ -36,6 +36,7 @@ type Props = {
   onRemove: (tipo: keyof CotizacionItemsState, id: string) => void;
   onGuardar: () => void;
   guardando: boolean;
+  fullWidth?: boolean;
 };
 
 const SECTION_CONFIG = {
@@ -82,6 +83,7 @@ export function ResumenCotizacion({
   onRemove,
   onGuardar,
   guardando,
+  fullWidth = false,
 }: Props) {
   // Calcular estadísticas
   const totalItems = items.platos.length + items.personal.length + items.transportes.length + (items.menaje ?? []).length;
@@ -162,76 +164,71 @@ export function ResumenCotizacion({
   ].filter(section => section.items.length > 0);
 
   const renderItemRow = (item: any, sectionColor: string) => (
-    <div 
+    <div
       key={`${item.tipo}-${item.id}`}
-      className="group relative bg-white rounded-xl p-4 border border-slate-200 hover:shadow-md transition-all duration-200"
+      className="bg-white rounded-xl p-4 border border-slate-200 hover:shadow-md transition-all duration-200 flex flex-col gap-2"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-slate-800 truncate mb-1">
-            {item.nombre}
-          </h4>
-          <div className="flex items-center space-x-2 text-sm text-slate-600">
-            <DollarSign className="h-3 w-3" />
-            <span>{item.precio.toLocaleString()}</span>
-            <span>×</span>
-            <span>{item.cantidad}</span>
-          </div>
+      {/* Fila 1: nombre completo + botón eliminar */}
+      <div className="flex items-start justify-between gap-2">
+        <h4 className="font-medium text-slate-800 break-words flex-1">
+          {item.nombre}
+        </h4>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onRemove(item.tipo, item.id)}
+          className="h-7 w-7 p-0 shrink-0 text-red-500 hover:bg-red-50 hover:text-red-600"
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </div>
+
+      {/* Fila 2: precio×qty | controles ± | subtotal */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center space-x-1 text-sm text-slate-600">
+          <DollarSign className="h-3 w-3" />
+          <span>{item.precio.toLocaleString()}</span>
+          <span>×</span>
+          <span>{item.cantidad}</span>
         </div>
 
-        <div className="flex items-center space-x-3 shrink-0">
-          {/* Controles de cantidad */}
-          <div className="flex items-center space-x-1 bg-slate-50 rounded-lg p-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onQtyChange(item.tipo, item.id, Math.max(1, item.cantidad - 1))}
-              className="h-7 w-7 p-0 hover:bg-white"
-            >
-              <Minus className="h-3 w-3" />
-            </Button>
-            
-            <Input
-              type="number"
-              min={1}
-              value={item.cantidad}
-              onChange={(e) => onQtyChange(item.tipo, item.id, Math.max(1, Number(e.target.value)))}
-              className="w-14 h-7 text-center text-sm border-0 bg-transparent focus:bg-white focus:border focus:border-slate-300"
-            />
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onQtyChange(item.tipo, item.id, item.cantidad + 1)}
-              className="h-7 w-7 p-0 hover:bg-white"
-            >
-              <Plus className="h-3 w-3" />
-            </Button>
-          </div>
-
-          {/* Subtotal */}
-          <div className="text-right min-w-[80px]">
-            <div className={cn("font-semibold", `text-${sectionColor}-600`)}>
-              ${item.subtotal.toLocaleString()}
-            </div>
-          </div>
-
-          {/* Botón eliminar */}
+        <div className="flex items-center space-x-1 bg-slate-50 rounded-lg p-1">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onRemove(item.tipo, item.id)}
-            className="h-7 w-7 p-0 text-red-500 hover:bg-red-50 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={() => onQtyChange(item.tipo, item.id, Math.max(1, item.cantidad - 1))}
+            className="h-7 w-7 p-0 hover:bg-white"
           >
-            <Trash2 className="h-3 w-3" />
+            <Minus className="h-3 w-3" />
           </Button>
+
+          <Input
+            type="number"
+            min={1}
+            value={item.cantidad}
+            onChange={(e) => onQtyChange(item.tipo, item.id, Math.max(1, Number(e.target.value)))}
+            className="w-14 h-7 text-center text-sm border-0 bg-transparent focus:bg-white focus:border focus:border-slate-300"
+          />
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onQtyChange(item.tipo, item.id, item.cantidad + 1)}
+            className="h-7 w-7 p-0 hover:bg-white"
+          >
+            <Plus className="h-3 w-3" />
+          </Button>
+        </div>
+
+        <div className={cn("font-semibold text-right", `text-${sectionColor}-600`)}>
+          ${item.subtotal.toLocaleString()}
         </div>
       </div>
     </div>
   );
 
   return (
-    <Card className="sticky top-4">
+    <Card className={cn(!fullWidth && "sticky top-4")}>
       {/* Header mejorado */}
       <CardHeader className="bg-emerald-50 border-b border-emerald-200 pb-4">
         <div className="flex items-center justify-between">
@@ -351,7 +348,10 @@ export function ResumenCotizacion({
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className={cn(
+                    "space-y-2",
+                    fullWidth && "grid grid-cols-1 md:grid-cols-2 gap-3 space-y-0"
+                  )}>
                     {section.items.map(item => renderItemRow(item, section.color))}
                   </div>
                 </div>
@@ -370,7 +370,10 @@ export function ResumenCotizacion({
                   </div>
                 </div>
                 
-                <div className="text-3xl font-bold text-emerald-600 mb-2">
+                <div className={cn(
+                  "font-bold text-emerald-600 mb-2",
+                  fullWidth ? "text-4xl" : "text-3xl"
+                )}>
                   ${total.toLocaleString()}
                 </div>
                 
