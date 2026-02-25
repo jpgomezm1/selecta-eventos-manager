@@ -181,11 +181,16 @@ export function PlatosSelector({
                     <Minus className="h-3 w-3" />
                   </Button>
                   
-                  <div className="text-center px-2 min-w-0">
-                    <span className="font-medium text-selecta-green text-sm block truncate">
-                      {qty} {qty === 1 ? 'plato' : 'platos'}
-                    </span>
-                  </div>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={qty}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      onQtyChange(plato.id, isNaN(val) ? 0 : Math.max(0, val));
+                    }}
+                    className="w-16 h-8 text-center text-sm font-medium border-slate-200"
+                  />
                   
                   <Button 
                     variant="outline" 
@@ -300,7 +305,16 @@ export function PlatosSelector({
                   >
                     <Minus className="h-3 w-3" />
                   </Button>
-                  <span className="w-8 text-center font-medium">{qty}</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={qty}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      onQtyChange(plato.id, isNaN(val) ? 0 : Math.max(0, val));
+                    }}
+                    className="w-16 h-8 text-center text-sm font-medium border-slate-200"
+                  />
                   <Button 
                     variant="outline" 
                     size="sm"

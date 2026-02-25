@@ -239,14 +239,16 @@ export function TransporteSelector({
                     <Minus className="h-3 w-3" />
                   </Button>
                   
-                  <div className="text-center">
-                    <span className="font-semibold text-selecta-green text-sm">
-                      {qty}
-                    </span>
-                    <div className="text-xs text-selecta-green/70">
-                      {qty === 1 ? 'servicio' : 'servicios'}
-                    </div>
-                  </div>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={qty}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      onQtyChange(transporte.id, isNaN(val) ? 0 : Math.max(0, val));
+                    }}
+                    className="w-16 h-8 text-center text-sm font-medium border-slate-200"
+                  />
                   
                   <Button 
                     variant="outline" 
@@ -361,7 +363,16 @@ export function TransporteSelector({
                   >
                     <Minus className="h-3 w-3" />
                   </Button>
-                  <span className="w-8 text-center font-semibold">{qty}</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={qty}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      onQtyChange(transporte.id, isNaN(val) ? 0 : Math.max(0, val));
+                    }}
+                    className="w-16 h-8 text-center text-sm font-medium border-slate-200"
+                  />
                   <Button 
                     variant="outline" 
                     size="sm"

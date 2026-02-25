@@ -35,6 +35,11 @@ import { PlatosSelector } from "@/components/Cotizador/PlatosSelector";
 import { PersonalSelector } from "@/components/Cotizador/PersonalSelector";
 import { TransporteSelector } from "@/components/Cotizador/TransporteSelector";
 import { MenajeSelector } from "@/components/Cotizador/MenajeSelector";
+import { ClienteSelector } from "@/components/Cotizador/ClienteSelector";
+import { ContactoSelector } from "@/components/Cotizador/ContactoSelector";
+import { LugaresSelector } from "@/components/Cotizador/LugaresSelector";
+import type { Cliente, ContactoCliente } from "@/integrations/supabase/apiClientes";
+import type { LugarOption } from "@/types/cotizador";
 
 import {
   Users,
@@ -45,14 +50,13 @@ import {
   Check,
   X,
   Copy,
-  Phone,
-  Mail,
   Clock,
   ArrowLeft,
   ArrowRight,
   ClipboardList,
   Utensils,
   Truck,
+  Package,
   CheckCircle2,
   Eye,
 } from "lucide-react";
@@ -70,6 +74,7 @@ type FormValues = {
   hora_fin?: string;
   hora_montaje_inicio?: string;
   hora_montaje_fin?: string;
+  cliente_id?: string | null;
 };
 
 type OpcionState = {
@@ -105,6 +110,15 @@ export default function Cotizador() {
   // Wizard step
   const [currentStep, setCurrentStep] = useState(1);
 
+  // Cliente selector state
+  const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
+  const [selectedContacto, setSelectedContacto] = useState<ContactoCliente | null>(null);
+
+  // Lugares state
+  const [lugares, setLugares] = useState<LugarOption[]>([
+    { nombre: "", es_seleccionado: true },
+  ]);
+
   // Catálogos
   const { data: platos } = useQuery({
     queryKey: ["platosCatalogo"],
@@ -138,12 +152,16 @@ export default function Cotizador() {
   const current = opciones.find((o) => o.key === activeKey)!;
 
   // Helpers cantidades + totales
+  const lugarCosto = lugares
+    .filter((l) => l.es_seleccionado && (l.precio_referencia ?? 0) > 0)
+    .reduce((a, l) => a + (l.precio_referencia ?? 0), 0);
+
   const calcSubtotales = (it: CotizacionItemsState) => {
     const platos = it.platos.reduce((a, p) => a + p.precio_unitario * p.cantidad, 0);
     const personal = it.personal.reduce((a, p) => a + p.tarifa_estimada_por_persona * p.cantidad, 0);
     const transportes = it.transportes.reduce((a, t) => a + t.tarifa_unitaria * t.cantidad, 0);
     const menaje = (it.menaje ?? []).reduce((a, m) => a + m.precio_alquiler * m.cantidad, 0);
-    return { platos, personal, transportes, menaje, total: platos + personal + transportes + menaje };
+    return { platos, personal, transportes, menaje, lugar: lugarCosto, total: platos + personal + transportes + menaje + lugarCosto };
   };
 
   const addOpcion = () => {
@@ -265,7 +283,7 @@ export default function Cotizador() {
         ...it,
         personal: [
           ...it.personal,
-          { personal_costo_id: p.id, rol: p.rol, tarifa_estimada_por_persona: Number(p.tarifa), cantidad: 1 },
+          { personal_costo_id: p.id, rol: p.rol, tarifa_estimada_por_persona: Number(p.tarifa) || 0, cantidad: 1 },
         ],
       };
     });
@@ -307,7 +325,12 @@ export default function Cotizador() {
 
   const updateQty = (tipo: keyof CotizacionItemsState, id: string, qty: number) =>
     mutateAdd((it) => {
-      if (qty < 1) return it;
+      if (qty <= 0) {
+        if (tipo === "platos") return { ...it, platos: it.platos.filter((x) => x.plato_id !== id) };
+        if (tipo === "personal") return { ...it, personal: it.personal.filter((x) => x.personal_costo_id !== id) };
+        if (tipo === "menaje") return { ...it, menaje: (it.menaje ?? []).filter((x) => x.menaje_id !== id) };
+        return { ...it, transportes: it.transportes.filter((x) => x.transporte_id !== id) };
+      }
       if (tipo === "platos")
         return { ...it, platos: it.platos.map((x) => (x.plato_id === id ? { ...x, cantidad: qty } : x)) };
       if (tipo === "personal")
@@ -384,7 +407,10 @@ export default function Cotizador() {
       ]);
       setActiveKey(newKey);
       setCurrentStep(1);
-      nav(`/cotizador/${res.id}`);
+      setSelectedCliente(null);
+      setSelectedContacto(null);
+      setLugares([{ nombre: "", es_seleccionado: true }]);
+      nav(`/cotizaciones/${res.id}`);
     },
     onError: (e: any) => {
       toast({
@@ -421,29 +447,40 @@ export default function Cotizador() {
         version_index: i + 1,
         total: tot.total,
         estado: "Pendiente por Aprobación" as const,
-        is_definitiva: i === 0 && opciones.length === 1 ? true : false,
+        is_definitiva: false,
         items: o.items,
       };
     });
 
+    // Get the selected lugar name for backward compat ubicacion_evento field
+    const lugarSeleccionado = lugares.find((l) => l.es_seleccionado);
+    const ubicacionEvento = lugarSeleccionado?.nombre?.trim() || null;
+
     const payload: CotizacionWithVersionsDraft = {
       cotizacion: {
         nombre_cotizacion: v.nombre_cotizacion.trim(),
-        cliente_nombre: v.cliente_nombre?.trim() || null,
+        cliente_nombre: selectedCliente?.nombre || v.cliente_nombre?.trim() || null,
+        cliente_id: selectedCliente?.id || null,
         numero_invitados: Number(v.numero_invitados),
         fecha_evento_estimada: v.fecha_evento_estimada ? new Date(v.fecha_evento_estimada) : null,
-        ubicacion_evento: v.ubicacion_evento?.trim() || null,
+        ubicacion_evento: ubicacionEvento,
         comercial_encargado: v.comercial_encargado.trim(),
         total_cotizado: versiones[0]?.total ?? 0,
         estado: "Pendiente por Aprobación",
-        contacto_telefono: v.contacto_telefono?.trim() || null,
-        contacto_correo: v.contacto_correo?.trim() || null,
+        contacto_telefono: selectedCliente?.tipo === 'empresa'
+          ? selectedContacto?.telefono || selectedCliente?.telefono || v.contacto_telefono?.trim() || null
+          : selectedCliente?.telefono || v.contacto_telefono?.trim() || null,
+        contacto_correo: selectedCliente?.tipo === 'empresa'
+          ? selectedContacto?.correo || selectedCliente?.correo || v.contacto_correo?.trim() || null
+          : selectedCliente?.correo || v.contacto_correo?.trim() || null,
+        contacto_id: selectedContacto?.id || null,
         hora_inicio: v.hora_inicio || null,
         hora_fin: v.hora_fin || null,
         hora_montaje_inicio: v.hora_montaje_inicio || null,
         hora_montaje_fin: v.hora_montaje_fin || null,
       },
       versiones,
+      lugares: lugares.filter((l) => l.nombre.trim()),
     };
     crear(payload);
   };
@@ -467,6 +504,7 @@ export default function Cotizador() {
         icon: Utensils,
         isComplete: current.items.platos.length > 0,
         isSkippable: true,
+        itemCount: current.items.platos.length,
       },
       {
         index: 3,
@@ -474,16 +512,26 @@ export default function Cotizador() {
         icon: Users,
         isComplete: current.items.personal.length > 0,
         isSkippable: true,
+        itemCount: current.items.personal.length,
       },
       {
         index: 4,
-        label: "Logística",
+        label: "Transporte",
         icon: Truck,
-        isComplete: current.items.transportes.length > 0 || (current.items.menaje ?? []).length > 0,
+        isComplete: current.items.transportes.length > 0,
         isSkippable: true,
+        itemCount: current.items.transportes.length,
       },
       {
         index: 5,
+        label: "Menaje",
+        icon: Package,
+        isComplete: (current.items.menaje ?? []).length > 0,
+        isSkippable: true,
+        itemCount: (current.items.menaje ?? []).length,
+      },
+      {
+        index: 6,
         label: "Resumen",
         icon: CheckCircle2,
         isComplete: false,
@@ -493,7 +541,9 @@ export default function Cotizador() {
     [nombreCotizacion, watch("comercial_encargado"), current.items]
   );
 
-  // Navigation
+  // Navigation — scroll to top on every step change
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+
   const goNext = () => {
     if (currentStep === 1) {
       const nombre = watch("nombre_cotizacion");
@@ -507,10 +557,17 @@ export default function Cotizador() {
         return;
       }
     }
-    setCurrentStep((s) => Math.min(s + 1, 5));
+    setCurrentStep((s) => Math.min(s + 1, 6));
+    scrollToTop();
   };
-  const goPrev = () => setCurrentStep((s) => Math.max(s - 1, 1));
-  const goToStep = (step: number) => setCurrentStep(step);
+  const goPrev = () => {
+    setCurrentStep((s) => Math.max(s - 1, 1));
+    scrollToTop();
+  };
+  const goToStep = (step: number) => {
+    setCurrentStep(step);
+    scrollToTop();
+  };
 
   // Option tabs renderer (reusable across steps 2-5)
   const renderOptionTabs = () => (
@@ -659,10 +716,16 @@ export default function Cotizador() {
                     <Users className="h-4 w-4 text-slate-400" />
                     <span>Cliente</span>
                   </label>
-                  <Input
-                    placeholder="Nombre del cliente"
-                    {...register("cliente_nombre")}
-                    className="h-12"
+                  <ClienteSelector
+                    value={selectedCliente?.id ?? null}
+                    selectedCliente={selectedCliente}
+                    onChange={(clienteId, cliente) => {
+                      setSelectedCliente(cliente);
+                      setSelectedContacto(null);
+                      if (cliente) {
+                        register("cliente_nombre").onChange({ target: { value: cliente.nombre, name: "cliente_nombre" } });
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -706,46 +769,69 @@ export default function Cotizador() {
                     className="h-12"
                   />
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
-                    Ubicación del Evento
-                  </label>
-                  <Input
-                    placeholder="Ej: Hacienda Los Robles, Chía"
-                    {...register("ubicacion_evento")}
-                    className="h-12"
-                  />
-                </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 flex items-center space-x-2">
-                    <Phone className="h-4 w-4 text-slate-400" />
-                    <span>Teléfono de Contacto</span>
-                  </label>
-                  <Input
-                    type="tel"
-                    placeholder="Ej: 300 123 4567"
-                    {...register("contacto_telefono")}
-                    className="h-12"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 flex items-center space-x-2">
-                    <Mail className="h-4 w-4 text-slate-400" />
-                    <span>Correo Electrónico</span>
-                  </label>
-                  <Input
-                    type="email"
-                    placeholder="Ej: cliente@correo.com"
-                    {...register("contacto_correo")}
-                    className="h-12"
-                  />
-                </div>
+              {/* Ubicaciones */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  Ubicaciones del Evento
+                </label>
+                <LugaresSelector
+                  lugares={lugares}
+                  onChange={setLugares}
+                />
               </div>
+
+              {selectedCliente && (
+                <Card className="bg-slate-50 border-slate-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Badge variant="outline" className={selectedCliente.tipo === 'empresa' ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-slate-100 text-slate-700 border-slate-200"}>
+                        {selectedCliente.tipo === 'empresa' ? 'Empresa' : 'Persona Natural'}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <span className="text-slate-500 text-xs">Nombre</span>
+                        <p className="font-medium text-slate-800">{selectedCliente.nombre}</p>
+                      </div>
+                      {selectedCliente.tipo === 'persona_natural' && selectedCliente.cedula && (
+                        <div>
+                          <span className="text-slate-500 text-xs">Cedula</span>
+                          <p className="font-medium text-slate-800">{selectedCliente.cedula}</p>
+                        </div>
+                      )}
+                      {selectedCliente.tipo === 'empresa' && selectedCliente.nit && (
+                        <div>
+                          <span className="text-slate-500 text-xs">NIT</span>
+                          <p className="font-medium text-slate-800">{selectedCliente.nit}</p>
+                        </div>
+                      )}
+                      {selectedCliente.telefono && (
+                        <div>
+                          <span className="text-slate-500 text-xs">Telefono</span>
+                          <p className="font-medium text-slate-800">{selectedCliente.telefono}</p>
+                        </div>
+                      )}
+                      {selectedCliente.correo && (
+                        <div>
+                          <span className="text-slate-500 text-xs">Correo</span>
+                          <p className="font-medium text-slate-800">{selectedCliente.correo}</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Contacto selector for empresa clients */}
+              {selectedCliente?.tipo === 'empresa' && (
+                <ContactoSelector
+                  clienteId={selectedCliente.id}
+                  value={selectedContacto?.id ?? null}
+                  onChange={(contactoId, contacto) => setSelectedContacto(contacto)}
+                />
+              )}
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700 flex items-center space-x-2">
@@ -819,59 +905,100 @@ export default function Cotizador() {
           </div>
         )}
 
-        {/* ─── Step 4: Logística (Transporte + Menaje) ─── */}
+        {/* ─── Step 4: Transporte ─── */}
         {currentStep === 4 && (
           <div>
             {renderOptionTabs()}
-            <Tabs defaultValue="transporte" className="w-full">
-              <TabsList className="mb-4 bg-slate-100 rounded-lg p-1">
-                <TabsTrigger value="transporte" className="rounded-md">
-                  <Truck className="h-4 w-4 mr-2" />
-                  Transporte
-                  {current.items.transportes.length > 0 && (
-                    <Badge className="ml-2 bg-green-100 text-green-700 text-xs">
-                      {current.items.transportes.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="menaje" className="rounded-md">
-                  Menaje
-                  {(current.items.menaje ?? []).length > 0 && (
-                    <Badge className="ml-2 bg-purple-100 text-purple-700 text-xs">
-                      {(current.items.menaje ?? []).length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="transporte">
-                <TransporteSelector
-                  data={transportes ?? []}
-                  onAdd={addTransporte}
-                  itemsSeleccionados={current.items.transportes.map((t) => ({
-                    transporte_id: t.transporte_id,
-                    cantidad: t.cantidad,
-                  }))}
-                  onQtyChange={(id, qty) => updateQty("transportes", id, qty)}
-                />
-              </TabsContent>
-              <TabsContent value="menaje">
-                <MenajeSelector
-                  data={menajeCatalogo ?? []}
-                  onAdd={addMenaje}
-                  itemsSeleccionados={(current.items.menaje ?? []).map((m) => ({
-                    menaje_id: m.menaje_id,
-                    cantidad: m.cantidad,
-                  }))}
-                  onQtyChange={(id, qty) => updateQty("menaje", id, qty)}
-                />
-              </TabsContent>
-            </Tabs>
+            <TransporteSelector
+              data={transportes ?? []}
+              onAdd={addTransporte}
+              itemsSeleccionados={current.items.transportes.map((t) => ({
+                transporte_id: t.transporte_id,
+                cantidad: t.cantidad,
+              }))}
+              onQtyChange={(id, qty) => updateQty("transportes", id, qty)}
+            />
           </div>
         )}
 
-        {/* ─── Step 5: Resumen y Guardado ─── */}
+        {/* ─── Step 5: Menaje ─── */}
         {currentStep === 5 && (
           <div>
+            {renderOptionTabs()}
+            <MenajeSelector
+              data={menajeCatalogo ?? []}
+              onAdd={addMenaje}
+              itemsSeleccionados={(current.items.menaje ?? []).map((m) => ({
+                menaje_id: m.menaje_id,
+                cantidad: m.cantidad,
+              }))}
+              onQtyChange={(id, qty) => updateQty("menaje", id, qty)}
+            />
+          </div>
+        )}
+
+        {/* ─── Step 6: Resumen y Guardado ─── */}
+        {currentStep === 6 && (
+          <div className="space-y-6">
+            {/* Comparison table when multiple options */}
+            {opciones.length >= 2 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-slate-900">
+                    Comparación de Opciones
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-slate-50">
+                          <th className="text-left p-4 font-semibold text-slate-600">Categoría</th>
+                          {opciones.map((o) => (
+                            <th key={o.key} className="text-right p-4 font-semibold text-slate-800">
+                              {o.nombre_opcion}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          { label: "Platos y Menú", key: "platos" as const },
+                          { label: "Personal", key: "personal" as const },
+                          { label: "Transporte", key: "transportes" as const },
+                          { label: "Menaje", key: "menaje" as const },
+                          { label: "Lugar", key: "lugar" as const },
+                        ].map((cat) => (
+                          <tr key={cat.key} className="border-b border-slate-100">
+                            <td className="p-4 text-slate-600">{cat.label}</td>
+                            {opciones.map((o) => {
+                              const sub = calcSubtotales(o.items);
+                              return (
+                                <td key={o.key} className="p-4 text-right font-medium text-slate-800">
+                                  ${sub[cat.key].toLocaleString()}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                        <tr className="bg-emerald-50 font-bold">
+                          <td className="p-4 text-emerald-700">TOTAL</td>
+                          {opciones.map((o) => {
+                            const sub = calcSubtotales(o.items);
+                            return (
+                              <td key={o.key} className="p-4 text-right text-emerald-700">
+                                ${sub.total.toLocaleString()}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {renderOptionTabs()}
             <ResumenCotizacion
               invitados={invitados}
@@ -883,6 +1010,7 @@ export default function Cotizador() {
                 transportes: subt.transportes,
                 menaje: subt.menaje,
               }}
+              lugarCosto={lugarCosto}
               onQtyChange={(tipo, id, qty) => updateQty(tipo, id, qty)}
               onRemove={(tipo, id) => removeItem(tipo, id)}
               onGuardar={handleSubmit(onSubmit)}
@@ -892,35 +1020,26 @@ export default function Cotizador() {
           </div>
         )}
 
-        {/* ─── Navigation buttons ─── */}
-        <div className="flex items-center justify-between mt-8">
-          <Button
-            variant="outline"
-            onClick={goPrev}
-            disabled={currentStep === 1}
-            className="h-11"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Anterior
-          </Button>
-
-          {currentStep < 5 ? (
-            <Button onClick={goNext} className="h-11 bg-selecta-green hover:bg-selecta-green/90">
-              Siguiente
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-          ) : null}
-        </div>
       </div>
 
-      {/* ─── Floating mini-summary bar (steps 1-4) ─── */}
-      {currentStep < 5 && (
+      {/* ─── Floating bottom bar with navigation + summary ─── */}
+      {currentStep < 6 && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-lg">
           <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center space-x-3 overflow-x-auto">
-              <span className="text-sm font-semibold text-slate-700 whitespace-nowrap">
-                {current.nombre_opcion}
-              </span>
+            {/* Left: Back button */}
+            <Button
+              variant="outline"
+              onClick={goPrev}
+              disabled={currentStep === 1}
+              size="sm"
+              className="h-9"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1.5" />
+              Anterior
+            </Button>
+
+            {/* Center: Summary badges + total */}
+            <div className="flex items-center space-x-3 overflow-x-auto mx-4">
               <div className="hidden sm:flex items-center space-x-2">
                 {current.items.platos.length > 0 && (
                   <Badge variant="outline" className="text-xs whitespace-nowrap">
@@ -946,21 +1065,37 @@ export default function Cotizador() {
                     {(current.items.menaje ?? []).length} menaje
                   </Badge>
                 )}
+                {lugarCosto > 0 && (
+                  <Badge variant="outline" className="text-xs whitespace-nowrap">
+                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full mr-1" />
+                    Lugar ${lugarCosto.toLocaleString()}
+                  </Badge>
+                )}
               </div>
-            </div>
-
-            <div className="flex items-center space-x-4">
               <span className="text-lg font-bold text-emerald-600 whitespace-nowrap">
                 $ {subt.total.toLocaleString()}
               </span>
+            </div>
+
+            {/* Right: Skip + Next buttons */}
+            <div className="flex items-center gap-2">
+              {[2, 3, 4, 5].includes(currentStep) && (
+                <Button
+                  variant="ghost"
+                  onClick={goNext}
+                  size="sm"
+                  className="h-9 text-slate-500 hover:text-slate-700 hidden sm:flex"
+                >
+                  Saltar
+                </Button>
+              )}
               <Button
+                onClick={goNext}
                 size="sm"
-                variant="outline"
-                onClick={() => setCurrentStep(5)}
-                className="whitespace-nowrap"
+                className="h-9 bg-selecta-green hover:bg-selecta-green/90"
               >
-                <Eye className="h-4 w-4 mr-1" />
-                Ver Resumen
+                Siguiente
+                <ArrowRight className="h-4 w-4 ml-1.5" />
               </Button>
             </div>
           </div>

@@ -16,6 +16,7 @@ import {
   Truck,
   ChefHat,
   Package,
+  MapPin,
   CheckCircle2,
   AlertCircle,
   Sparkles,
@@ -32,6 +33,7 @@ type Props = {
   items: CotizacionItemsState;
   total: number;
   subtotales: { platos: number; personal: number; transportes: number; menaje: number };
+  lugarCosto?: number;
   onQtyChange: (tipo: keyof CotizacionItemsState, id: string, qty: number) => void;
   onRemove: (tipo: keyof CotizacionItemsState, id: string) => void;
   onGuardar: () => void;
@@ -79,6 +81,7 @@ export function ResumenCotizacion({
   items,
   total,
   subtotales,
+  lugarCosto = 0,
   onQtyChange,
   onRemove,
   onGuardar,
@@ -102,6 +105,7 @@ export function ResumenCotizacion({
   const personalPercentage = total > 0 ? (subtotales.personal / total) * 100 : 0;
   const transportesPercentage = total > 0 ? (subtotales.transportes / total) * 100 : 0;
   const menajePercentage = total > 0 ? ((subtotales.menaje ?? 0) / total) * 100 : 0;
+  const lugarPercentage = total > 0 ? (lugarCosto / total) * 100 : 0;
 
   // Preparar datos por sección
   const sections = [
@@ -306,8 +310,8 @@ export function ResumenCotizacion({
                         <span className="font-medium text-slate-700">{section.label}</span>
                         <span className="text-slate-600">{section.percentage.toFixed(1)}%</span>
                       </div>
-                      <Progress 
-                        value={section.percentage} 
+                      <Progress
+                        value={section.percentage}
                         className="h-2"
                       />
                     </div>
@@ -316,6 +320,21 @@ export function ResumenCotizacion({
                     </span>
                   </div>
                 ))}
+                {lugarCosto > 0 && (
+                  <div className="flex items-center gap-3">
+                    <MapPin className="h-4 w-4 text-emerald-700" />
+                    <div className="flex-1">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="font-medium text-slate-700">Lugar del Evento</span>
+                        <span className="text-slate-600">{lugarPercentage.toFixed(1)}%</span>
+                      </div>
+                      <Progress value={lugarPercentage} className="h-2" />
+                    </div>
+                    <span className="text-sm font-semibold text-emerald-700">
+                      ${lugarCosto.toLocaleString()}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

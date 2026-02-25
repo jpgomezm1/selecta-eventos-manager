@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { movimientosList, movimientoCreate, movimientoUpdate, movimientoUpsertItems, movimientoConfirmar, movimientoDelete } from "@/integrations/supabase/apiMenaje";
 import { MenajeMovimiento, MenajeMovimientoItem } from "@/types/menaje";
@@ -8,22 +8,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import MovimientoDialog from "./MovimientoDialog";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Plus, 
-  ArrowUpDown, 
-  ArrowUp, 
-  ArrowDown, 
-  Edit3, 
-  Trash2, 
-  Check, 
-  Clock, 
+import {
+  Plus,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Edit3,
+  Trash2,
+  Check,
+  Clock,
   X,
   Filter,
   Calendar,
-  Package
+  Package,
+  AlertTriangle,
+  CheckCircle2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import moment from "moment";
+
+type DiscrepancyInfo = {
+  totalMerma: number;
+  totalFaltante: number;
+  hasFaltante: boolean;
+};
 
 export default function MovimientosPanel() {
   const qc = useQueryClient();
@@ -34,6 +42,58 @@ export default function MovimientosPanel() {
   const [editing, setEditing] = useState<(MenajeMovimiento & { items: MenajeMovimientoItem[] }) | null>(null);
   const [filterTipo, setFilterTipo] = useState("");
   const [filterEstado, setFilterEstado] = useState("");
+
+  // Compute discrepancy info for ingresos by cross-referencing with their matching salida
+  const discrepancyMap = useMemo(() => {
+    const map = new Map<string, DiscrepancyInfo>();
+    if (!data) return map;
+
+    // Build a lookup of salidas by evento_id+reserva_id
+    const salidaMap = new Map<string, MenajeMovimientoItem[]>();
+    for (const m of data) {
+      if (m.tipo === "salida" && m.estado === "confirmado" && m.evento_id) {
+        const key = `${m.evento_id}|${m.reserva_id ?? ""}`;
+        salidaMap.set(key, m.items);
+      }
+    }
+
+    // For each ingreso, compute discrepancy against its matching salida
+    for (const m of data) {
+      if (m.tipo !== "ingreso" || !m.evento_id) continue;
+
+      const key = `${m.evento_id}|${m.reserva_id ?? ""}`;
+      const salidaItems = salidaMap.get(key);
+      if (!salidaItems) continue;
+
+      // Build dispatched quantities map
+      const despachado = new Map<string, number>();
+      for (const si of salidaItems) {
+        despachado.set(si.menaje_id, (despachado.get(si.menaje_id) || 0) + si.cantidad);
+      }
+
+      let totalMerma = 0;
+      let totalFaltante = 0;
+
+      // Sum merma from ingreso items
+      for (const ii of m.items) {
+        totalMerma += ii.merma || 0;
+        const desp = despachado.get(ii.menaje_id) || 0;
+        const faltante = Math.max(0, desp - ii.cantidad - (ii.merma || 0));
+        totalFaltante += faltante;
+      }
+
+      // Items that were dispatched but not returned at all
+      for (const [menajeId, cantDesp] of despachado) {
+        if (!m.items.some((ii) => ii.menaje_id === menajeId)) {
+          totalFaltante += cantDesp;
+        }
+      }
+
+      map.set(m.id, { totalMerma, totalFaltante, hasFaltante: totalFaltante > 0 });
+    }
+
+    return map;
+  }, [data]);
 
   // Filtrar movimientos
   const filteredData = (data ?? []).filter(mov => {
@@ -69,7 +129,7 @@ export default function MovimientosPanel() {
     setOpen(true);
   };
 
-  const handleSave = async (mov: MenajeMovimiento, items: Array<{ menaje_id: string; cantidad: number; merma?: number }>) => {
+  const handleSave = async (mov: MenajeMovimiento, items: Array<{ menaje_id: string; cantidad: number; merma?: number; nota?: string }>) => {
     try {
       let id = mov.id;
       if (!id) {
@@ -97,13 +157,14 @@ export default function MovimientosPanel() {
         await movimientoUpsertItems(id, items);
       }
 
-      toast({ 
+      toast({
         title: "¡Movimiento guardado!",
         description: `El ${mov.tipo} se registró correctamente en el sistema.`
       });
       setOpen(false);
       setEditing(null);
       qc.invalidateQueries({ queryKey: ["movimientos"] });
+      qc.invalidateQueries({ queryKey: ["salidas-confirmadas"] });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
@@ -113,6 +174,7 @@ export default function MovimientosPanel() {
     mutationFn: (id: string) => movimientoConfirmar(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["movimientos"] });
+      qc.invalidateQueries({ queryKey: ["salidas-confirmadas"] });
       toast({
         title: "Movimiento confirmado",
         description: "El stock se ha actualizado correctamente."
@@ -125,6 +187,7 @@ export default function MovimientosPanel() {
     mutationFn: (id: string) => movimientoDelete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["movimientos"] });
+      qc.invalidateQueries({ queryKey: ["salidas-confirmadas"] });
       toast({
         title: "Movimiento eliminado",
         description: "El registro se removió del sistema."
@@ -224,16 +287,16 @@ export default function MovimientosPanel() {
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
             {/* Botones de acción */}
             <div className="flex gap-3">
-              <Button 
+              <Button
                 onClick={() => handleNew("salida")}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
                 <ArrowDown className="h-4 w-4 mr-2" />
                 Nueva Salida
               </Button>
-              
-              <Button 
-                variant="outline" 
+
+              <Button
+                variant="outline"
                 onClick={() => handleNew("ingreso")}
                 className="border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400"
               >
@@ -245,7 +308,7 @@ export default function MovimientosPanel() {
             {/* Filtros */}
             <div className="flex items-center space-x-3">
               <Filter className="h-4 w-4 text-slate-500" />
-              
+
               <select
                 value={filterTipo}
                 onChange={(e) => setFilterTipo(e.target.value)}
@@ -291,7 +354,9 @@ export default function MovimientosPanel() {
                 <TableHead className="font-semibold text-slate-700">Fecha</TableHead>
                 <TableHead className="font-semibold text-slate-700">Tipo</TableHead>
                 <TableHead className="font-semibold text-slate-700">Estado</TableHead>
+                <TableHead className="font-semibold text-slate-700">Evento</TableHead>
                 <TableHead className="font-semibold text-slate-700">Elementos</TableHead>
+                <TableHead className="font-semibold text-slate-700">Resultado</TableHead>
                 <TableHead className="font-semibold text-slate-700">Notas</TableHead>
                 <TableHead className="font-semibold text-slate-700 text-right">Acciones</TableHead>
               </TableRow>
@@ -299,7 +364,7 @@ export default function MovimientosPanel() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12">
+                  <TableCell colSpan={8} className="text-center py-12">
                     <div className="flex flex-col items-center space-y-3">
                       <div className="animate-spin w-8 h-8 border-2 border-slate-200 border-t-selecta-green rounded-full" />
                       <span className="text-slate-500">Cargando movimientos...</span>
@@ -308,7 +373,7 @@ export default function MovimientosPanel() {
                 </TableRow>
               ) : filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12">
+                  <TableCell colSpan={8} className="text-center py-12">
                     <div className="flex flex-col items-center space-y-3">
                       <Package className="h-12 w-12 text-slate-300" />
                       <div>
@@ -326,6 +391,7 @@ export default function MovimientosPanel() {
                   const tipoBadge = getTipoBadge(m.tipo);
                   const EstadoIcon = estadoBadge.icon;
                   const TipoIcon = tipoBadge.icon;
+                  const disc = discrepancyMap.get(m.id);
 
                   return (
                     <TableRow key={m.id} className="hover:bg-slate-50 transition-colors">
@@ -354,106 +420,142 @@ export default function MovimientosPanel() {
                           "flex items-center space-x-1 w-fit",
                           estadoBadge.color === "green" && "bg-green-100 text-green-700 border-green-200",
                           estadoBadge.color === "amber" && "bg-amber-100 text-amber-700 border-amber-200",
-                         estadoBadge.color === "red" && "bg-red-100 text-red-700 border-red-200"
-                       )}>
-                         <EstadoIcon className="h-3 w-3" />
-                         <span className="capitalize">{estadoBadge.label}</span>
-                       </Badge>
-                     </TableCell>
+                          estadoBadge.color === "red" && "bg-red-100 text-red-700 border-red-200"
+                        )}>
+                          <EstadoIcon className="h-3 w-3" />
+                          <span className="capitalize">{estadoBadge.label}</span>
+                        </Badge>
+                      </TableCell>
 
-                     <TableCell>
-                       <div className="max-w-xs">
-                         {m.items.length > 0 ? (
-                           <div className="space-y-1">
-                             {m.items.slice(0, 2).map((item, idx) => (
-                               <div key={idx} className="text-sm text-slate-600">
-                                 <span className="font-medium">
-                                   {item.menaje?.nombre ?? 'Elemento desconocido'}
-                                 </span>
-                                 <span className="text-slate-400 ml-1">
-                                   x{item.cantidad}
-                                 </span>
-                               </div>
-                             ))}
-                             {m.items.length > 2 && (
-                               <div className="text-xs text-slate-500">
-                                 +{m.items.length - 2} más...
-                               </div>
-                             )}
-                           </div>
-                         ) : (
-                           <span className="text-slate-400 text-sm">Sin elementos</span>
-                         )}
-                       </div>
-                     </TableCell>
+                      <TableCell>
+                        {(m as any).nombre_evento ? (
+                          <span className="text-sm font-medium text-slate-700">{(m as any).nombre_evento}</span>
+                        ) : (
+                          <span className="text-slate-400 text-sm">&mdash;</span>
+                        )}
+                      </TableCell>
 
-                     <TableCell>
-                       <div className="max-w-xs">
-                         {m.notas ? (
-                           <span className="text-sm text-slate-600 truncate block">
-                             {m.notas}
-                           </span>
-                         ) : (
-                           <span className="text-slate-400 text-sm">—</span>
-                         )}
-                       </div>
-                     </TableCell>
+                      <TableCell>
+                        <div className="max-w-xs">
+                          {m.items.length > 0 ? (
+                            <div className="space-y-1">
+                              {m.items.slice(0, 2).map((item, idx) => (
+                                <div key={idx} className="text-sm text-slate-600">
+                                  <span className="font-medium">
+                                    {item.menaje?.nombre ?? 'Elemento desconocido'}
+                                  </span>
+                                  <span className="text-slate-400 ml-1">
+                                    x{item.cantidad}
+                                  </span>
+                                </div>
+                              ))}
+                              {m.items.length > 2 && (
+                                <div className="text-xs text-slate-500">
+                                  +{m.items.length - 2} más...
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 text-sm">Sin elementos</span>
+                          )}
+                        </div>
+                      </TableCell>
 
-                     <TableCell className="text-right">
-                       <div className="flex items-center justify-end space-x-2">
-                         <Button
-                           size="sm"
-                           variant="ghost"
-                           onClick={() => handleEdit(m)}
-                           className="text-blue-600 hover:bg-blue-50"
-                         >
-                           <Edit3 className="h-4 w-4" />
-                         </Button>
+                      {/* Resultado / Discrepancy badges */}
+                      <TableCell>
+                        {m.tipo === "ingreso" && disc ? (
+                          <div className="flex flex-col gap-1">
+                            {disc.hasFaltante && (
+                              <Badge className="bg-red-100 text-red-700 border-red-200 text-xs flex items-center space-x-1 w-fit">
+                                <AlertTriangle className="h-3 w-3" />
+                                <span>Faltante: {disc.totalFaltante}</span>
+                              </Badge>
+                            )}
+                            {disc.totalMerma > 0 && (
+                              <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs flex items-center space-x-1 w-fit">
+                                <AlertTriangle className="h-3 w-3" />
+                                <span>Merma: {disc.totalMerma}</span>
+                              </Badge>
+                            )}
+                            {!disc.hasFaltante && disc.totalMerma === 0 && (
+                              <Badge className="bg-green-100 text-green-700 border-green-200 text-xs flex items-center space-x-1 w-fit">
+                                <CheckCircle2 className="h-3 w-3" />
+                                <span>Completo</span>
+                              </Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 text-sm">&mdash;</span>
+                        )}
+                      </TableCell>
 
-                         {m.estado !== "confirmado" && (
-                           <Button
-                             size="sm"
-                             onClick={() => confirmMut.mutate(m.id)}
-                             disabled={confirmMut.isPending}
-                             className="bg-green-500 hover:bg-green-600 text-white text-xs px-3"
-                           >
-                             {confirmMut.isPending ? (
-                               <div className="animate-spin w-3 h-3 border border-white/30 border-t-white rounded-full" />
-                             ) : (
-                               <Check className="h-3 w-3" />
-                             )}
-                           </Button>
-                         )}
+                      <TableCell>
+                        <div className="max-w-xs">
+                          {m.notas ? (
+                            <span className="text-sm text-slate-600 truncate block">
+                              {m.notas}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 text-sm">&mdash;</span>
+                          )}
+                        </div>
+                      </TableCell>
 
-                         <Button
-                           size="sm"
-                           variant="ghost"
-                           onClick={() => deleteMut.mutate(m.id)}
-                           disabled={deleteMut.isPending}
-                           className="text-red-600 hover:bg-red-50"
-                         >
-                           <Trash2 className="h-4 w-4" />
-                         </Button>
-                       </div>
-                     </TableCell>
-                   </TableRow>
-                 );
-               })
-             )}
-           </TableBody>
-         </Table>
-       </div>
-     </Card>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end space-x-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleEdit(m)}
+                            className="text-blue-600 hover:bg-blue-50"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </Button>
 
-     {/* Dialog de movimiento */}
-     {editing && (
-       <MovimientoDialog
-         open={open}
-         onOpenChange={setOpen}
-         movimiento={editing as any}
-         onSave={handleSave}
-       />
-     )}
-   </div>
- );
+                          {m.estado !== "confirmado" && (
+                            <Button
+                              size="sm"
+                              onClick={() => confirmMut.mutate(m.id)}
+                              disabled={confirmMut.isPending}
+                              className="bg-green-500 hover:bg-green-600 text-white text-xs px-3"
+                            >
+                              {confirmMut.isPending ? (
+                                <div className="animate-spin w-3 h-3 border border-white/30 border-t-white rounded-full" />
+                              ) : (
+                                <Check className="h-3 w-3" />
+                              )}
+                            </Button>
+                          )}
+
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => deleteMut.mutate(m.id)}
+                            disabled={deleteMut.isPending}
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+
+      {/* Dialog de movimiento */}
+      {editing && (
+        <MovimientoDialog
+          open={open}
+          onOpenChange={setOpen}
+          movimiento={editing as any}
+          onSave={handleSave}
+        />
+      )}
+    </div>
+  );
 }

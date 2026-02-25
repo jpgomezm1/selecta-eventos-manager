@@ -5,32 +5,7 @@ import type { OrdenCompra, OrdenCompraItem } from "@/types/cotizador";
 export async function generateOrdenCompra(
   eventoId: string
 ): Promise<{ orden: OrdenCompra; items: OrdenCompraItem[] }> {
-  // 1. Get evento + cotizacion info for invitados count
-  const { data: evento, error: evErr } = await supabase
-    .from("eventos")
-    .select("id, cotizacion_version_id")
-    .eq("id", eventoId)
-    .single();
-  if (evErr) throw evErr;
-
-  let numeroInvitados = 1;
-  if (evento.cotizacion_version_id) {
-    const { data: ver } = await supabase
-      .from("cotizacion_versiones")
-      .select("cotizacion_id")
-      .eq("id", evento.cotizacion_version_id)
-      .single();
-    if (ver) {
-      const { data: cot } = await supabase
-        .from("cotizaciones")
-        .select("numero_invitados")
-        .eq("id", ver.cotizacion_id)
-        .single();
-      if (cot) numeroInvitados = cot.numero_invitados || 1;
-    }
-  }
-
-  // 2. Get platos del requerimiento
+  // 1. Get platos del requerimiento
   const { data: reqPlatos } = await supabase
     .from("evento_requerimiento_platos")
     .select("plato_id, cantidad")
@@ -47,7 +22,7 @@ export async function generateOrdenCompra(
     return { orden: mapOrden(orden), items: [] };
   }
 
-  // 3. Get plato ingredients with catalog info
+  // 2. Get plato ingredients with catalog info
   const platoIds = reqPlatos.map((r: any) => r.plato_id);
 
   const [{ data: platoIngredientes }, { data: platosCatalogo }] = await Promise.all([
@@ -68,7 +43,7 @@ export async function generateOrdenCompra(
     reqPlatos.map((r: any) => [r.plato_id, r.cantidad])
   );
 
-  // 4. Aggregate ingredients
+  // 3. Aggregate ingredients
   const ingredienteAgg = new Map<
     string,
     { nombre: string; unidad: string; costo: number; stock: number; totalNecesario: number }
@@ -80,8 +55,9 @@ export async function generateOrdenCompra(
 
     const porcionesReceta = porcionesMap.get(pi.plato_id) || 1;
     const platoCant = platoCantMap.get(pi.plato_id) || 1;
-    const cantidadPorInvitado = Number(pi.cantidad) / porcionesReceta;
-    const totalNecesario = cantidadPorInvitado * platoCant * numeroInvitados;
+    // ingredient per portion × total portions to prepare
+    const cantidadPorPorcion = Number(pi.cantidad) / porcionesReceta;
+    const totalNecesario = cantidadPorPorcion * platoCant;
 
     const existing = ingredienteAgg.get(ing.id);
     if (existing) {
@@ -97,7 +73,7 @@ export async function generateOrdenCompra(
     }
   }
 
-  // 5. Build items
+  // 4. Build items
   const itemRows: Array<{
     ingrediente_id: string;
     nombre: string;
@@ -126,7 +102,7 @@ export async function generateOrdenCompra(
     });
   }
 
-  // 6. Insert order + items
+  // 5. Insert order + items
   const { data: orden, error: oErr } = await supabase
     .from("evento_orden_compra")
     .insert({
@@ -169,13 +145,23 @@ export async function getOrdenCompra(
 
   const { data: items } = await supabase
     .from("evento_orden_compra_items")
-    .select("*")
+    .select("*, ingredientes_catalogo(stock_actual)")
     .eq("orden_id", orden.id)
     .order("nombre");
 
+  // Refresh cantidad_inventario with live stock from ingredientes_catalogo
+  const mapped = (items ?? []).map((r: any) => {
+    const liveStock = Number(r.ingredientes_catalogo?.stock_actual ?? 0);
+    const item = mapItem(r);
+    item.cantidad_inventario = liveStock;
+    item.cantidad_comprar = Math.round(Math.max(0, item.cantidad_necesaria - liveStock) * 100) / 100;
+    item.subtotal = Math.round(item.cantidad_comprar * item.costo_unitario);
+    return item;
+  });
+
   return {
     orden: mapOrden(orden),
-    items: (items ?? []).map(mapItem),
+    items: mapped,
   };
 }
 
@@ -250,77 +236,6 @@ export async function registrarCompraEnInventario(
       await supabase
         .from("ingredientes_catalogo")
         .update({ stock_actual: Number(ing.stock_actual ?? 0) + Number(i.cantidad_comprar) })
-        .eq("id", i.ingrediente_id);
-    }
-  }
-}
-
-/** Create inventory "uso" movement — dispatch ingredients for an event */
-export async function despacharIngredientesEvento(eventoId: string): Promise<void> {
-  // Check if already dispatched
-  const { data: existing } = await supabase
-    .from("inventario_movimientos")
-    .select("id")
-    .eq("evento_id", eventoId)
-    .eq("tipo", "uso")
-    .limit(1)
-    .maybeSingle();
-  if (existing) throw new Error("Los ingredientes ya fueron despachados para este evento.");
-
-  // Get purchased order items
-  const { data: orden } = await supabase
-    .from("evento_orden_compra")
-    .select("id")
-    .eq("evento_id", eventoId)
-    .eq("estado", "comprada")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (!orden) throw new Error("No hay orden de compra en estado 'comprada'.");
-
-  const { data: items, error: iErr } = await supabase
-    .from("evento_orden_compra_items")
-    .select("ingrediente_id, cantidad_necesaria")
-    .eq("orden_id", orden.id);
-  if (iErr) throw iErr;
-
-  const useItems = (items ?? []).filter((i: any) => Number(i.cantidad_necesaria) > 0);
-  if (useItems.length === 0) return;
-
-  // Create "uso" movement
-  const { data: mov, error: mErr } = await supabase
-    .from("inventario_movimientos")
-    .insert({
-      tipo: "uso",
-      estado: "confirmado",
-      evento_id: eventoId,
-      fecha: new Date().toISOString().slice(0, 10),
-      notas: "Despacho de ingredientes para evento",
-    })
-    .select("id")
-    .single();
-  if (mErr) throw mErr;
-
-  const movItems = useItems.map((i: any) => ({
-    movimiento_id: mov.id,
-    ingrediente_id: i.ingrediente_id,
-    cantidad: Number(i.cantidad_necesaria),
-    costo_unitario: 0,
-  }));
-  const { error: miErr } = await supabase.from("inventario_mov_items").insert(movItems);
-  if (miErr) throw miErr;
-
-  // Decrement stock
-  for (const i of useItems) {
-    const { data: ing } = await supabase
-      .from("ingredientes_catalogo")
-      .select("stock_actual")
-      .eq("id", i.ingrediente_id)
-      .single();
-    if (ing) {
-      await supabase
-        .from("ingredientes_catalogo")
-        .update({ stock_actual: Math.max(0, Number(ing.stock_actual ?? 0) - Number(i.cantidad_necesaria)) })
         .eq("id", i.ingrediente_id);
     }
   }

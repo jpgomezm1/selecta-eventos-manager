@@ -40,6 +40,7 @@ export default function InventarioTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<Partial<MenajeCatalogo>>({});
 
   // Filtrar datos
   const filteredData = (data ?? []).filter(item => {
@@ -70,12 +71,30 @@ export default function InventarioTable() {
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  const updateField = (id: string, patch: Partial<MenajeCatalogo>) =>
-    menajeCatalogoUpdate(id, patch).then(() => {
+  const startEditing = (item: MenajeCatalogo) => {
+    setEditingId(item.id);
+    setEditValues({
+      nombre: item.nombre,
+      categoria: item.categoria,
+      unidad: item.unidad,
+      stock_total: item.stock_total,
+      precio_alquiler: item.precio_alquiler,
+    });
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditValues({});
+  };
+
+  const saveEditing = (id: string) => {
+    menajeCatalogoUpdate(id, editValues).then(() => {
       qc.invalidateQueries({ queryKey: ["menaje-catalogo"] });
       setEditingId(null);
+      setEditValues({});
       toast({ title: "Actualizado", description: "Los cambios se guardaron correctamente." });
     });
+  };
 
   const delMut = useMutation({
     mutationFn: (id: string) => menajeCatalogoDelete(id),
@@ -311,9 +330,9 @@ export default function InventarioTable() {
                     <TableRow key={item.id} className="hover:bg-slate-50 transition-colors">
                       <TableCell className="font-medium">
                         {isEditing ? (
-                          <Input 
-                            value={item.nombre} 
-                            onChange={(e) => updateField(item.id, { nombre: e.target.value })}
+                          <Input
+                            value={editValues.nombre ?? ""}
+                            onChange={(e) => setEditValues((v) => ({ ...v, nombre: e.target.value }))}
                             className="w-full"
                             autoFocus
                           />
@@ -327,9 +346,9 @@ export default function InventarioTable() {
 
                       <TableCell>
                         {isEditing ? (
-                          <Input 
-                            value={item.categoria} 
-                            onChange={(e) => updateField(item.id, { categoria: e.target.value })}
+                          <Input
+                            value={editValues.categoria ?? ""}
+                            onChange={(e) => setEditValues((v) => ({ ...v, categoria: e.target.value }))}
                           />
                         ) : (
                           <Badge className="bg-slate-100 text-slate-700 border-slate-200">
@@ -340,9 +359,9 @@ export default function InventarioTable() {
 
                       <TableCell>
                         {isEditing ? (
-                          <Input 
-                            value={item.unidad} 
-                            onChange={(e) => updateField(item.id, { unidad: e.target.value })}
+                          <Input
+                            value={editValues.unidad ?? ""}
+                            onChange={(e) => setEditValues((v) => ({ ...v, unidad: e.target.value }))}
                             className="w-24"
                           />
                         ) : (
@@ -352,11 +371,11 @@ export default function InventarioTable() {
 
                       <TableCell className="text-center">
                         {isEditing ? (
-                          <Input 
-                            type="number" 
+                          <Input
+                            type="number"
                             min="0"
-                            value={item.stock_total} 
-                            onChange={(e) => updateField(item.id, { stock_total: Number(e.target.value) })}
+                            value={editValues.stock_total ?? 0}
+                            onChange={(e) => setEditValues((v) => ({ ...v, stock_total: Number(e.target.value) }))}
                             className="w-20 text-center"
                           />
                         ) : (
@@ -376,8 +395,8 @@ export default function InventarioTable() {
                           <Input
                             type="number"
                             min="0"
-                            value={item.precio_alquiler}
-                            onChange={(e) => updateField(item.id, { precio_alquiler: Number(e.target.value) })}
+                            value={editValues.precio_alquiler ?? 0}
+                            onChange={(e) => setEditValues((v) => ({ ...v, precio_alquiler: Number(e.target.value) }))}
                             className="w-24 text-right"
                           />
                         ) : (
@@ -406,7 +425,7 @@ export default function InventarioTable() {
                              <Button
                                variant="ghost"
                                size="sm"
-                               onClick={() => setEditingId(null)}
+                               onClick={() => saveEditing(item.id)}
                                className="text-green-600 hover:bg-green-50"
                              >
                                <Save className="h-4 w-4" />
@@ -414,7 +433,7 @@ export default function InventarioTable() {
                              <Button
                                variant="ghost"
                                size="sm"
-                               onClick={() => setEditingId(null)}
+                               onClick={cancelEditing}
                                className="text-slate-500 hover:bg-slate-50"
                              >
                                <X className="h-4 w-4" />
@@ -425,7 +444,7 @@ export default function InventarioTable() {
                              <Button
                                variant="ghost"
                                size="sm"
-                               onClick={() => setEditingId(item.id)}
+                               onClick={() => startEditing(item)}
                                className="text-blue-600 hover:bg-blue-50"
                              >
                                <Edit3 className="h-4 w-4" />

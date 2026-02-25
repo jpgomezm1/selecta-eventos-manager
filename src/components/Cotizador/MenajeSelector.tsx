@@ -132,7 +132,16 @@ export function MenajeSelector({
                   </Button>
 
                   <div className="text-center">
-                    <span className="font-semibold text-purple-600 text-sm">{qty}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={qty}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        onQtyChange(item.id, isNaN(val) ? 0 : Math.max(0, val));
+                      }}
+                      className="w-16 text-center font-semibold text-purple-600 text-sm bg-transparent border-0 outline-none focus:ring-1 focus:ring-purple-300 rounded"
+                    />
                     <div className="text-xs text-purple-500">
                       {qty === 1 ? "unidad" : "unidades"}
                     </div>
@@ -216,7 +225,16 @@ export function MenajeSelector({
                   <Button variant="outline" size="sm" onClick={() => onQtyChange(item.id, Math.max(0, qty - 1))} className="h-8 w-8 p-0">
                     <Minus className="h-3 w-3" />
                   </Button>
-                  <span className="w-8 text-center font-semibold">{qty}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={qty}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      onQtyChange(item.id, isNaN(val) ? 0 : Math.max(0, val));
+                    }}
+                    className="w-16 text-center font-semibold bg-transparent border border-slate-200 rounded outline-none focus:ring-1 focus:ring-purple-300 h-8"
+                  />
                   <Button variant="outline" size="sm" onClick={() => onQtyChange(item.id, qty + 1)} className="h-8 w-8 p-0">
                     <Plus className="h-3 w-3" />
                   </Button>

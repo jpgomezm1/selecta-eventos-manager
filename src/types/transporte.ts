@@ -6,8 +6,10 @@ export type TransporteOrden = {
     pickup_direccion: string | null;
     descripcion_carga: string | null;
     destino_direccion: string | null;
-    hora_descarga: string | null;   // "HH:MM:SS"
-    hora_recogida: string | null;   // "HH:MM:SS"
+    hora_recepcion_inicio: string | null;  // "HH:MM:SS"
+    hora_recepcion_fin: string | null;     // "HH:MM:SS"
+    hora_recogida_inicio: string | null;   // "HH:MM:SS"
+    hora_recogida_fin: string | null;      // "HH:MM:SS"
     contacto_nombre: string | null;
     contacto_telefono: string | null;
     vehiculo: string | null;
@@ -15,4 +17,4 @@ export type TransporteOrden = {
     created_at?: string;
     updated_at?: string;
   };
-  
+

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, X, Users, Calendar, LayoutDashboard, LogOut } from "lucide-react";
+import { Menu, X, Users, Calendar, LayoutDashboard, LogOut, FileText, Boxes, CookingPot, Warehouse, UserCircle, SlidersHorizontal, TrendingUp, Truck } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -7,9 +7,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const navigation = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Personal", url: "/personal", icon: Users },
   { title: "Eventos", url: "/eventos", icon: Calendar },
+  { title: "Cotizaciones", url: "/cotizaciones", icon: FileText },
+  { title: "Pipeline", url: "/pipeline", icon: TrendingUp },
+  { title: "Clientes", url: "/clientes", icon: UserCircle },
+  { title: "Menaje", url: "/bodega", icon: Boxes },
+  { title: "Recetario", url: "/recetario", icon: CookingPot },
+  { title: "Transporte", url: "/transporte", icon: Truck },
+  { title: "Inventario", url: "/inventario", icon: Warehouse },
+  { title: "Catálogos", url: "/catalogos", icon: SlidersHorizontal },
 ];
 
 export function MobileSidebar() {

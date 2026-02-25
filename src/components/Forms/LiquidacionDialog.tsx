@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EventoConPersonal } from "@/types/database";
-import { calcularPagoPersonal, getModalidadCobroLabel } from "@/lib/calcularPagoPersonal";
+import { calcularPagoPersonal, getModalidadCobroLabel, requiereRegistroHoras } from "@/lib/calcularPagoPersonal";
 
 interface LiquidacionDialogProps {
   evento: EventoConPersonal | null;
@@ -119,8 +119,10 @@ export function LiquidacionDialog({ evento, isOpen, onClose, onLiquidationComple
   const empleadosPendientes = evento?.personal.filter(p => p.estado_pago !== 'pagado') || [];
   const empleadosPagados = evento?.personal.filter(p => p.estado_pago === 'pagado') || [];
   
-  // Verificar si hay empleados pendientes sin horas definidas
-  const empleadosSinHoras = empleadosPendientes.filter(p => !p.horas_trabajadas || p.horas_trabajadas === 0);
+  // Only flag workers who need hours (por_hora, jornada_hasta_10h)
+  const empleadosSinHoras = empleadosPendientes.filter(p =>
+    requiereRegistroHoras(p.modalidad_cobro) && (!p.horas_trabajadas || p.horas_trabajadas === 0)
+  );
   const puedeLiberar = empleadosSinHoras.length === 0 && empleadosPendientes.length > 0;
   
   // Calcular totales
@@ -210,8 +212,8 @@ export function LiquidacionDialog({ evento, isOpen, onClose, onLiquidationComple
                   <AlertTriangle className="h-6 w-6 text-white animate-pulse" />
                 </div>
                 <div>
-                  <h4 className="text-xl font-bold text-orange-800">Empleados sin horas registradas</h4>
-                  <p className="text-sm text-orange-700">Se requiere completar la información antes de proceder</p>
+                  <h4 className="text-xl font-bold text-orange-800">Empleados por hora sin horas registradas</h4>
+                  <p className="text-sm text-orange-700">Estos empleados cobran por hora y necesitan horas definidas para calcular su pago</p>
                 </div>
               </div>
               <div className="bg-white/60 rounded-2xl p-4 space-y-2">
@@ -355,7 +357,7 @@ export function LiquidacionDialog({ evento, isOpen, onClose, onLiquidationComple
                               <div className="flex flex-col items-end">
                                 <div className="flex items-center space-x-1">
                                   <DollarSign className="h-4 w-4 text-selecta-green" />
-                                  <span className="font-semibold text-slate-800">{Number(person.tarifa_hora).toLocaleString()}</span>
+                                  <span className="font-semibold text-slate-800">{(Number(person.tarifa) || 0).toLocaleString()}</span>
                                 </div>
                                 <span className="text-xs text-slate-500">{getModalidadCobroLabel(person.modalidad_cobro)}</span>
                               </div>
@@ -416,7 +418,7 @@ export function LiquidacionDialog({ evento, isOpen, onClose, onLiquidationComple
                               <div className="flex flex-col items-end">
                                 <div className="flex items-center space-x-1">
                                   <DollarSign className="h-4 w-4 text-selecta-green" />
-                                  <span className="font-semibold text-slate-600">{Number(person.tarifa_hora).toLocaleString()}</span>
+                                  <span className="font-semibold text-slate-600">{(Number(person.tarifa) || 0).toLocaleString()}</span>
                                 </div>
                                 <span className="text-xs text-slate-500">{getModalidadCobroLabel(person.modalidad_cobro)}</span>
                               </div>

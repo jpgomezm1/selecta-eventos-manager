@@ -1,23 +1,21 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { reservasCalendario, menajeDisponiblePorRango } from "@/integrations/supabase/apiMenaje";
-import { MenajeReservaCal, MenajeDisponible } from "@/types/menaje";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { reservasCalendario } from "@/integrations/supabase/apiMenaje";
+import { MenajeReservaCal } from "@/types/menaje";
 import { Calendar as BigCalendar, momentLocalizer, Views } from "react-big-calendar";
 import moment from "moment";
 import "moment/locale/es";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  Calendar as CalendarIcon, 
-  Clock, 
-  Package, 
-  Users, 
+import {
+  Calendar as CalendarIcon,
+  Clock,
+  Package,
   Info,
-  TrendingUp,
   AlertCircle
 } from "lucide-react";
+import ReservaDetalleDialog from "./ReservaDetalleDialog";
 
 moment.locale("es");
 const localizer = momentLocalizer(moment);
@@ -31,13 +29,16 @@ type CalEvent = {
 };
 
 export default function ReservasCalendar() {
-  const { toast } = useToast();
+  const qc = useQueryClient();
   const [range, setRange] = useState<{ from: Date; to: Date }>(() => {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return { from: start, to: end };
   });
+
+  const [selectedReserva, setSelectedReserva] = useState<MenajeReservaCal | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const fromStr = moment(range.from).format("YYYY-MM-DD");
   const toStr = moment(range.to).format("YYYY-MM-DD");
@@ -50,19 +51,19 @@ export default function ReservasCalendar() {
   const events: CalEvent[] = useMemo(() => {
     return (reservas ?? []).map((r) => ({
       id: r.reserva_id,
-      title: `${r.nombre_evento} • ${r.items.length} ítems`,
+      title: `${r.nombre_evento} • ${r.items.length} items`,
       start: new Date(r.fecha_inicio),
       end: new Date(r.fecha_fin),
       resource: r,
     }));
   }, [reservas]);
 
-  // Estadísticas del período
+  // Stats
   const stats = useMemo(() => {
     const totalReservas = reservas?.length ?? 0;
     const totalItems = reservas?.reduce((sum, r) => sum + r.items.length, 0) ?? 0;
-    const eventosActivos = reservas?.filter(r => 
-      moment(r.fecha_inicio).isSameOrBefore(moment()) && 
+    const eventosActivos = reservas?.filter(r =>
+      moment(r.fecha_inicio).isSameOrBefore(moment()) &&
       moment(r.fecha_fin).isSameOrAfter(moment())
     ).length ?? 0;
 
@@ -79,41 +80,27 @@ export default function ReservasCalendar() {
     }
   };
 
-  const onSelectEvent = async (e: CalEvent) => {
-    try {
-      const d = moment(e.start).format("YYYY-MM-DD");
-      const list: MenajeDisponible[] = await menajeDisponiblePorRango(d, d);
-      const comprometidos = list.filter((x) => x.reservado > 0).slice(0, 10);
-      
-      if (comprometidos.length > 0) {
-        const msg = comprometidos.map((x) => `• ${x.nombre}: ${x.reservado} reservado (${x.disponible} disponible)`).join("\n");
-        toast({ 
-          title: `📅 ${e.resource.nombre_evento}`,
-          description: `Elementos comprometidos:\n${msg}`
-        });
-      } else {
-        toast({ 
-          title: `📅 ${e.resource.nombre_evento}`,
-          description: "Este evento no tiene compromisos relevantes de inventario."
-        });
-      }
-    } catch (err: any) {
-      toast({ 
-        title: "Error al consultar disponibilidad", 
-        description: err.message, 
-        variant: "destructive" 
-      });
-    }
+  const onSelectEvent = (e: CalEvent) => {
+    setSelectedReserva(e.resource);
+    setDialogOpen(true);
   };
 
-  // Estilo personalizado para eventos
+  // Color by estado
   const eventStyleGetter = (event: CalEvent) => {
-    const itemCount = event.resource.items.length;
-    let backgroundColor = '#3174ad';
-    
-    if (itemCount > 10) backgroundColor = '#f59e0b'; // Amber para muchos items
-    if (itemCount > 20) backgroundColor = '#ef4444'; // Red para crítico
-    
+    const estado = event.resource.estado;
+    let backgroundColor: string;
+
+    switch (estado) {
+      case "confirmado":
+        backgroundColor = "#3b82f6"; // blue
+        break;
+      case "devuelto":
+        backgroundColor = "#10b981"; // green
+        break;
+      default:
+        backgroundColor = "#94a3b8"; // slate/gray for borrador
+    }
+
     return {
       style: {
         backgroundColor,
@@ -130,7 +117,7 @@ export default function ReservasCalendar() {
 
   return (
     <div className="space-y-6">
-      {/* Estadísticas del período */}
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-blue-50 border-blue-200">
           <CardContent className="p-4">
@@ -140,7 +127,7 @@ export default function ReservasCalendar() {
               </div>
               <div>
                 <div className="text-2xl font-bold text-blue-800">{stats.totalReservas}</div>
-                <div className="text-sm text-blue-600">Reservas en el período</div>
+                <div className="text-sm text-blue-600">Reservas en el periodo</div>
               </div>
             </div>
           </CardContent>
@@ -175,34 +162,34 @@ export default function ReservasCalendar() {
         </Card>
       </div>
 
-      {/* Leyenda de colores */}
+      {/* Legend by estado */}
       <Card className="bg-slate-50 border-slate-200">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Info className="h-4 w-4 text-slate-500" />
-              <span className="text-sm font-medium text-slate-700">Leyenda de eventos:</span>
+              <span className="text-sm font-medium text-slate-700">Leyenda de estados:</span>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-slate-400 rounded" />
+                <span className="text-xs text-slate-600">Borrador</span>
+              </div>
+              <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 bg-blue-500 rounded" />
-                <span className="text-xs text-slate-600">1-10 elementos</span>
+                <span className="text-xs text-slate-600">Confirmado</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-amber-500 rounded" />
-                <span className="text-xs text-slate-600">11-20 elementos</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-red-500 rounded" />
-                <span className="text-xs text-slate-600">20+ elementos</span>
+                <div className="w-4 h-4 bg-emerald-500 rounded" />
+                <span className="text-xs text-slate-600">Devuelto</span>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Calendario */}
+      {/* Calendar */}
       <Card className="bg-white border-slate-200 overflow-hidden">
         <CardHeader className="bg-slate-50 border-b border-slate-200 pb-4">
           <div className="flex items-center justify-between">
@@ -263,7 +250,7 @@ export default function ReservasCalendar() {
                 font-weight: 500;
               }
             `}</style>
-            
+
             <BigCalendar
               localizer={localizer}
               events={events}
@@ -287,21 +274,21 @@ export default function ReservasCalendar() {
                 time: "Hora",
                 event: "Evento",
                 noEventsInRange: "No hay eventos en este rango de fechas",
-                showMore: (total) => `+${total} más`
+                showMore: (total) => `+${total} mas`
               }}
             />
           </div>
         </CardContent>
       </Card>
 
-      {/* Información adicional */}
+      {/* Empty state */}
       {!isLoading && reservas && reservas.length === 0 && (
         <Card className="bg-amber-50 border-amber-200">
           <CardContent className="p-6 text-center">
             <div className="flex flex-col items-center space-y-3">
               <AlertCircle className="h-12 w-12 text-amber-500" />
               <div>
-                <h3 className="font-medium text-amber-800">No hay reservas en este período</h3>
+                <h3 className="font-medium text-amber-800">No hay reservas en este periodo</h3>
                 <p className="text-sm text-amber-600 mt-1">
                   Selecciona un rango diferente o verifica que existan eventos programados
                 </p>
@@ -309,6 +296,16 @@ export default function ReservasCalendar() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Reserva detail dialog */}
+      {selectedReserva && (
+        <ReservaDetalleDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          reservaCal={selectedReserva}
+          onUpdated={() => qc.invalidateQueries({ queryKey: ["bodega-cal"] })}
+        />
       )}
     </div>
   );

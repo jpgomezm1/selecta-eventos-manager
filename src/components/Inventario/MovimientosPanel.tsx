@@ -4,6 +4,7 @@ import {
   inventarioMovimientosList,
   inventarioMovimientoConfirmar,
   inventarioMovimientoDelete,
+  inventarioMovimientoDeleteConReversa,
 } from "@/integrations/supabase/apiInventario";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,9 +14,16 @@ import {
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, ChevronDown, ChevronLeft, ChevronRight, Check, Trash2 } from "lucide-react";
+import { Plus, ChevronDown, ChevronLeft, ChevronRight, Check, Trash2, Camera, Receipt } from "lucide-react";
 import NuevoMovimientoDialog from "./NuevoMovimientoDialog";
+import FacturaIngresoDialog from "./FacturaIngresoDialog";
+import { getFacturaSignedUrl } from "@/services/facturaStorage";
 import type { InventarioMovimiento } from "@/types/cotizador";
 
 const PAGE_SIZE = 15;
@@ -38,6 +46,7 @@ export default function MovimientosPanel() {
   const qc = useQueryClient();
   const [page, setPage] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [facturaDialogOpen, setFacturaDialogOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const { data: movimientos = [], isLoading } = useQuery({
@@ -59,15 +68,30 @@ export default function MovimientosPanel() {
   });
 
   const deleteMut = useMutation({
-    mutationFn: inventarioMovimientoDelete,
+    mutationFn: async (mov: (typeof movimientos)[0]) => {
+      if (mov.estado === "confirmado") {
+        return inventarioMovimientoDeleteConReversa(mov.id, mov.tipo, mov.items);
+      }
+      return inventarioMovimientoDelete(mov.id);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["inventario-movimientos"] });
+      qc.invalidateQueries({ queryKey: ["ingredientes-stock"] });
       toast({ title: "Movimiento eliminado" });
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });
+
+  async function openFactura(path: string) {
+    try {
+      const url = await getFacturaSignedUrl(path);
+      window.open(url, "_blank");
+    } catch {
+      toast({ title: "Error", description: "No se pudo abrir la factura", variant: "destructive" });
+    }
+  }
 
   const totalPages = Math.max(1, Math.ceil(movimientos.length / PAGE_SIZE));
   const paginated = movimientos.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -82,7 +106,14 @@ export default function MovimientosPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          onClick={() => setFacturaDialogOpen(true)}
+          className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+        >
+          <Camera className="h-4 w-4 mr-2" /> Registrar Ingreso
+        </Button>
         <Button onClick={() => setDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" /> Nuevo movimiento
         </Button>
@@ -124,33 +155,79 @@ export default function MovimientosPanel() {
                           </TableCell>
                           <TableCell>{mov.fecha}</TableCell>
                           <TableCell><Badge variant={tb.variant}>{tb.label}</Badge></TableCell>
-                          <TableCell>{mov.proveedor || (mov.evento_id ? "Evento vinculado" : "—")}</TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center gap-1.5">
+                              {mov.proveedor || (mov.evento_id ? "Evento vinculado" : "—")}
+                              {(mov as any).factura_url && (
+                                <button
+                                  className="text-emerald-600 hover:text-emerald-800"
+                                  title="Ver factura"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openFactura((mov as any).factura_url);
+                                  }}
+                                >
+                                  <Receipt className="h-4 w-4" />
+                                </button>
+                              )}
+                            </span>
+                          </TableCell>
                           <TableCell><Badge variant={eb.variant}>{eb.label}</Badge></TableCell>
                           <TableCell className="text-right">{mov.items.length}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                               {mov.estado === "borrador" && (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-green-600"
-                                    onClick={() => confirmarMut.mutate(mov)}
-                                    disabled={confirmarMut.isPending}
-                                  >
-                                    <Check className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-red-500"
-                                    onClick={() => deleteMut.mutate(mov.id)}
-                                    disabled={deleteMut.isPending}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-green-600"
+                                  onClick={() => confirmarMut.mutate(mov)}
+                                  disabled={confirmarMut.isPending}
+                                >
+                                  <Check className="h-4 w-4" />
+                                </Button>
                               )}
+                              {mov.estado === "confirmado" ? (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-red-500"
+                                      disabled={deleteMut.isPending}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Eliminar movimiento confirmado</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Se revertirá el stock de {mov.items.length} ingrediente(s) y se eliminará este movimiento. Esta acción no se puede deshacer.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => deleteMut.mutate(mov)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Eliminar y revertir stock
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              ) : mov.estado === "borrador" ? (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-red-500"
+                                  onClick={() => deleteMut.mutate(mov)}
+                                  disabled={deleteMut.isPending}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              ) : null}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -209,6 +286,7 @@ export default function MovimientosPanel() {
       )}
 
       <NuevoMovimientoDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <FacturaIngresoDialog open={facturaDialogOpen} onOpenChange={setFacturaDialogOpen} />
     </div>
   );
 }

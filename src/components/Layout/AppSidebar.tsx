@@ -11,6 +11,10 @@ import {
   Boxes,
   CookingPot,
   Warehouse,
+  UserCircle,
+  SlidersHorizontal,
+  TrendingUp,
+  Truck,
 } from "lucide-react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -24,9 +28,13 @@ const navigation = [
   { title: "Personal", url: "/personal", icon: Users },
   { title: "Eventos", url: "/eventos", icon: Calendar },
   { title: "Cotizaciones", url: "/cotizaciones", icon: FileText },
+  { title: "Pipeline", url: "/pipeline", icon: TrendingUp },
+  { title: "Clientes", url: "/clientes", icon: UserCircle },
   { title: "Menaje", url: "/bodega", icon: Boxes },
   { title: "Recetario", url: "/recetario", icon: CookingPot },
+  { title: "Transporte", url: "/transporte", icon: Truck },
   { title: "Inventario", url: "/inventario", icon: Warehouse },
+  { title: "Catálogos", url: "/catalogos", icon: SlidersHorizontal },
 ];
 
 export function AppSidebar() {

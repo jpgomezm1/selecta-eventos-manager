@@ -65,3 +65,23 @@ export async function setTransporteOrdenEstado(id: string, estado: TransporteOrd
   if (error) throw error;
   return data as TransporteOrden;
 }
+
+/** Listar TODAS las órdenes de transporte con datos del evento */
+export async function listAllTransporteOrdenes(): Promise<
+  (TransporteOrden & { nombre_evento: string; fecha_evento: string })[]
+> {
+  const { data, error } = await supabase
+    .from("transporte_ordenes")
+    .select("*, eventos:evento_id(nombre_evento, fecha_evento)")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+
+  return (data || []).map((row: any) => {
+    const { eventos, ...orden } = row;
+    return {
+      ...orden,
+      nombre_evento: eventos?.nombre_evento ?? "Sin evento",
+      fecha_evento: eventos?.fecha_evento ?? "",
+    } as TransporteOrden & { nombre_evento: string; fecha_evento: string };
+  });
+}

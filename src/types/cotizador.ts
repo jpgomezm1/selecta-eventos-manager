@@ -17,6 +17,7 @@ export interface IngredienteCatalogo {
     evento_id: string | null;
     proveedor: string | null;
     notas: string | null;
+    factura_url: string | null;
   }
 
   export interface InventarioMovItem {
@@ -96,12 +97,37 @@ export interface IngredienteCatalogo {
     created_at?: string | null;
   }
   
+  export interface LugarCatalogo {
+    id: string;
+    nombre: string;
+    direccion: string | null;
+    ciudad: string | null;
+    capacidad_estimada: number | null;
+    precio_referencia: number;
+    notas: string | null;
+    activo: boolean;
+    created_at?: string | null;
+  }
+
   export type EstadoCotizacion = "Pendiente por Aprobación" | "Enviada" | "Cotización Aprobada" | "Rechazada";
-  
+
+  export interface LugarOption {
+    id?: string;
+    nombre: string;
+    direccion?: string | null;
+    ciudad?: string | null;
+    capacidad_estimada?: number | null;
+    precio_referencia?: number | null;
+    notas?: string | null;
+    es_seleccionado: boolean;
+    orden?: number;
+  }
+
   export interface Cotizacion {
     id: string;
     nombre_cotizacion: string;
     cliente_nombre: string | null;
+    cliente_id?: string | null;
     numero_invitados: number;
     fecha_evento_estimada: string | null; // ISO
     ubicacion_evento?: string | null;
@@ -116,6 +142,14 @@ export interface IngredienteCatalogo {
     hora_montaje_fin?: string | null;
     created_at?: string | null;
     updated_at?: string | null;
+    motivo_rechazo?: string | null;
+    notas_rechazo?: string | null;
+    fecha_envio?: string | null;
+    fecha_cierre?: string | null;
+    cliente?: { nombre: string; empresa: string | null; telefono: string | null; correo: string | null; tipo?: string; cedula?: string | null } | null;
+    contacto_id?: string | null;
+    contacto?: { nombre: string; cargo: string | null; telefono: string | null; correo: string | null } | null;
+    lugares?: LugarOption[];
   }
 
   /** Nueva: versión/opción */
@@ -176,6 +210,8 @@ export interface IngredienteCatalogo {
   export interface CotizacionInsert {
     nombre_cotizacion: string;
     cliente_nombre: string | null;
+    cliente_id?: string | null;
+    contacto_id?: string | null;
     numero_invitados: number;
     fecha_evento_estimada: Date | null;
     ubicacion_evento?: string | null;
@@ -203,6 +239,7 @@ export interface IngredienteCatalogo {
   export interface CotizacionWithVersionsDraft {
     cotizacion: CotizacionInsert;
     versiones: CotizacionVersionInsert[]; // al menos 1
+    lugares?: LugarOption[];
   }
   
   /** Para UI del editor con opciones */
@@ -268,5 +305,13 @@ export interface IngredienteCatalogo {
     costo_unitario: number;
     subtotal: number;
   }
-  
+
+  export const MOTIVOS_RECHAZO = [
+    "Precio",
+    "Competencia",
+    "Cambio de fecha",
+    "Cliente desistió",
+    "Otro",
+  ] as const;
+
   

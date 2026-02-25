@@ -270,12 +270,23 @@ export default function EventoDetallePage() {
             eventoId={head.id}
             fechaEvento={head.fecha_evento}
             estadoLiquidacion={head.estado_liquidacion}
+            onChanged={() => refetchChecklist()}
           />
         </TabsContent>
 
         {/* Tab: Menaje */}
         <TabsContent value="menaje" className="mt-4">
-          <MenajePanel eventoId={head.id} fechaEvento={head.fecha_evento} />
+          <MenajePanel
+            eventoId={head.id}
+            fechaEvento={head.fecha_evento}
+            eventoInfo={{
+              nombre_evento: head.nombre_evento,
+              fecha_evento: head.fecha_evento,
+              ubicacion: head.ubicacion,
+              comercial_encargado: head.comercial_encargado,
+            }}
+            onChanged={() => refetchChecklist()}
+          />
         </TabsContent>
 
         {/* Tab: Compras */}
@@ -288,14 +299,23 @@ export default function EventoDetallePage() {
               </div>
             </div>
             <div className="p-4">
-              <OrdenCompraPanel eventoId={head.id} onChanged={() => refetchChecklist()} />
+              <OrdenCompraPanel
+                eventoId={head.id}
+                eventoInfo={{
+                  nombre_evento: head.nombre_evento,
+                  fecha_evento: head.fecha_evento,
+                  ubicacion: head.ubicacion,
+                  comercial_encargado: head.comercial_encargado,
+                }}
+                onChanged={() => refetchChecklist()}
+              />
             </div>
           </Card>
         </TabsContent>
 
         {/* Tab: Transporte */}
         <TabsContent value="transporte" className="mt-4">
-          <TransportePanel eventoId={head.id} />
+          <TransportePanel eventoId={head.id} onChanged={() => refetchChecklist()} />
         </TabsContent>
 
         {/* Tab: Financiero */}

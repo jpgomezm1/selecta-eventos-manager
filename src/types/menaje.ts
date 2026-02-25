@@ -59,6 +59,7 @@ export type MenajeCatalogo = {
     menaje_id: string;
     cantidad: number;
     merma: number;
+    nota?: string | null;
     menaje?: MenajeCatalogo;
   };
   
@@ -70,5 +71,24 @@ export type MenajeCatalogo = {
     fecha_fin: string;
     estado: string;
     items: Array<{ menaje_id: string; cantidad: number }>;
+  };
+
+  export type OrdenMenajeItem = {
+    menaje_id: string;
+    nombre: string;
+    unidad: string;
+    cantidad_requerida: number;
+    disponible: number;
+    cantidad_reservar: number;
+    precio_alquiler: number;
+  };
+
+  export type SalidaConEvento = {
+    movimiento_id: string;
+    evento_id: string;
+    nombre_evento: string;
+    fecha: string;
+    reserva_id: string | null;
+    items: Array<{ menaje_id: string; cantidad: number; nombre: string; unidad: string }>;
   };
   

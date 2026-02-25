@@ -14,6 +14,7 @@ import type {
   PlatoIngrediente,
   IngredienteProveedor,
   PersonalAsignacion,
+  LugarOption,
 } from "@/types/cotizador";
 
 /** =====================
@@ -43,40 +44,105 @@ export async function getPersonalCostosCatalogo(): Promise<PersonalCosto[]> {
     .select("*")
     .order("rol", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((d: any) => ({ ...d, tarifa: Number(d.tarifa) }));
+  return (data ?? []).map((d: any) => ({ ...d, tarifa: Number(d.tarifa) || 0 }));
+}
+
+/** =====================
+ *   MIGRATION CHECK
+ *  ===================== */
+// Cache whether the new tables/columns exist so we don't retry on every call
+let _migrationChecked = false;
+let _hasClientesTable = false;
+let _hasLugaresTable = false;
+let _hasClienteIdCol = false;
+let _hasContactoIdCol = false;
+let _hasContactosTable = false;
+
+async function checkMigration() {
+  if (_migrationChecked) return;
+  _migrationChecked = true;
+
+  // Check clientes table
+  const { error: e1 } = await supabase.from("clientes").select("id").limit(0);
+  _hasClientesTable = !e1;
+
+  // Check cotizacion_lugares table
+  const { error: e2 } = await supabase.from("cotizacion_lugares").select("id").limit(0);
+  _hasLugaresTable = !e2;
+
+  // Check cliente_id column on cotizaciones (try a read with that column)
+  const { error: e3 } = await supabase.from("cotizaciones").select("cliente_id").limit(0);
+  _hasClienteIdCol = !e3;
+
+  // Check cliente_contactos table
+  const { error: e4 } = await supabase.from("cliente_contactos").select("id").limit(0);
+  _hasContactosTable = !e4;
+
+  // Check contacto_id column on cotizaciones
+  const { error: e5 } = await supabase.from("cotizaciones").select("contacto_id").limit(0);
+  _hasContactoIdCol = !e5;
 }
 
 /** =====================
  *   LISTADO / DETALLE
  *  ===================== */
 export async function listCotizaciones(): Promise<Cotizacion[]> {
+  await checkMigration();
+
+  let selectParts = ["*"];
+  if (_hasClientesTable) selectParts.push("clientes(nombre, empresa, telefono, correo, tipo, cedula)");
+  if (_hasContactosTable && _hasContactoIdCol) selectParts.push("cliente_contactos(nombre, cargo, telefono, correo)");
+  const selectQuery = selectParts.join(", ");
+
   const { data, error } = await supabase
     .from("cotizaciones")
-    .select("*")
+    .select(selectQuery)
     .order("created_at", { ascending: false });
   if (error) throw error;
+
   return (data ?? []).map((d: any) => ({
     ...d,
     total_cotizado: Number(d.total_cotizado),
+    cliente: d.clientes ?? null,
+    contacto: d.cliente_contactos ?? null,
   }));
 }
 
 export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
   cotizacion: Cotizacion;
   versiones: Array<CotizacionVersion & { items: CotizacionItemsState }>;
+  lugares: LugarOption[];
 }> {
+  await checkMigration();
+
+  let selectParts = ["*"];
+  if (_hasClientesTable) selectParts.push("clientes(nombre, empresa, telefono, correo, tipo, cedula)");
+  if (_hasContactosTable && _hasContactoIdCol) selectParts.push("cliente_contactos(nombre, cargo, telefono, correo)");
+  const selectQuery = selectParts.join(", ");
+
   const { data: cot, error: e1 } = await supabase
     .from("cotizaciones")
-    .select("*")
+    .select(selectQuery)
     .eq("id", cotizacion_id)
     .single();
-  if (e1) throw e1;
 
   const { data: vers, error: e2 } = await supabase
     .from("cotizacion_versiones")
     .select("*")
     .eq("cotizacion_id", cotizacion_id)
     .order("version_index", { ascending: true });
+
+  let lugares: any[] = [];
+  if (_hasLugaresTable) {
+    const { data } = await supabase
+      .from("cotizacion_lugares")
+      .select("*")
+      .eq("cotizacion_id", cotizacion_id)
+      .order("orden", { ascending: true });
+    lugares = data ?? [];
+  }
+
+  if (e1) throw e1;
   if (e2) throw e2;
 
   const versiones = await Promise.all(
@@ -124,25 +190,25 @@ export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
         platos: (p ?? []).map((x: any) => ({
           plato_id: x.plato_id,
           nombre: x.platos_catalogo?.nombre || "Plato sin nombre",
-          precio_unitario: Number(x.precio_unitario),
+          precio_unitario: Number(x.precio_unitario) || 0,
           cantidad: x.cantidad,
         })),
         transportes: (t ?? []).map((x: any) => ({
           transporte_id: x.transporte_id,
           lugar: x.transporte_tarifas?.lugar || "Lugar sin especificar",
-          tarifa_unitaria: Number(x.tarifa_unitaria),
+          tarifa_unitaria: Number(x.tarifa_unitaria) || 0,
           cantidad: x.cantidad,
         })),
         personal: (pe ?? []).map((x: any) => ({
           personal_costo_id: x.personal_costo_id,
           rol: x.personal_costos_catalogo?.rol || "Rol sin especificar",
-          tarifa_estimada_por_persona: Number(x.tarifa_estimada_por_persona),
+          tarifa_estimada_por_persona: Number(x.tarifa_estimada_por_persona) || 0,
           cantidad: x.cantidad,
         })),
         menaje: (me ?? []).map((x: any) => ({
           menaje_id: x.menaje_id,
           nombre: x.menaje_catalogo?.nombre || "Menaje sin nombre",
-          precio_alquiler: Number(x.precio_alquiler),
+          precio_alquiler: Number(x.precio_alquiler) || 0,
           cantidad: x.cantidad,
         })),
       };
@@ -159,8 +225,21 @@ export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
     cotizacion: {
       ...(cot as any),
       total_cotizado: Number((cot as any).total_cotizado),
+      cliente: (cot as any).clientes ?? null,
+      contacto: (cot as any).cliente_contactos ?? null,
     } as Cotizacion,
     versiones,
+    lugares: (lugares ?? []).map((l: any) => ({
+      id: l.id,
+      nombre: l.nombre,
+      direccion: l.direccion,
+      ciudad: l.ciudad,
+      capacidad_estimada: l.capacidad_estimada,
+      precio_referencia: Number(l.precio_referencia ?? 0),
+      notas: l.notas,
+      es_seleccionado: l.es_seleccionado,
+      orden: l.orden,
+    })) as LugarOption[],
   };
 }
 
@@ -169,26 +248,40 @@ export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
  *  ===================== */
 export async function createCotizacionWithVersions(payload: CotizacionWithVersionsDraft) {
   // 1) Insert cabecera
+  const insertData: any = {
+    nombre_cotizacion: payload.cotizacion.nombre_cotizacion,
+    cliente_nombre: payload.cotizacion.cliente_nombre,
+    numero_invitados: payload.cotizacion.numero_invitados,
+    fecha_evento_estimada: payload.cotizacion.fecha_evento_estimada
+      ? payload.cotizacion.fecha_evento_estimada.toISOString().slice(0, 10)
+      : null,
+    ubicacion_evento: payload.cotizacion.ubicacion_evento,
+    comercial_encargado: payload.cotizacion.comercial_encargado,
+    total_cotizado: payload.cotizacion.total_cotizado,
+    estado: payload.cotizacion.estado,
+    contacto_telefono: payload.cotizacion.contacto_telefono || null,
+    contacto_correo: payload.cotizacion.contacto_correo || null,
+    hora_inicio: payload.cotizacion.hora_inicio || null,
+    hora_fin: payload.cotizacion.hora_fin || null,
+    hora_montaje_inicio: payload.cotizacion.hora_montaje_inicio || null,
+    hora_montaje_fin: payload.cotizacion.hora_montaje_fin || null,
+  };
+
+  await checkMigration();
+
+  // Only include cliente_id if the column exists
+  if (payload.cotizacion.cliente_id && _hasClienteIdCol) {
+    insertData.cliente_id = payload.cotizacion.cliente_id;
+  }
+
+  // Only include contacto_id if the column exists
+  if (payload.cotizacion.contacto_id && _hasContactoIdCol) {
+    insertData.contacto_id = payload.cotizacion.contacto_id;
+  }
+
   const { data: cab, error: errCab } = await supabase
     .from("cotizaciones")
-    .insert({
-      nombre_cotizacion: payload.cotizacion.nombre_cotizacion,
-      cliente_nombre: payload.cotizacion.cliente_nombre,
-      numero_invitados: payload.cotizacion.numero_invitados,
-      fecha_evento_estimada: payload.cotizacion.fecha_evento_estimada
-        ? payload.cotizacion.fecha_evento_estimada.toISOString().slice(0, 10)
-        : null,
-      ubicacion_evento: payload.cotizacion.ubicacion_evento,
-      comercial_encargado: payload.cotizacion.comercial_encargado,
-      total_cotizado: payload.cotizacion.total_cotizado,
-      estado: payload.cotizacion.estado,
-      contacto_telefono: payload.cotizacion.contacto_telefono || null,
-      contacto_correo: payload.cotizacion.contacto_correo || null,
-      hora_inicio: payload.cotizacion.hora_inicio || null,
-      hora_fin: payload.cotizacion.hora_fin || null,
-      hora_montaje_inicio: payload.cotizacion.hora_montaje_inicio || null,
-      hora_montaje_fin: payload.cotizacion.hora_montaje_fin || null,
-    })
+    .insert(insertData)
     .select("id")
     .single();
 
@@ -196,7 +289,24 @@ export async function createCotizacionWithVersions(payload: CotizacionWithVersio
   const cotizacion_id = cab!.id as string;
 
   try {
-    // 2) Insert versiones + items
+    // 2) Insert lugares if table exists
+    if (_hasLugaresTable && payload.lugares && payload.lugares.length > 0) {
+      const lugarRows = payload.lugares.map((l, i) => ({
+        cotizacion_id,
+        nombre: l.nombre,
+        direccion: l.direccion || null,
+        ciudad: l.ciudad || null,
+        capacidad_estimada: l.capacidad_estimada || null,
+        precio_referencia: l.precio_referencia || 0,
+        notas: l.notas || null,
+        es_seleccionado: l.es_seleccionado,
+        orden: i + 1,
+      }));
+      const { error: lugarErr } = await supabase.from("cotizacion_lugares").insert(lugarRows);
+      if (lugarErr) throw lugarErr;
+    }
+
+    // 3) Insert versiones + items
     for (const v of payload.versiones) {
       const { data: ver, error: errVer } = await supabase
         .from("cotizacion_versiones")
@@ -250,7 +360,8 @@ export async function addVersionToCotizacion(
 export async function updateVersionCotizacion(
   cotizacion_id: string,
   version_id: string,
-  items: CotizacionItemsState
+  items: CotizacionItemsState,
+  nombre_opcion?: string
 ) {
   // Calcular nuevo total
   const total =
@@ -259,10 +370,13 @@ export async function updateVersionCotizacion(
     items.transportes.reduce((a, t) => a + t.tarifa_unitaria * t.cantidad, 0) +
     (items.menaje ?? []).reduce((a, m) => a + m.precio_alquiler * m.cantidad, 0);
 
-  // Actualizar total de la versión
+  // Actualizar total (y nombre si se proporcionó) de la versión
+  const updateData: Record<string, any> = { total };
+  if (nombre_opcion !== undefined) updateData.nombre_opcion = nombre_opcion;
+
   const { error: updateError } = await supabase
     .from("cotizacion_versiones")
-    .update({ total })
+    .update(updateData)
     .eq("id", version_id);
   if (updateError) throw updateError;
 
@@ -355,7 +469,7 @@ export async function ensureEventFromVersion(opts: {
       evento_id,
       plato_id: x.plato_id,
       nombre: nameByPlato.get(x.plato_id) ?? "",
-      precio_unitario: Number(x.precio_unitario),
+      precio_unitario: Number(x.precio_unitario) || 0,
       cantidad: x.cantidad,
       subtotal: Number(x.subtotal),
     }));
@@ -367,7 +481,7 @@ export async function ensureEventFromVersion(opts: {
       evento_id,
       transporte_id: x.transporte_id,
       lugar: lugarByTrans.get(x.transporte_id) ?? "",
-      tarifa_unitaria: Number(x.tarifa_unitaria),
+      tarifa_unitaria: Number(x.tarifa_unitaria) || 0,
       cantidad: x.cantidad,
       subtotal: Number(x.subtotal),
     }));
@@ -379,7 +493,7 @@ export async function ensureEventFromVersion(opts: {
       evento_id,
       personal_costo_id: x.personal_costo_id,
       rol: rolByPers.get(x.personal_costo_id) ?? "",
-      tarifa_estimada_por_persona: Number(x.tarifa_estimada_por_persona),
+      tarifa_estimada_por_persona: Number(x.tarifa_estimada_por_persona) || 0,
       cantidad: x.cantidad,
       subtotal: Number(x.subtotal),
     }));
@@ -393,34 +507,12 @@ export async function ensureEventFromVersion(opts: {
       evento_id,
       menaje_id: x.menaje_id,
       nombre: nameByMenaje.get(x.menaje_id) ?? "",
-      precio_alquiler: Number(x.precio_alquiler),
+      precio_alquiler: Number(x.precio_alquiler) || 0,
       cantidad: x.cantidad,
-      subtotal: Number(x.precio_alquiler) * x.cantidad,
+      subtotal: (Number(x.precio_alquiler) || 0) * x.cantidad,
     }));
     const { error } = await supabase.from("evento_requerimiento_menaje").insert(rows);
     if (error) throw error;
-
-    // Auto-crear reserva de menaje en borrador
-    const fechaEvento = opts.fecha_evento ?? new Date().toISOString().slice(0, 10);
-    const { data: reserva, error: resErr } = await supabase
-      .from("menaje_reservas")
-      .insert({
-        evento_id,
-        fecha_inicio: fechaEvento,
-        fecha_fin: fechaEvento,
-        estado: "borrador",
-      })
-      .select("id")
-      .single();
-    if (resErr) throw resErr;
-
-    const reservaItems = (me ?? []).map((x: any) => ({
-      reserva_id: reserva!.id,
-      menaje_id: x.menaje_id,
-      cantidad: x.cantidad,
-    }));
-    const { error: riErr } = await supabase.from("menaje_reserva_items").insert(reservaItems);
-    if (riErr) throw riErr;
   }
 
   return { evento_id };
@@ -443,7 +535,7 @@ export async function getEventoRequerimiento(evento_id: string): Promise<EventoR
   const mapMenaje = (data: any[]) => (data ?? []).map((x: any) => ({
     menaje_id: x.menaje_id,
     nombre: x.nombre ?? "",
-    precio_alquiler: Number(x.precio_alquiler),
+    precio_alquiler: Number(x.precio_alquiler) || 0,
     cantidad: x.cantidad,
     subtotal: Number(x.subtotal),
   }));
@@ -470,21 +562,21 @@ export async function getEventoRequerimiento(evento_id: string): Promise<EventoR
       platos: (p2.data ?? []).map((x: any) => ({
         plato_id: x.plato_id,
         nombre: x.nombre ?? "",
-        precio_unitario: Number(x.precio_unitario),
+        precio_unitario: Number(x.precio_unitario) || 0,
         cantidad: x.cantidad,
         subtotal: Number(x.subtotal),
       })),
       transportes: (t2.data ?? []).map((x: any) => ({
         transporte_id: x.transporte_id,
         lugar: x.lugar ?? "",
-        tarifa_unitaria: Number(x.tarifa_unitaria),
+        tarifa_unitaria: Number(x.tarifa_unitaria) || 0,
         cantidad: x.cantidad,
         subtotal: Number(x.subtotal),
       })),
       personal: (pe2.data ?? []).map((x: any) => ({
         personal_costo_id: x.personal_costo_id,
         rol: x.rol ?? "",
-        tarifa_estimada_por_persona: Number(x.tarifa_estimada_por_persona),
+        tarifa_estimada_por_persona: Number(x.tarifa_estimada_por_persona) || 0,
         cantidad: x.cantidad,
         subtotal: Number(x.subtotal),
       })),
@@ -497,21 +589,21 @@ export async function getEventoRequerimiento(evento_id: string): Promise<EventoR
     platos: (p.data ?? []).map((x: any) => ({
       plato_id: x.plato_id,
       nombre: x.nombre ?? "",
-      precio_unitario: Number(x.precio_unitario),
+      precio_unitario: Number(x.precio_unitario) || 0,
       cantidad: x.cantidad,
       subtotal: Number(x.subtotal),
     })),
     transportes: (t.data ?? []).map((x: any) => ({
       transporte_id: x.transporte_id,
       lugar: x.lugar ?? "",
-      tarifa_unitaria: Number(x.tarifa_unitaria),
+      tarifa_unitaria: Number(x.tarifa_unitaria) || 0,
       cantidad: x.cantidad,
       subtotal: Number(x.subtotal),
     })),
     personal: (pe.data ?? []).map((x: any) => ({
       personal_costo_id: x.personal_costo_id,
       rol: x.rol ?? "",
-      tarifa_estimada_por_persona: Number(x.tarifa_estimada_por_persona),
+      tarifa_estimada_por_persona: Number(x.tarifa_estimada_por_persona) || 0,
       cantidad: x.cantidad,
       subtotal: Number(x.subtotal),
     })),
@@ -594,24 +686,41 @@ export async function setVersionDefinitiva(cotizacion_id: string, version_id: st
   const totalDef = Number(v!.total);
   const { error: e3 } = await supabase
     .from("cotizaciones")
-    .update({ total_cotizado: totalDef, estado: "Cotización Aprobada" })
+    .update({ total_cotizado: totalDef, estado: "Cotización Aprobada", fecha_cierre: new Date().toISOString() })
     .eq("id", cotizacion_id);
   if (e3) throw e3;
 
   // 4) crear evento (si no existe) + snapshot enriquecido
   const { data: cab, error: e4 } = await supabase
     .from("cotizaciones")
-    .select("nombre_cotizacion, fecha_evento_estimada")
+    .select("nombre_cotizacion, fecha_evento_estimada, ubicacion_evento")
     .eq("id", cotizacion_id)
     .single();
   if (e4) throw e4;
+
+  // Try to get selected lugar
+  await checkMigration();
+  let lugarSel: any = null;
+  if (_hasLugaresTable) {
+    const { data } = await supabase
+      .from("cotizacion_lugares")
+      .select("nombre, direccion, ciudad")
+      .eq("cotizacion_id", cotizacion_id)
+      .eq("es_seleccionado", true)
+      .maybeSingle();
+    lugarSel = data;
+  }
+
+  const ubicacion = lugarSel
+    ? [lugarSel.nombre, lugarSel.direccion, lugarSel.ciudad].filter(Boolean).join(", ")
+    : (cab as any).ubicacion_evento || "";
 
   await ensureEventFromVersion({
     cotizacion_id,
     cotizacion_version_id: version_id,
     nombre_evento: (cab as any).nombre_cotizacion,
     fecha_evento: (cab as any).fecha_evento_estimada,
-    ubicacion: "",
+    ubicacion,
   });
 
   return { ok: true };
@@ -1030,6 +1139,86 @@ export async function savePersonalAsignaciones(
   }
 }
 
+/** =====================
+ *  COTIZACIÓN LUGARES
+ *  ===================== */
+
+export async function getCotizacionLugares(cotizacion_id: string): Promise<LugarOption[]> {
+  await checkMigration();
+  if (!_hasLugaresTable) return [];
+
+  const { data, error } = await supabase
+    .from("cotizacion_lugares")
+    .select("*")
+    .eq("cotizacion_id", cotizacion_id)
+    .order("orden", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((l: any) => ({
+    id: l.id,
+    nombre: l.nombre,
+    direccion: l.direccion,
+    ciudad: l.ciudad,
+    capacidad_estimada: l.capacidad_estimada,
+    precio_referencia: Number(l.precio_referencia ?? 0),
+    notas: l.notas,
+    es_seleccionado: l.es_seleccionado,
+    orden: l.orden,
+  }));
+}
+
+export async function saveCotizacionLugares(
+  cotizacion_id: string,
+  lugares: LugarOption[]
+): Promise<void> {
+  await checkMigration();
+  if (!_hasLugaresTable) return;
+
+  // Delete existing
+  const { error: delErr } = await supabase
+    .from("cotizacion_lugares")
+    .delete()
+    .eq("cotizacion_id", cotizacion_id);
+  if (delErr) throw delErr;
+
+  if (lugares.length === 0) return;
+
+  const rows = lugares.map((l, i) => ({
+    cotizacion_id,
+    nombre: l.nombre,
+    direccion: l.direccion || null,
+    ciudad: l.ciudad || null,
+    capacidad_estimada: l.capacidad_estimada || null,
+    precio_referencia: l.precio_referencia || 0,
+    notas: l.notas || null,
+    es_seleccionado: l.es_seleccionado,
+    orden: i + 1,
+  }));
+  const { error: insErr } = await supabase.from("cotizacion_lugares").insert(rows);
+  if (insErr) throw insErr;
+}
+
+export async function setLugarSeleccionado(
+  cotizacion_id: string,
+  lugar_id: string
+): Promise<void> {
+  await checkMigration();
+  if (!_hasLugaresTable) return;
+
+  // Deselect all
+  const { error: e1 } = await supabase
+    .from("cotizacion_lugares")
+    .update({ es_seleccionado: false })
+    .eq("cotizacion_id", cotizacion_id);
+  if (e1) throw e1;
+
+  // Select the one
+  const { error: e2 } = await supabase
+    .from("cotizacion_lugares")
+    .update({ es_seleccionado: true })
+    .eq("id", lugar_id);
+  if (e2) throw e2;
+}
+
 /** Cargar asignaciones de personal para una versión de cotización */
 export async function loadPersonalAsignaciones(
   cotizacion_version_id: string
@@ -1050,4 +1239,48 @@ export async function loadPersonalAsignaciones(
     });
   }
   return result;
+}
+
+/** =====================
+ *  PIPELINE DE VENTAS
+ *  ===================== */
+
+/** Marcar cotización como Enviada */
+export async function marcarCotizacionEnviada(id: string) {
+  const { error } = await supabase
+    .from("cotizaciones")
+    .update({ estado: "Enviada", fecha_envio: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+  return { ok: true };
+}
+
+/** Rechazar cotización con motivo */
+export async function rechazarCotizacion(id: string, motivo: string, notas: string | null) {
+  const { error } = await supabase
+    .from("cotizaciones")
+    .update({
+      estado: "Rechazada",
+      motivo_rechazo: motivo,
+      notas_rechazo: notas || null,
+      fecha_cierre: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) throw error;
+  return { ok: true };
+}
+
+/** Reabrir cotización rechazada */
+export async function reabrirCotizacion(id: string) {
+  const { error } = await supabase
+    .from("cotizaciones")
+    .update({
+      estado: "Pendiente por Aprobación",
+      motivo_rechazo: null,
+      notas_rechazo: null,
+      fecha_cierre: null,
+    })
+    .eq("id", id);
+  if (error) throw error;
+  return { ok: true };
 }

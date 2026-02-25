@@ -11,9 +11,10 @@ import type { TransporteOrden } from "@/types/transporte";
 
 type Props = {
   eventoId: string;
+  onChanged?: () => void;
 };
 
-export default function TransportePanel({ eventoId }: Props) {
+export default function TransportePanel({ eventoId, onChanged }: Props) {
   const { toast } = useToast();
   const [orden, setOrden] = useState<TransporteOrden | null>(null);
   const [saving, setSaving] = useState(false);
@@ -57,6 +58,7 @@ export default function TransportePanel({ eventoId }: Props) {
     try {
       const updated = await setTransporteOrdenEstado(orden.id, estado);
       setOrden(updated);
+      onChanged?.();
       toast({ title: "Estado actualizado", description: `Orden ${estado}` });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -136,7 +138,7 @@ export default function TransportePanel({ eventoId }: Props) {
           </div>
         </div>
 
-        {/* Destination */}
+        {/* Destination + Time ranges */}
         <div className="space-y-3">
           <div className="flex items-center gap-1.5">
             <MapPin className="h-4 w-4 text-emerald-600" />
@@ -151,22 +153,56 @@ export default function TransportePanel({ eventoId }: Props) {
                 onChange={(e) => onChange({ destino_direccion: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm text-slate-600 mb-1 block">Hora descarga</label>
-                <Input
-                  type="time"
-                  value={orden.hora_descarga ?? ""}
-                  onChange={(e) => onChange({ hora_descarga: e.target.value })}
-                />
+
+            {/* Ventana de recepción */}
+            <div>
+              <label className="text-sm text-slate-600 mb-1 block flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" /> Ventana de recepción
+              </label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <span className="text-xs text-slate-400">Desde</span>
+                  <Input
+                    type="time"
+                    value={orden.hora_recepcion_inicio ?? ""}
+                    onChange={(e) => onChange({ hora_recepcion_inicio: e.target.value })}
+                  />
+                </div>
+                <span className="text-slate-400 mt-4">—</span>
+                <div className="flex-1">
+                  <span className="text-xs text-slate-400">Hasta</span>
+                  <Input
+                    type="time"
+                    value={orden.hora_recepcion_fin ?? ""}
+                    onChange={(e) => onChange({ hora_recepcion_fin: e.target.value })}
+                  />
+                </div>
               </div>
-              <div>
-                <label className="text-sm text-slate-600 mb-1 block">Hora recogida</label>
-                <Input
-                  type="time"
-                  value={orden.hora_recogida ?? ""}
-                  onChange={(e) => onChange({ hora_recogida: e.target.value })}
-                />
+            </div>
+
+            {/* Ventana de recogida */}
+            <div>
+              <label className="text-sm text-slate-600 mb-1 block flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" /> Ventana de recogida
+              </label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <span className="text-xs text-slate-400">Desde</span>
+                  <Input
+                    type="time"
+                    value={orden.hora_recogida_inicio ?? ""}
+                    onChange={(e) => onChange({ hora_recogida_inicio: e.target.value })}
+                  />
+                </div>
+                <span className="text-slate-400 mt-4">—</span>
+                <div className="flex-1">
+                  <span className="text-xs text-slate-400">Hasta</span>
+                  <Input
+                    type="time"
+                    value={orden.hora_recogida_fin ?? ""}
+                    onChange={(e) => onChange({ hora_recogida_fin: e.target.value })}
+                  />
+                </div>
               </div>
             </div>
           </div>

@@ -25,8 +25,12 @@ import {
   AlertTriangle,
   X,
   ArrowUpDown,
-  Download
+  Download,
+  Building2,
+  Layers,
+  User,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function CotizacionesListPage() {
   const nav = useNavigate();
@@ -34,6 +38,7 @@ export default function CotizacionesListPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterComercial, setFilterComercial] = useState<string>("all");
+  const [filterCliente, setFilterCliente] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("fecha_desc");
   const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
@@ -49,7 +54,7 @@ export default function CotizacionesListPage() {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterStatus, filterComercial, sortBy]);
+  }, [searchTerm, filterStatus, filterComercial, filterCliente, sortBy]);
 
   // Obtener lista de comerciales únicos
   const comerciales = useMemo(() => {
@@ -60,17 +65,29 @@ export default function CotizacionesListPage() {
     )].sort();
   }, [data]);
 
+  // Obtener lista de clientes únicos
+  const clientes = useMemo(() => {
+    if (!data) return [];
+    const names = data.map(c => c.cliente?.nombre || c.cliente_nombre).filter(Boolean);
+    return [...new Set(names)].sort() as string[];
+  }, [data]);
+
   // Filtros y ordenamiento
   const filteredAndSortedData = useMemo(() => {
     if (!data) return [];
 
     let filtered = data.filter(c => {
-      const matchesSearch = c.nombre_cotizacion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (c.cliente_nombre || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const clienteName = c.cliente?.nombre || c.cliente_nombre || '';
+      const clienteEmpresa = c.cliente?.empresa || '';
+      const term = searchTerm.toLowerCase();
+      const matchesSearch = c.nombre_cotizacion.toLowerCase().includes(term) ||
+                           clienteName.toLowerCase().includes(term) ||
+                           clienteEmpresa.toLowerCase().includes(term);
       const matchesStatus = filterStatus === 'all' || c.estado === filterStatus;
       const matchesComercial = filterComercial === 'all' || c.comercial_encargado === filterComercial;
+      const matchesCliente = filterCliente === 'all' || clienteName === filterCliente;
 
-      return matchesSearch && matchesStatus && matchesComercial;
+      return matchesSearch && matchesStatus && matchesComercial && matchesCliente;
     });
 
     // Ordenamiento
@@ -92,7 +109,7 @@ export default function CotizacionesListPage() {
     });
 
     return filtered;
-  }, [data, searchTerm, filterStatus, filterComercial, sortBy]);
+  }, [data, searchTerm, filterStatus, filterComercial, filterCliente, sortBy]);
 
   const totalPages = Math.ceil(filteredAndSortedData.length / ITEMS_PER_PAGE);
   const paginatedData = filteredAndSortedData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -223,7 +240,7 @@ export default function CotizacionesListPage() {
           <h1 className="text-2xl font-semibold text-slate-900">Cotizaciones</h1>
           <p className="text-slate-500 mt-1">Gestión de cotizaciones y presupuestos</p>
         </div>
-        <Button onClick={() => nav("/cotizador/nueva")}>
+        <Button onClick={() => nav("/cotizaciones/nueva")}>
           <Plus className="h-4 w-4 mr-2" />
           Nueva Cotización
         </Button>
@@ -323,6 +340,24 @@ export default function CotizacionesListPage() {
               </Select>
 
               <div className="flex items-center space-x-2">
+                <Building2 className="h-4 w-4 text-slate-600" />
+                <span className="text-sm font-semibold text-slate-700">Cliente:</span>
+              </div>
+              <Select value={filterCliente} onValueChange={setFilterCliente}>
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los clientes</SelectItem>
+                  {clientes.map((cliente) => (
+                    <SelectItem key={cliente} value={cliente}>
+                      {cliente}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <div className="flex items-center space-x-2">
                 <Users className="h-4 w-4 text-slate-600" />
                 <span className="text-sm font-semibold text-slate-700">Comercial:</span>
               </div>
@@ -360,7 +395,7 @@ export default function CotizacionesListPage() {
           </div>
 
           {/* Resultados de filtros */}
-          {(searchTerm || filterStatus !== 'all') && (
+          {(searchTerm || filterStatus !== 'all' || filterCliente !== 'all') && (
             <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200/40">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-blue-800">
@@ -372,6 +407,7 @@ export default function CotizacionesListPage() {
                   onClick={() => {
                     setSearchTerm("");
                     setFilterStatus("all");
+                    setFilterCliente("all");
                   }}
                   className="text-blue-700 hover:text-blue-800 hover:bg-blue-100"
                 >
@@ -401,7 +437,7 @@ export default function CotizacionesListPage() {
             </p>
             {!searchTerm && filterStatus === 'all' && (
               <Button
-                onClick={() => nav("/cotizador/nueva")}
+                onClick={() => nav("/cotizaciones/nueva")}
               >
                 <Plus className="h-5 w-5 mr-2" />
                 Crear Primera Cotización
@@ -412,90 +448,127 @@ export default function CotizacionesListPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {paginatedData.map((c) => (
-              <Card
-                key={c.id}
-                className="hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => nav(`/cotizador/${c.id}`)}
-              >
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <CardTitle className="text-lg font-bold text-slate-800 line-clamp-2 flex-1 min-w-0">
-                      {c.nombre_cotizacion}
-                    </CardTitle>
-                    {getStatusBadge(c.estado)}
-                  </div>
-                </CardHeader>
+            {paginatedData.map((c) => {
+              const borderColor =
+                c.estado === "Cotización Aprobada"
+                  ? "border-l-green-500"
+                  : c.estado === "Rechazada"
+                    ? "border-l-red-500"
+                    : "border-l-yellow-500";
+              const clienteName = c.cliente?.nombre || c.cliente_nombre || "Sin especificar";
+              const clienteEmpresa = c.cliente?.empresa;
+              const clienteTipo = c.cliente?.tipo;
+              const contactoNombre = c.contacto?.nombre;
 
-                <CardContent className="space-y-4">
-                  {/* Información del cliente */}
-                  <div className="space-y-3">
-                    <div className="flex items-center text-sm text-slate-600">
-                      <Users className="h-4 w-4 mr-3 text-selecta-green" />
-                      <span className="font-semibold">Cliente: {c.cliente_nombre || "Sin especificar"}</span>
+              return (
+                <Card
+                  key={c.id}
+                  className={cn(
+                    "hover:shadow-md transition-shadow cursor-pointer border-l-4",
+                    borderColor
+                  )}
+                  onClick={() => nav(`/cotizaciones/${c.id}`)}
+                >
+                  <CardHeader className="pb-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <CardTitle className="text-lg font-bold text-slate-800 line-clamp-2 flex-1 min-w-0">
+                        {c.nombre_cotizacion}
+                      </CardTitle>
+                      {getStatusBadge(c.estado)}
                     </div>
+                  </CardHeader>
 
-                    <div className="flex items-center text-sm text-slate-600">
-                      <Users className="h-4 w-4 mr-3 text-selecta-green" />
-                      <span className="font-semibold">Invitados: {c.numero_invitados}</span>
-                    </div>
-
-                    {c.created_at && (
+                  <CardContent className="space-y-4">
+                    {/* Información del cliente */}
+                    <div className="space-y-3">
                       <div className="flex items-center text-sm text-slate-600">
-                        <Calendar className="h-4 w-4 mr-3 text-selecta-green" />
-                        <span className="font-semibold">
-                          {new Date(c.created_at).toLocaleDateString('es-CO')}
-                        </span>
+                        {clienteTipo === 'empresa' ? (
+                          <Building2 className="h-4 w-4 mr-3 text-blue-500" />
+                        ) : (
+                          <User className="h-4 w-4 mr-3 text-selecta-green" />
+                        )}
+                        <div className="min-w-0 flex items-center gap-2">
+                          <span className="font-semibold">{clienteName}</span>
+                          {clienteTipo && (
+                            <Badge variant="outline" className={cn(
+                              "text-xs",
+                              clienteTipo === 'empresa'
+                                ? "bg-blue-50 text-blue-700 border-blue-200"
+                                : "bg-slate-50 text-slate-600 border-slate-200"
+                            )}>
+                              {clienteTipo === 'empresa' ? 'Empresa' : 'Persona'}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </div>
+                      {contactoNombre && (
+                        <div className="flex items-center text-sm text-slate-500 ml-7">
+                          <span className="text-xs">Contacto: <span className="font-medium">{contactoNombre}</span></span>
+                        </div>
+                      )}
 
-                  {/* Total destacado */}
-                  <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200/60">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <DollarSign className="h-5 w-5 text-emerald-600" />
-                        <span className="text-sm font-semibold text-emerald-700">Total Cotizado:</span>
+                      <div className="flex items-center text-sm text-slate-600">
+                        <Layers className="h-4 w-4 mr-3 text-selecta-green" />
+                        <span className="font-semibold">{c.numero_invitados} invitados</span>
                       </div>
-                      <div className="text-xl font-bold text-emerald-600">
-                        ${c.total_cotizado.toLocaleString()}
+
+                      {c.created_at && (
+                        <div className="flex items-center text-sm text-slate-600">
+                          <Calendar className="h-4 w-4 mr-3 text-selecta-green" />
+                          <span className="font-semibold">
+                            {new Date(c.created_at).toLocaleDateString('es-CO')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Total destacado */}
+                    <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200/60">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <DollarSign className="h-5 w-5 text-emerald-600" />
+                          <span className="text-sm font-semibold text-emerald-700">Total Cotizado:</span>
+                        </div>
+                        <div className="text-xl font-bold text-emerald-600">
+                          ${c.total_cotizado.toLocaleString()}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Botones de acción */}
-                  <div className="pt-2 space-y-2" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="outline"
-                      onClick={() => nav(`/cotizador/${c.id}`)}
-                      className="w-full"
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      <span className="font-semibold">Abrir Cotización</span>
-                    </Button>
+                    {/* Botones de acción */}
+                    <div className="pt-2 space-y-2" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="outline"
+                        onClick={() => nav(`/cotizaciones/${c.id}`)}
+                        className="w-full"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        <span className="font-semibold">Abrir Cotización</span>
+                      </Button>
 
-                    <Button
-                      variant="outline"
-                      onClick={() => handleOpenPDFModal(c.id)}
-                      disabled={downloadingPdf === c.id}
-                      className="w-full bg-blue-50 hover:bg-blue-100 border-blue-200 hover:border-blue-300 text-blue-700 hover:text-blue-800"
-                    >
-                      {downloadingPdf === c.id ? (
-                        <>
-                          <div className="animate-spin w-4 h-4 border-2 border-blue-300 border-t-blue-700 rounded-full mr-2" />
-                          <span className="font-semibold">Generando PDF...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Download className="h-4 w-4 mr-2" />
-                          <span className="font-semibold">Propuesta Selecta</span>
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                      <Button
+                        variant="outline"
+                        onClick={() => handleOpenPDFModal(c.id)}
+                        disabled={downloadingPdf === c.id}
+                        className="w-full bg-blue-50 hover:bg-blue-100 border-blue-200 hover:border-blue-300 text-blue-700 hover:text-blue-800"
+                      >
+                        {downloadingPdf === c.id ? (
+                          <>
+                            <div className="animate-spin w-4 h-4 border-2 border-blue-300 border-t-blue-700 rounded-full mr-2" />
+                            <span className="font-semibold">Generando PDF...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Download className="h-4 w-4 mr-2" />
+                            <span className="font-semibold">Propuesta Selecta</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
           {totalPages > 1 && (

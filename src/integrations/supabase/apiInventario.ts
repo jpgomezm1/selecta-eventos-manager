@@ -111,7 +111,66 @@ export async function inventarioMovimientoConfirmar(
   return data as InventarioMovimiento;
 }
 
+export async function inventarioMovimientoUpdateFacturaUrl(id: string, facturaUrl: string) {
+  const { error } = await supabase
+    .from("inventario_movimientos")
+    .update({ factura_url: facturaUrl } as any)
+    .eq("id", id);
+  if (error) throw error;
+}
+
 export async function inventarioMovimientoDelete(id: string) {
+  // Delete items first, then the movement
+  await supabase.from("inventario_mov_items").delete().eq("movimiento_id", id);
+  const { error } = await supabase.from("inventario_movimientos").delete().eq("id", id);
+  if (error) throw error;
+  return { ok: true };
+}
+
+export async function inventarioMovimientoDeleteConReversa(
+  id: string,
+  tipo: InventarioMovimiento["tipo"],
+  items: InventarioMovItem[]
+) {
+  // Reverse stock for each item (mirror of inventarioMovimientoConfirmar)
+  for (const item of items) {
+    const { data: ing, error: eRead } = await supabase
+      .from("ingredientes_catalogo")
+      .select("stock_actual")
+      .eq("id", item.ingrediente_id)
+      .single();
+    if (eRead) throw eRead;
+
+    const currentStock = Number((ing as any).stock_actual) || 0;
+    let newStock: number;
+
+    switch (tipo) {
+      case "compra":
+        // Compra added stock → subtract to reverse
+        newStock = Math.max(0, currentStock - Number(item.cantidad));
+        break;
+      case "uso":
+      case "devolucion":
+        // Uso/devolucion subtracted stock → add back to reverse
+        newStock = currentStock + Number(item.cantidad);
+        break;
+      case "ajuste":
+        // Cannot reverse absolute adjustment — leave stock as-is
+        newStock = currentStock;
+        break;
+      default:
+        newStock = currentStock;
+    }
+
+    const { error: eUp } = await supabase
+      .from("ingredientes_catalogo")
+      .update({ stock_actual: newStock } as any)
+      .eq("id", item.ingrediente_id);
+    if (eUp) throw eUp;
+  }
+
+  // Delete items first, then the movement
+  await supabase.from("inventario_mov_items").delete().eq("movimiento_id", id);
   const { error } = await supabase.from("inventario_movimientos").delete().eq("id", id);
   if (error) throw error;
   return { ok: true };

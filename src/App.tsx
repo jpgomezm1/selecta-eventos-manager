@@ -14,10 +14,16 @@ import NotFound from "./pages/NotFound";
 import Cotizador from "./pages/Cotizador";
 import CotizacionesListPage from "./pages/Cotizaciones";
 import CotizacionEditorPage from "./pages/CotizacionEditor";
+import VersionEditorWizard from "./pages/VersionEditorWizard";
 import EventoDetallePage from "./pages/EventoDetalle";
 import BodegaPage from "./pages/Bodega"; // ⬅️ NUEVO
 import RecetarioPage from "./pages/Recetario";
 import InventarioPage from "./pages/Inventario";
+import ClientesPage from "./pages/Clientes";
+import CotizacionPublica from "./pages/CotizacionPublica";
+import CatalogosPage from "./pages/Catalogos";
+import PipelinePage from "./pages/Pipeline";
+import TransportePage from "./pages/Transporte";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +54,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/compartido/:token" element={<CotizacionPublica />} />
             <Route path="/" element={<Navigate to="/personal" replace />} />
 
             <Route
@@ -84,6 +91,7 @@ const App = () => (
               }
             />
 
+            {/* Cotizaciones */}
             <Route
               path="/cotizaciones"
               element={
@@ -92,10 +100,8 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-
-            {/* Crear nueva cotización: admitimos ambas URLs */}
             <Route
-              path="/cotizador"
+              path="/cotizaciones/nueva"
               element={
                 <ProtectedRoute>
                   <Cotizador />
@@ -103,20 +109,53 @@ const App = () => (
               }
             />
             <Route
-              path="/cotizador/nueva"
-              element={
-                <ProtectedRoute>
-                  <Cotizador />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Editor de una cotización existente */}
-            <Route
-              path="/cotizador/:id"
+              path="/cotizaciones/:id"
               element={
                 <ProtectedRoute>
                   <CotizacionEditorPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cotizaciones/:id/editar/:versionId"
+              element={
+                <ProtectedRoute>
+                  <VersionEditorWizard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Pipeline */}
+            <Route
+              path="/pipeline"
+              element={
+                <ProtectedRoute>
+                  <PipelinePage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Clientes */}
+            <Route
+              path="/clientes"
+              element={
+                <ProtectedRoute>
+                  <ClientesPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Backward-compat redirects */}
+            <Route path="/cotizador" element={<Navigate to="/cotizaciones/nueva" replace />} />
+            <Route path="/cotizador/nueva" element={<Navigate to="/cotizaciones/nueva" replace />} />
+            <Route path="/cotizador/:id" element={<Navigate to="/cotizaciones" replace />} />
+
+            {/* Transporte */}
+            <Route
+              path="/transporte"
+              element={
+                <ProtectedRoute>
+                  <TransportePage />
                 </ProtectedRoute>
               }
             />
@@ -137,6 +176,16 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <InventarioPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Catálogos */}
+            <Route
+              path="/catalogos"
+              element={
+                <ProtectedRoute>
+                  <CatalogosPage />
                 </ProtectedRoute>
               }
             />

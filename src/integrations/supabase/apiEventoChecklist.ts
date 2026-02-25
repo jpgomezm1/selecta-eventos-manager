@@ -9,7 +9,6 @@ export async function fetchChecklistData(eventoId: string): Promise<ChecklistDat
     { data: menajeReserva },
     { data: transporteOrden },
     { data: evento },
-    { data: movUso },
     { data: movSalida },
   ] = await Promise.all([
     supabase
@@ -48,13 +47,6 @@ export async function fetchChecklistData(eventoId: string): Promise<ChecklistDat
       .eq("id", eventoId)
       .single(),
     supabase
-      .from("inventario_movimientos")
-      .select("id")
-      .eq("evento_id", eventoId)
-      .eq("tipo", "uso")
-      .limit(1)
-      .maybeSingle(),
-    supabase
       .from("menaje_movimientos")
       .select("id")
       .eq("evento_id", eventoId)
@@ -76,7 +68,6 @@ export async function fetchChecklistData(eventoId: string): Promise<ChecklistDat
     transporteOrden: transporteOrden as { estado: string } | null,
     fechaEvento: (evento as any)?.fecha_evento ?? "",
     estadoLiquidacion: (evento as any)?.estado_liquidacion ?? "pendiente",
-    ingredientesDespachados: !!movUso,
     menajeDespachado: !!movSalida,
   };
 }
@@ -94,7 +85,6 @@ export async function fetchChecklistDataBatch(
     { data: reservas },
     { data: transportes },
     { data: eventos },
-    { data: movsUso },
     { data: movsSalida },
   ] = await Promise.all([
     supabase
@@ -123,11 +113,6 @@ export async function fetchChecklistDataBatch(
       .select("id, fecha_evento, estado_liquidacion")
       .in("id", eventoIds),
     supabase
-      .from("inventario_movimientos")
-      .select("evento_id")
-      .in("evento_id", eventoIds)
-      .eq("tipo", "uso"),
-    supabase
       .from("menaje_movimientos")
       .select("evento_id")
       .in("evento_id", eventoIds)
@@ -154,7 +139,6 @@ export async function fetchChecklistDataBatch(
       transporteOrden: transporte ? { estado: transporte.estado } : null,
       fechaEvento: ev?.fecha_evento ?? "",
       estadoLiquidacion: ev?.estado_liquidacion ?? "pendiente",
-      ingredientesDespachados: (movsUso ?? []).some((m: any) => m.evento_id === eid),
       menajeDespachado: (movsSalida ?? []).some((m: any) => m.evento_id === eid),
     };
   }

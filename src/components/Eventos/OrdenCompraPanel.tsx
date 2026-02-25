@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, RefreshCw, CheckCircle, Package, FileText, Truck } from "lucide-react";
+import { ShoppingCart, RefreshCw, CheckCircle, Package, FileText, FileDown } from "lucide-react";
+import { generateOrdenCompraPDF } from "@/lib/orden-compra-pdf";
 import {
   generateOrdenCompra,
   getOrdenCompra,
@@ -14,23 +14,27 @@ import {
   updateOrdenCompraItem,
   regenerateOrdenCompra,
   recalcOrdenTotal,
-  despacharIngredientesEvento,
 } from "@/integrations/supabase/apiOrdenCompra";
 import type { OrdenCompra, OrdenCompraItem } from "@/types/cotizador";
 
 type Props = {
   eventoId: string;
+  eventoInfo?: {
+    nombre_evento: string;
+    fecha_evento: string;
+    ubicacion: string;
+    comercial_encargado?: string | null;
+  };
   onChanged?: () => void;
 };
 
-export default function OrdenCompraPanel({ eventoId, onChanged }: Props) {
+export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Props) {
   const { toast } = useToast();
   const [orden, setOrden] = useState<OrdenCompra | null>(null);
   const [items, setItems] = useState<OrdenCompraItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [dispatching, setDispatching] = useState(false);
-  const [despachado, setDespachado] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   useEffect(() => {
     loadOrden();
@@ -47,15 +51,6 @@ export default function OrdenCompraPanel({ eventoId, onChanged }: Props) {
         setOrden(null);
         setItems([]);
       }
-      // Check if ingredients already dispatched
-      const { data: usoMov } = await supabase
-        .from("inventario_movimientos")
-        .select("id")
-        .eq("evento_id", eventoId)
-        .eq("tipo", "uso")
-        .limit(1)
-        .maybeSingle();
-      setDespachado(!!usoMov);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -108,17 +103,16 @@ export default function OrdenCompraPanel({ eventoId, onChanged }: Props) {
     }
   };
 
-  const handleDespachar = async () => {
-    setDispatching(true);
+  const handleDownloadPDF = async () => {
+    if (!orden || !eventoInfo) return;
+    setDownloadingPdf(true);
     try {
-      await despacharIngredientesEvento(eventoId);
-      setDespachado(true);
-      toast({ title: "Ingredientes despachados", description: "Se creó el movimiento de uso y se actualizó el inventario." });
-      onChanged?.();
+      await generateOrdenCompraPDF({ orden, items, evento: eventoInfo });
+      toast({ title: "PDF generado" });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Error al generar PDF", description: err.message, variant: "destructive" });
     } finally {
-      setDispatching(false);
+      setDownloadingPdf(false);
     }
   };
 
@@ -225,17 +219,11 @@ export default function OrdenCompraPanel({ eventoId, onChanged }: Props) {
               Marcar Comprada
             </Button>
           )}
-          {orden.estado === "comprada" && !despachado && (
-            <Button variant="outline" size="sm" onClick={handleDespachar} disabled={dispatching} className="h-8">
-              <Truck className="h-3.5 w-3.5 mr-1" />
-              {dispatching ? "Despachando..." : "Despachar al Evento"}
+          {items.length > 0 && eventoInfo && (
+            <Button variant="outline" size="sm" onClick={handleDownloadPDF} disabled={downloadingPdf} className="h-8">
+              <FileDown className="h-3.5 w-3.5 mr-1" />
+              {downloadingPdf ? "Generando..." : "Descargar PDF"}
             </Button>
-          )}
-          {orden.estado === "comprada" && despachado && (
-            <Badge variant="secondary" className="bg-emerald-50 text-emerald-700">
-              <CheckCircle className="h-3 w-3 mr-1" />
-              Ingredientes despachados
-            </Badge>
           )}
           {(orden.estado === "borrador" || orden.estado === "aprobada") && (
             <Button variant="ghost" size="sm" onClick={() => handleEstado("cancelada")} className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50">

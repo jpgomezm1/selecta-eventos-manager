@@ -107,7 +107,7 @@ export default function EventosPage() {
           notas_pago: ep.notas_pago,
           evento_personal_id: ep.id,
         })) || [];
-        const costoTotal = personalAsignado.reduce((sum: number, p: PersonalAsignado) => sum + (p.pago_calculado || Number(p.tarifa_hora)), 0);
+        const costoTotal = personalAsignado.reduce((sum: number, p: PersonalAsignado) => sum + (p.pago_calculado || Number(p.tarifa) || 0), 0);
 
         const cotizacionInfo = evento.cotizacion_versiones?.cotizaciones;
         const ubicacionEvento = cotizacionInfo?.ubicacion_evento || evento.ubicacion;

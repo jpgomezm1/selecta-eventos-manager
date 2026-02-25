@@ -168,7 +168,7 @@ export function PersonalSelector({
     const totalSelected = itemsSeleccionados.reduce((sum, item) => sum + item.cantidad, 0);
     const totalCost = itemsSeleccionados.reduce((sum, item) => {
       const person = data.find(p => p.id === item.personal_costo_id);
-      return sum + (person ? Number(person.tarifa) * item.cantidad : 0);
+      return sum + (person ? (Number(person.tarifa) || 0) * item.cantidad : 0);
     }, 0);
     
     const byCategory = CATEGORIES.slice(1).map(category => {
@@ -193,12 +193,12 @@ export function PersonalSelector({
     const qty = getQty(person.id);
     const suggested = suggestions[person.rol];
     const Icon = config.icon;
-    const tarifa = Number(person.tarifa);
+    const tarifa = Number(person.tarifa) || 0;
     const selected = isSelected(person.id);
 
     return (
-      <Card 
-        key={person.id} 
+      <Card
+        key={person.id}
         className={cn(
           "group relative overflow-hidden transition-all duration-300 border-2",
           selected
@@ -276,10 +276,16 @@ export function PersonalSelector({
                 >
                   <Minus className="h-3 w-3" />
                 </Button>
-                <div className="flex items-center space-x-2 px-3 py-1 bg-selecta-green/10 rounded-lg">
-                  <span className="font-semibold text-selecta-green">{qty}</span>
-                  <span className="text-xs text-selecta-green">personas</span>
-                </div>
+                <Input
+                  type="number"
+                  min={0}
+                  value={qty}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    onQtyChange(person.id, isNaN(val) ? 0 : Math.max(0, val));
+                  }}
+                  className="w-16 h-8 text-center text-sm font-medium border-slate-200"
+                />
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -359,11 +365,11 @@ export function PersonalSelector({
     const qty = getQty(person.id);
     const suggested = suggestions[person.rol];
     const Icon = config.icon;
-    const tarifa = Number(person.tarifa);
+    const tarifa = Number(person.tarifa) || 0;
     const selected = isSelected(person.id);
 
     return (
-      <Card 
+      <Card
         key={person.id}
         className={cn(
           "transition-all duration-200 hover:shadow-md border-l-4",
@@ -426,7 +432,16 @@ export function PersonalSelector({
                     >
                       <Minus className="h-3 w-3" />
                     </Button>
-                    <span className="w-8 text-center font-semibold">{qty}</span>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={qty}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        onQtyChange(person.id, isNaN(val) ? 1 : Math.max(1, val));
+                      }}
+                      className="w-16 h-8 text-center text-sm font-medium border-slate-200"
+                    />
                     <Button 
                       variant="outline" 
                       size="sm"

@@ -20,7 +20,6 @@ export interface ChecklistData {
   transporteOrden: { estado: string } | null;
   fechaEvento: string;
   estadoLiquidacion: string;
-  ingredientesDespachados: boolean;
   menajeDespachado: boolean;
 }
 
@@ -51,12 +50,6 @@ export function computeChecklist(data: ChecklistData): ChecklistResult {
       label: "Menaje confirmado",
       completed: data.menajeReserva?.estado === "confirmado" || data.menajeReserva?.estado === "devuelto",
       tab: "menaje",
-    },
-    {
-      key: "ingredientes_despachados",
-      label: "Ingredientes despachados",
-      completed: data.ingredientesDespachados,
-      tab: "compras",
     },
     {
       key: "transporte_programado",

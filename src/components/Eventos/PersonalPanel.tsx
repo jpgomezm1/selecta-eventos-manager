@@ -7,17 +7,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, Plus, Trash2, Users, Clock, AlertTriangle, CheckCircle, Save } from "lucide-react";
+import { DollarSign, Plus, Trash2, Users, Clock, AlertTriangle, CheckCircle, Save, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LiquidacionDialog } from "@/components/Forms/LiquidacionDialog";
+import { calcularPagoPersonal, getModalidadCobroLabel, requiereRegistroHoras } from "@/lib/calcularPagoPersonal";
 import type { Personal, PersonalAsignado, EventoConPersonal } from "@/types/database";
 
 type Props = {
   eventoId: string;
   fechaEvento: string;
   estadoLiquidacion: "pendiente" | "liquidado";
+  onChanged?: () => void;
 };
 
-export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion }: Props) {
+export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion, onChanged }: Props) {
   const { toast } = useToast();
   const [catalogo, setCatalogo] = useState<Personal[]>([]);
   const [asignados, setAsignados] = useState<PersonalAsignado[]>([]);
@@ -95,14 +98,21 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
     try {
       const persona = catalogo.find(p => p.id === selectToAdd);
       if (!persona) return;
+      // Pre-calculate pago for fixed-rate workers (jornada, por_evento)
+      const tarifa = Number(persona.tarifa) || 0;
+      const pagoInicial = !requiereRegistroHoras(persona.modalidad_cobro) && tarifa > 0
+        ? calcularPagoPersonal(persona.modalidad_cobro, tarifa)
+        : null;
       const { error } = await supabase.from("evento_personal").insert({
         evento_id: eventoId,
         personal_id: persona.id,
         estado_pago: "pendiente",
+        ...(pagoInicial != null ? { pago_calculado: pagoInicial } : {}),
       });
       if (error) throw error;
       setSelectToAdd("");
       await fetchData();
+      onChanged?.();
       toast({ title: "Personal asignado", description: `${persona.nombre_completo} agregado al evento.` });
     } catch (err: any) {
       toast({ title: "Error", description: err.message ?? "No se pudo asignar.", variant: "destructive" });
@@ -114,6 +124,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
       const { error } = await supabase.from("evento_personal").delete().eq("id", evento_personal_id);
       if (error) throw error;
       await fetchData();
+      onChanged?.();
     } catch (err: any) {
       toast({ title: "Error", description: err.message ?? "No se pudo eliminar.", variant: "destructive" });
     }
@@ -121,6 +132,14 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
 
   const handleUpdateRow = (id: string, patch: Partial<PersonalAsignado>) => {
     setAsignados(prev => prev.map(p => (p.evento_personal_id === id ? { ...p, ...patch } : p)));
+  };
+
+  /** When hours change, auto-recalculate pago based on modalidad */
+  const handleHorasChange = (epId: string, horas: number, person: PersonalAsignado) => {
+    const tarifa = Number(person.tarifa) || 0;
+    const tarifaExtra = Number(person.tarifa_hora_extra) || 0;
+    const pago = calcularPagoPersonal(person.modalidad_cobro, tarifa, horas, tarifaExtra);
+    handleUpdateRow(epId, { horas_trabajadas: horas, pago_calculado: pago });
   };
 
   const handleSaveRow = async (row: PersonalAsignado) => {
@@ -147,11 +166,24 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
   };
 
   const handleLiquidar = () => {
-    const sinHoras = asignados.filter(p => !p.horas_trabajadas || p.horas_trabajadas <= 0);
+    // Only require hours for workers paid by hour or jornada_hasta_10h
+    const sinHoras = asignados.filter(p =>
+      requiereRegistroHoras(p.modalidad_cobro) && (!p.horas_trabajadas || p.horas_trabajadas <= 0)
+    );
     if (sinHoras.length > 0) {
       toast({
         title: "Información faltante",
-        description: `${sinHoras.length} empleado(s) no tienen horas de trabajo definidas.`,
+        description: `${sinHoras.length} empleado(s) con cobro por hora no tienen horas definidas.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    // Check that all workers have a pago_calculado > 0
+    const sinPago = asignados.filter(p => !p.pago_calculado || Number(p.pago_calculado) <= 0);
+    if (sinPago.length > 0) {
+      toast({
+        title: "Pago faltante",
+        description: `${sinPago.length} empleado(s) no tienen pago calculado.`,
         variant: "destructive",
       });
       return;
@@ -211,7 +243,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
               ) : (
                 noAsignadosCatalog.map(p => (
                   <SelectItem key={p.id} value={p.id}>
-                    {p.nombre_completo} — {p.rol} · ${Number(p.tarifa_hora).toLocaleString()}
+                    {p.nombre_completo} — {p.rol} · ${(Number(p.tarifa) || 0).toLocaleString()} ({getModalidadCobroLabel(p.modalidad_cobro)})
                   </SelectItem>
                 ))
               )}
@@ -260,8 +292,29 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
                 </TableRow>
               ) : (
                 asignados.map((p) => (
-                  <TableRow key={p.evento_personal_id}>
-                    <TableCell className="font-medium text-slate-900">{p.nombre_completo}</TableCell>
+                  <TableRow key={p.evento_personal_id} data-modalidad={p.modalidad_cobro}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium text-slate-900">{p.nombre_completo}</div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-xs text-slate-500">
+                            {getModalidadCobroLabel(p.modalidad_cobro)} · ${(Number(p.tarifa) || 0).toLocaleString()}{p.modalidad_cobro === 'por_hora' ? '/h' : ''}
+                          </span>
+                          {p.modalidad_cobro === 'jornada_hasta_10h' && Number(p.tarifa_hora_extra) > 0 && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-3 w-3 text-slate-400 cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Hora extra: ${Number(p.tarifa_hora_extra).toLocaleString()}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className={getRoleBadgeClass(p.rol)}>{p.rol}</Badge>
                     </TableCell>
@@ -286,20 +339,26 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
                         type="number"
                         min={0}
                         step={0.5}
-                        className="w-20 text-center h-8"
-                        value={p.horas_trabajadas ?? 0}
-                        onChange={(e) => handleUpdateRow(p.evento_personal_id!, { horas_trabajadas: Number(e.target.value) })}
+                        className={`w-20 text-center h-8 ${!requiereRegistroHoras(p.modalidad_cobro) ? 'opacity-60' : ''}`}
+                        value={p.horas_trabajadas ?? (requiereRegistroHoras(p.modalidad_cobro) ? '' : 0)}
+                        placeholder={requiereRegistroHoras(p.modalidad_cobro) ? 'Req.' : 'Opc.'}
+                        onChange={(e) => handleHorasChange(p.evento_personal_id!, Number(e.target.value), p)}
                       />
                     </TableCell>
                     <TableCell className="text-right">
-                      <Input
-                        type="number"
-                        min={0}
-                        step={1000}
-                        className="w-28 text-right h-8 ml-auto"
-                        value={p.pago_calculado ?? 0}
-                        onChange={(e) => handleUpdateRow(p.evento_personal_id!, { pago_calculado: Number(e.target.value) })}
-                      />
+                      <div>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={1000}
+                          className="w-28 text-right h-8 ml-auto"
+                          value={p.pago_calculado ?? 0}
+                          onChange={(e) => handleUpdateRow(p.evento_personal_id!, { pago_calculado: Number(e.target.value) })}
+                        />
+                        {!requiereRegistroHoras(p.modalidad_cobro) && (
+                          <div className="text-[10px] text-emerald-600 text-right mt-0.5 mr-1">Tarifa fija</div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-center">
                       <Select
@@ -342,6 +401,19 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
                 <div className="text-xs text-slate-500">Empleados</div>
               </div>
               <div className="w-px h-10 bg-slate-200" />
+              {(() => {
+                const porHora = asignados.filter(p => p.modalidad_cobro === 'por_hora').length;
+                const porJornada = asignados.filter(p => ['jornada_9h', 'jornada_10h', 'jornada_hasta_10h', 'jornada_nocturna'].includes(p.modalidad_cobro)).length;
+                const porEvento = asignados.filter(p => p.modalidad_cobro === 'por_evento').length;
+                return (
+                  <div className="flex items-center gap-3 text-xs text-slate-500">
+                    {porHora > 0 && <span>{porHora} por hora</span>}
+                    {porJornada > 0 && <span>{porJornada} por jornada</span>}
+                    {porEvento > 0 && <span>{porEvento} por evento</span>}
+                  </div>
+                );
+              })()}
+              <div className="w-px h-10 bg-slate-200" />
               <div className="text-center">
                 <div className="text-xs text-slate-500">Total Calculado</div>
                 <div className="text-xl font-semibold text-emerald-700">${totalCalculado.toLocaleString()}</div>
@@ -367,12 +439,28 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
             </Button>
           </div>
 
-          {asignados.some(p => !p.horas_trabajadas || p.horas_trabajadas <= 0) && (
+          {asignados.some(p => requiereRegistroHoras(p.modalidad_cobro) && (!p.horas_trabajadas || p.horas_trabajadas <= 0)) && (
             <div className="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200 flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-orange-800">Información incompleta</p>
-                <p className="text-xs text-orange-700">Algunos empleados no tienen horas definidas.</p>
+                <p className="text-sm font-medium text-orange-800">Horas requeridas</p>
+                <p className="text-xs text-orange-700">
+                  {asignados.filter(p => requiereRegistroHoras(p.modalidad_cobro) && (!p.horas_trabajadas || p.horas_trabajadas <= 0))
+                    .map(p => p.nombre_completo).join(', ')} — cobran por hora y necesitan horas definidas.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {asignados.some(p => !p.pago_calculado || Number(p.pago_calculado) <= 0) && (
+            <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-red-800">Sin pago calculado</p>
+                <p className="text-xs text-red-700">
+                  {asignados.filter(p => !p.pago_calculado || Number(p.pago_calculado) <= 0)
+                    .map(p => p.nombre_completo).join(', ')} — no tienen pago asignado.
+                </p>
               </div>
             </div>
           )}
@@ -386,7 +474,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
               setIsLiquidacionOpen(false);
               setLiquidacionEvento(null);
             }}
-            onLiquidationComplete={() => fetchData()}
+            onLiquidationComplete={() => { fetchData(); onChanged?.(); }}
           />
         )}
       </div>

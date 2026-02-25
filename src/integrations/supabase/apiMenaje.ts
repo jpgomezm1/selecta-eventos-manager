@@ -7,6 +7,8 @@ import type {
   MenajeMovimiento,
   MenajeMovimientoItem,
   MenajeReservaCal,
+  OrdenMenajeItem,
+  SalidaConEvento,
 } from "@/types/menaje";
 
 /* =========================
@@ -186,29 +188,33 @@ export async function reservasCalendario(
  *       MOVIMIENTOS
  * ========================= */
 export async function movimientosList(): Promise<
-  (MenajeMovimiento & { items: MenajeMovimientoItem[] })[]
+  (MenajeMovimiento & { items: MenajeMovimientoItem[]; nombre_evento?: string })[]
 > {
   const { data: movs, error: e1 } = await supabase
     .from("menaje_movimientos")
-    .select("*")
+    .select("*, eventos:evento_id(nombre_evento)")
     .order("fecha", { ascending: false });
   if (e1) throw e1;
 
-  const result: (MenajeMovimiento & { items: MenajeMovimientoItem[] })[] = [];
+  const result: (MenajeMovimiento & { items: MenajeMovimientoItem[]; nombre_evento?: string })[] = [];
   for (const m of movs ?? []) {
     const { data: it, error: e2 } = await supabase
       .from("menaje_mov_items")
       .select("*, menaje:menaje_id(id,nombre,categoria,unidad,stock_total)")
       .eq("movimiento_id", (m as any).id);
     if (e2) throw e2;
-    result.push({ ...(m as MenajeMovimiento), items: (it ?? []) as any });
+    result.push({
+      ...(m as MenajeMovimiento),
+      nombre_evento: (m as any).eventos?.nombre_evento ?? undefined,
+      items: (it ?? []) as any,
+    });
   }
   return result;
 }
 
 export async function movimientoCreate(
   payload: Omit<MenajeMovimiento, "id" | "created_at" | "updated_at">,
-  items: Array<{ menaje_id: string; cantidad: number; merma?: number }>
+  items: Array<{ menaje_id: string; cantidad: number; merma?: number; nota?: string }>
 ) {
   const { data: mov, error } = await supabase
     .from("menaje_movimientos")
@@ -223,6 +229,7 @@ export async function movimientoCreate(
       menaje_id: i.menaje_id,
       cantidad: i.cantidad,
       merma: i.merma ?? 0,
+      nota: i.nota ?? null,
     }));
     const { error: e2 } = await supabase.from("menaje_mov_items").insert(rows);
     if (e2) throw e2;
@@ -243,7 +250,7 @@ export async function movimientoUpdate(id: string, patch: Partial<MenajeMovimien
 
 export async function movimientoUpsertItems(
   movimiento_id: string,
-  items: Array<{ menaje_id: string; cantidad: number; merma?: number }>
+  items: Array<{ menaje_id: string; cantidad: number; merma?: number; nota?: string }>
 ) {
   const { error: e1 } = await supabase
     .from("menaje_mov_items")
@@ -257,6 +264,7 @@ export async function movimientoUpsertItems(
       menaje_id: i.menaje_id,
       cantidad: i.cantidad,
       merma: i.merma ?? 0,
+      nota: i.nota ?? null,
     }));
     const { error: e2 } = await supabase.from("menaje_mov_items").insert(rows);
     if (e2) throw e2;
@@ -283,13 +291,76 @@ export async function movimientoDelete(id: string) {
 }
 
 /* =========================
+ *  SALIDAS CONFIRMADAS (para selector de ingreso)
+ * ========================= */
+export async function getSalidasConfirmadas(): Promise<SalidaConEvento[]> {
+  // Fetch confirmed salidas with an associated event
+  const { data: salidas, error: e1 } = await supabase
+    .from("menaje_movimientos")
+    .select("id, evento_id, reserva_id, fecha, eventos:evento_id(nombre_evento, fecha_evento)")
+    .eq("tipo", "salida")
+    .eq("estado", "confirmado")
+    .not("evento_id", "is", null)
+    .order("fecha", { ascending: false });
+  if (e1) throw e1;
+
+  // Fetch confirmed ingresos to exclude salidas that already have a return
+  const { data: ingresos, error: e2 } = await supabase
+    .from("menaje_movimientos")
+    .select("evento_id, reserva_id")
+    .eq("tipo", "ingreso")
+    .eq("estado", "confirmado")
+    .not("evento_id", "is", null);
+  if (e2) throw e2;
+
+  const ingresadoSet = new Set(
+    (ingresos ?? []).map((i: any) => `${i.evento_id}|${i.reserva_id ?? ""}`)
+  );
+
+  const pendientes = (salidas ?? []).filter((s: any) =>
+    !ingresadoSet.has(`${s.evento_id}|${s.reserva_id ?? ""}`)
+  );
+
+  // Fetch items for each pending salida
+  const result: SalidaConEvento[] = [];
+  for (const s of pendientes) {
+    const { data: items, error: e3 } = await supabase
+      .from("menaje_mov_items")
+      .select("menaje_id, cantidad, menaje:menaje_id(nombre, unidad)")
+      .eq("movimiento_id", (s as any).id);
+    if (e3) throw e3;
+
+    result.push({
+      movimiento_id: (s as any).id,
+      evento_id: (s as any).evento_id,
+      nombre_evento: (s as any).eventos?.nombre_evento ?? "",
+      fecha: (s as any).fecha,
+      reserva_id: (s as any).reserva_id ?? null,
+      items: (items ?? []).map((it: any) => ({
+        menaje_id: it.menaje_id,
+        cantidad: Number(it.cantidad) || 0,
+        nombre: it.menaje?.nombre ?? "",
+        unidad: it.menaje?.unidad ?? "und",
+      })),
+    });
+  }
+  return result;
+}
+
+/* =========================
  *  DESPACHO DESDE RESERVA
  * ========================= */
 
-/** Create "salida" movement from a confirmed reservation */
+/** Create "salida" movement from a confirmed reservation with per-item quantities and notes */
 export async function despacharMenajeDesdeReserva(
   reservaId: string,
-  eventoId: string
+  eventoId: string,
+  items: Array<{
+    menaje_id: string;
+    cantidad_reservada: number;
+    cantidad_despachada: number;
+    nota?: string;
+  }>
 ): Promise<void> {
   // Check if already dispatched
   const { data: existing } = await supabase
@@ -301,13 +372,10 @@ export async function despacharMenajeDesdeReserva(
     .maybeSingle();
   if (existing) throw new Error("El menaje ya fue despachado para esta reserva.");
 
-  // Get reservation items
-  const { data: items, error: iErr } = await supabase
-    .from("menaje_reserva_items")
-    .select("menaje_id, cantidad")
-    .eq("reserva_id", reservaId);
-  if (iErr) throw iErr;
   if (!items || items.length === 0) throw new Error("La reserva no tiene items.");
+
+  // Determine if partial dispatch
+  const isParcial = items.some(i => i.cantidad_despachada < i.cantidad_reservada);
 
   // Create salida movement
   const { data: mov, error: mErr } = await supabase
@@ -318,28 +386,76 @@ export async function despacharMenajeDesdeReserva(
       evento_id: eventoId,
       reserva_id: reservaId,
       fecha: new Date().toISOString().slice(0, 10),
-      notas: "Despacho de menaje para evento",
+      notas: isParcial
+        ? "Despacho parcial — ver notas por item"
+        : "Despacho de menaje para evento",
     })
     .select("id")
     .single();
   if (mErr) throw mErr;
 
-  const movItems = items.map((i: any) => ({
+  const movItems = items.map((i) => ({
     movimiento_id: mov.id,
     menaje_id: i.menaje_id,
-    cantidad: Number(i.cantidad),
+    cantidad: Number(i.cantidad_despachada) || 0,
     merma: 0,
+    nota: i.nota || null,
   }));
   const { error: miErr } = await supabase.from("menaje_mov_items").insert(movItems);
   if (miErr) throw miErr;
 }
 
-/** Register menaje return with breakage/loss */
+/** Get dispatched items for a reservation (from the salida movement) */
+export async function getSalidaItemsForReserva(
+  reservaId: string
+): Promise<Array<{
+  menaje_id: string;
+  nombre: string;
+  unidad: string;
+  cantidad_despachada: number;
+}>> {
+  const { data: mov } = await supabase
+    .from("menaje_movimientos")
+    .select("id")
+    .eq("reserva_id", reservaId)
+    .eq("tipo", "salida")
+    .limit(1)
+    .maybeSingle();
+
+  if (!mov) return [];
+
+  const { data: items, error } = await supabase
+    .from("menaje_mov_items")
+    .select("menaje_id, cantidad, menaje:menaje_id(nombre,unidad)")
+    .eq("movimiento_id", mov.id);
+  if (error) throw error;
+
+  return (items ?? []).map((i: any) => ({
+    menaje_id: i.menaje_id,
+    nombre: i.menaje?.nombre ?? "",
+    unidad: i.menaje?.unidad ?? "und",
+    cantidad_despachada: Number(i.cantidad) || 0,
+  }));
+}
+
+/** Register menaje return with breakage/loss per item */
 export async function registrarDevolucionMenaje(
   reservaId: string,
   eventoId: string,
-  itemsMerma: Array<{ menaje_id: string; cantidad_devuelta: number; merma: number }>
+  items: Array<{
+    menaje_id: string;
+    cantidad_despachada: number;
+    cantidad_devuelta: number;
+    merma: number;
+    nota?: string;
+  }>
 ): Promise<void> {
+  // Determine if there are shortages
+  const hayFaltante = items.some(i => {
+    const faltante = i.cantidad_despachada - i.cantidad_devuelta - i.merma;
+    return faltante > 0;
+  });
+
   // Create ingreso movement
   const { data: mov, error: mErr } = await supabase
     .from("menaje_movimientos")
@@ -349,24 +465,29 @@ export async function registrarDevolucionMenaje(
       evento_id: eventoId,
       reserva_id: reservaId,
       fecha: new Date().toISOString().slice(0, 10),
-      notas: "Devolución de menaje de evento",
+      notas: hayFaltante
+        ? "Inventario descompletado — ver detalle por item"
+        : "Devolución de menaje de evento",
     })
     .select("id")
     .single();
   if (mErr) throw mErr;
 
-  const movItems = itemsMerma.map((i) => ({
+  const movItems = items.map((i) => ({
     movimiento_id: mov.id,
     menaje_id: i.menaje_id,
-    cantidad: i.cantidad_devuelta,
-    merma: i.merma,
+    cantidad: Number(i.cantidad_devuelta) || 0,
+    merma: Number(i.merma) || 0,
+    nota: i.nota || null,
   }));
   const { error: miErr } = await supabase.from("menaje_mov_items").insert(movItems);
   if (miErr) throw miErr;
 
-  // Decrement stock_total by merma for each item with merma > 0
-  for (const i of itemsMerma) {
-    if (i.merma > 0) {
+  // Decrement stock_total by merma and faltante for each item
+  for (const i of items) {
+    const faltante = Math.max(0, i.cantidad_despachada - i.cantidad_devuelta - i.merma);
+    const totalLoss = (Number(i.merma) || 0) + faltante;
+    if (totalLoss > 0) {
       const { data: cat } = await supabase
         .from("menaje_catalogo")
         .select("stock_total")
@@ -375,7 +496,7 @@ export async function registrarDevolucionMenaje(
       if (cat) {
         await supabase
           .from("menaje_catalogo")
-          .update({ stock_total: Math.max(0, Number(cat.stock_total) - i.merma) })
+          .update({ stock_total: Math.max(0, Number(cat.stock_total) - totalLoss) })
           .eq("id", i.menaje_id);
       }
     }
@@ -383,4 +504,152 @@ export async function registrarDevolucionMenaje(
 
   // Update reservation to "devuelto"
   await setReservaEstado(reservaId, "devuelto");
+}
+
+/* =========================
+ *   ORDEN DE MENAJE
+ * ========================= */
+
+/** Get existing menaje order (reservation) for an event, enriched with requirement + availability data */
+export async function getOrdenMenaje(
+  eventoId: string,
+  fechaEvento: string
+): Promise<{ reserva: MenajeReserva; items: OrdenMenajeItem[] } | null> {
+  const { data: reserva } = await supabase
+    .from("menaje_reservas")
+    .select("*")
+    .eq("evento_id", eventoId)
+    .neq("estado", "cancelado")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!reserva) return null;
+
+  // Read reservation items with catalog info
+  const rf = await readReserva(reserva.id);
+
+  // Read requirements for enrichment
+  const { data: reqs } = await supabase
+    .from("evento_requerimiento_menaje")
+    .select("menaje_id, nombre, cantidad, precio_alquiler")
+    .eq("evento_id", eventoId);
+
+  const reqMap = new Map(
+    (reqs ?? []).map((r: any) => [r.menaje_id, r])
+  );
+
+  // Get availability
+  const fecha = reserva.fecha_inicio || fechaEvento;
+  const disponibles = await menajeDisponiblePorRango(fecha, fecha);
+  const dispMap = new Map(disponibles.map((d) => [d.id, d]));
+
+  const items: OrdenMenajeItem[] = rf.items.map((it) => {
+    const req = reqMap.get(it.menaje_id);
+    const disp = dispMap.get(it.menaje_id);
+    return {
+      menaje_id: it.menaje_id,
+      nombre: it.menaje?.nombre ?? req?.nombre ?? "",
+      unidad: it.menaje?.unidad ?? disp?.unidad ?? "und",
+      cantidad_requerida: Number(req?.cantidad) || Number(it.cantidad) || 0,
+      disponible: Number(disp?.disponible ?? 0) + Number(it.cantidad), // add back own reservation
+      cantidad_reservar: Number(it.cantidad) || 0,
+      precio_alquiler: Number(req?.precio_alquiler) || Number(it.menaje?.precio_alquiler) || 0,
+    };
+  });
+
+  return { reserva: reserva as MenajeReserva, items };
+}
+
+/** Auto-generate menaje order (reservation) from event requirements */
+export async function generateOrdenMenaje(
+  eventoId: string,
+  fechaEvento: string
+): Promise<{ reserva: MenajeReserva; items: OrdenMenajeItem[] }> {
+  // Check if already exists
+  const existing = await getOrdenMenaje(eventoId, fechaEvento);
+  if (existing) return existing;
+
+  // Read menaje requirements
+  const { data: reqMenaje, error: reqErr } = await supabase
+    .from("evento_requerimiento_menaje")
+    .select("menaje_id, nombre, cantidad, precio_alquiler")
+    .eq("evento_id", eventoId);
+  if (reqErr) throw reqErr;
+
+  if (!reqMenaje || reqMenaje.length === 0) {
+    // Create empty reservation
+    const { data: reserva, error: rErr } = await supabase
+      .from("menaje_reservas")
+      .insert({ evento_id: eventoId, fecha_inicio: fechaEvento, fecha_fin: fechaEvento, estado: "borrador" })
+      .select("*")
+      .single();
+    if (rErr) throw rErr;
+    return { reserva: reserva as MenajeReserva, items: [] };
+  }
+
+  // Check availability
+  const disponibles = await menajeDisponiblePorRango(fechaEvento, fechaEvento);
+  const dispMap = new Map(disponibles.map((d) => [d.id, d]));
+
+  // Build items
+  const itemRows: OrdenMenajeItem[] = reqMenaje.map((req: any) => {
+    const disp = dispMap.get(req.menaje_id);
+    const cantRequerida = Number(req.cantidad) || 0;
+    const cantDisponible = Number(disp?.disponible) || 0;
+    return {
+      menaje_id: req.menaje_id,
+      nombre: req.nombre ?? disp?.nombre ?? "",
+      unidad: disp?.unidad ?? "und",
+      cantidad_requerida: cantRequerida,
+      disponible: cantDisponible,
+      cantidad_reservar: Math.min(cantRequerida, cantDisponible),
+      precio_alquiler: Number(req.precio_alquiler) || 0,
+    };
+  });
+
+  // Create reservation
+  const { data: reserva, error: rErr } = await supabase
+    .from("menaje_reservas")
+    .insert({ evento_id: eventoId, fecha_inicio: fechaEvento, fecha_fin: fechaEvento, estado: "borrador" })
+    .select("*")
+    .single();
+  if (rErr) throw rErr;
+
+  // Insert items
+  const rows = itemRows
+    .filter((i) => i.cantidad_reservar > 0)
+    .map((i) => ({
+      reserva_id: reserva.id,
+      menaje_id: i.menaje_id,
+      cantidad: i.cantidad_reservar,
+    }));
+  if (rows.length > 0) {
+    const { error: iErr } = await supabase.from("menaje_reserva_items").insert(rows);
+    if (iErr) throw iErr;
+  }
+
+  // Re-fetch enriched to get consistent data
+  return { reserva: reserva as MenajeReserva, items: itemRows };
+}
+
+/** Delete draft reservation and regenerate */
+export async function regenerateOrdenMenaje(
+  eventoId: string,
+  fechaEvento: string
+): Promise<{ reserva: MenajeReserva; items: OrdenMenajeItem[] }> {
+  // Delete existing borrador items + reservation
+  const { data: existing } = await supabase
+    .from("menaje_reservas")
+    .select("id")
+    .eq("evento_id", eventoId)
+    .eq("estado", "borrador")
+    .maybeSingle();
+
+  if (existing) {
+    await supabase.from("menaje_reserva_items").delete().eq("reserva_id", existing.id);
+    await supabase.from("menaje_reservas").delete().eq("id", existing.id);
+  }
+
+  return generateOrdenMenaje(eventoId, fechaEvento);
 }
