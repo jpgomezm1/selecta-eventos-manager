@@ -630,6 +630,7 @@ export default function PersonalDetalle() {
                         <TableCell>
                           <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             {trabajo.estado_pago === 'pendiente' && !eventosSeleccionados.has(trabajo.id) && (
+                              Number(trabajo.pago_calculado) > 0 ? (
                               <Dialog open={isDialogOpen && trabajoSeleccionado?.id === trabajo.id} onOpenChange={(open) => {
                                 if (!open) {
                                   setIsDialogOpen(false);
@@ -748,11 +749,23 @@ export default function PersonalDetalle() {
                                   </div>
                                 </DialogContent>
                               </Dialog>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => navigate(`/eventos/${trabajo.evento.id}`)}
+                                  className="h-8 px-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                  title="Este trabajo no tiene horas cargadas. Complétalas en el evento antes de pagar."
+                                >
+                                  <Clock className="h-4 w-4 mr-1" />
+                                  <span className="text-xs">Cargar horas</span>
+                                </Button>
+                              )
                             )}
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => navigate(`/eventos`)}
+                              onClick={() => navigate(`/eventos/${trabajo.evento.id}`)}
                               className="h-8 w-8 p-0"
                             >
                               <Eye className="h-4 w-4 text-slate-500" />
