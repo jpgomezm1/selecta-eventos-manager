@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Download, Printer, FileText, ClipboardList } from "lucide-react";
 import { RegistroPagoConEventos } from "@/types/database";
+import { formatLocalDate } from "@/lib/dateLocal";
 
 interface ComprobanteModalProps {
   isOpen: boolean;
@@ -79,7 +80,7 @@ export function ComprobanteModal({ isOpen, onClose, registroPago, empleadoNombre
                       <div>
                         <h4 className="font-medium">{index + 1}. {eventoDetalle.evento.nombre_evento}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(eventoDetalle.evento.fecha_evento).toLocaleDateString('es-CO')} - {eventoDetalle.evento.ubicacion}
+                          {formatLocalDate(eventoDetalle.evento.fecha_evento, 'es-CO')} - {eventoDetalle.evento.ubicacion}
                         </p>
                       </div>
                       <div className="text-right">

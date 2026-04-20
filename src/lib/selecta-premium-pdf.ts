@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import type { Cotizacion } from '@/types/cotizador';
+import { formatLocalDate } from '@/lib/dateLocal';
 
 interface CotizacionDetalle {
   cotizacion: Cotizacion;
@@ -29,6 +30,8 @@ export async function generateSelectaPremiumPDF(
     : data.versiones;
 
   // Paleta de colores oficial de Selecta (refinada)
+  // `as const` narrows cada tupla para que `pdf.setTextColor(...selectaColors.x)` satisfaga
+  // la firma de 3 args (jspdf rechaza `number[]` de longitud arbitraria).
   const selectaColors = {
     primary: [0, 90, 100],        // #005A64 - Azul petróleo principal
     secondary: [177, 201, 30],     // #B1C91E - Verde lima distintivo
@@ -38,7 +41,7 @@ export async function generateSelectaPremiumPDF(
     lightText: [107, 114, 128],    // Gris medio para texto secundario
     border: [229, 231, 235],       // Bordes sutiles
     accent: [16, 185, 129]         // Verde accent para destacados
-  };
+  } as const;
 
   // Cargar logo
   let logoImg: string = '';
@@ -111,7 +114,7 @@ export async function generateSelectaPremiumPDF(
       ['Cliente:', data.cotizacion.cliente_nombre || 'Por definir'],
       ['Invitados:', `${data.cotizacion.numero_invitados} personas`],
       ['Fecha:', data.cotizacion.fecha_evento_estimada
-        ? new Date(data.cotizacion.fecha_evento_estimada).toLocaleDateString('es-CO', {
+        ? formatLocalDate(data.cotizacion.fecha_evento_estimada, 'es-CO', {
             year: 'numeric', month: 'long', day: 'numeric'
           })
         : 'Por definir'],
@@ -161,7 +164,7 @@ export async function generateSelectaPremiumPDF(
     pdf.roundedRect(15, yPos, pageWidth - 30, 50, 8, 8, 'F');
 
     // Borde izquierdo de color
-    const borderColor = isRecommended ? selectaColors.accent : selectaColors.primary;
+    const borderColor: readonly [number, number, number] = isRecommended ? selectaColors.accent : selectaColors.primary;
     pdf.setFillColor(...borderColor);
     pdf.roundedRect(15, yPos, 4, 50, 4, 4, 'F');
 
@@ -198,7 +201,12 @@ export async function generateSelectaPremiumPDF(
     yPos += 60;
 
     // Categorías de servicios
-    const categories = [
+    const categories: Array<{
+      title: string;
+      items: any[];
+      color: readonly [number, number, number];
+      getValue: (item: any) => { name: string; price: number; qty: number };
+    }> = [
       {
         title: 'EXPERIENCIA GASTRONÓMICA',
         items: version.items.platos,
@@ -214,7 +222,7 @@ export async function generateSelectaPremiumPDF(
       {
         title: 'LOGÍSTICA Y TRANSPORTE',
         items: version.items.transportes,
-        color: [255, 146, 43], // Naranja
+        color: [255, 146, 43] as const, // Naranja
         getValue: (item: any) => ({ name: `Transporte a ${item.lugar}`, price: item.tarifa_unitaria, qty: item.cantidad })
       }
     ];

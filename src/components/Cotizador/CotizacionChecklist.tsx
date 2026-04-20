@@ -29,17 +29,15 @@ async function fetchChecklistData(versionId: string) {
   if (evErr) throw evErr;
   if (!evento) return null;
 
-  const eventoId = evento.id as string;
+  const eventoId = evento.id;
 
-  // Fetch all checklist-related data in parallel
   const [
-    { data: personalReq },
-    { data: personalAsig },
-    { data: ordenCompra },
-    { data: menajeReserva },
-    { data: transporteOrden },
-    { data: despachoIng },
-    { data: despachoMenaje },
+    { data: personalReq, error: ePersReq },
+    { data: personalAsig, error: ePersAsig },
+    { data: ordenCompra, error: eOrden },
+    { data: menajeReserva, error: eReserva },
+    { data: transporteOrden, error: eTransp },
+    { data: despachoMenaje, error: eDespacho },
   ] = await Promise.all([
     supabase
       .from("evento_requerimiento_personal")
@@ -50,44 +48,46 @@ async function fetchChecklistData(versionId: string) {
       .select("id")
       .eq("evento_id", eventoId),
     supabase
-      .from("ordenes_compra")
+      .from("evento_orden_compra")
       .select("estado")
       .eq("evento_id", eventoId)
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle(),
     supabase
       .from("menaje_reservas")
       .select("estado")
       .eq("evento_id", eventoId)
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle(),
     supabase
       .from("transporte_ordenes")
       .select("estado")
       .eq("evento_id", eventoId)
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle(),
     supabase
-      .from("despachos_ingredientes")
+      .from("menaje_movimientos")
       .select("id")
       .eq("evento_id", eventoId)
-      .limit(1),
-    supabase
-      .from("despachos_menaje")
-      .select("id")
-      .eq("evento_id", eventoId)
+      .eq("tipo", "salida")
+      .eq("estado", "confirmado")
       .limit(1),
   ]);
 
-  const personalRequeridoCount = (personalReq ?? []).length;
-  const personalAsignadoCount = (personalAsig ?? []).length;
+  const firstErr = ePersReq ?? ePersAsig ?? eOrden ?? eReserva ?? eTransp ?? eDespacho;
+  if (firstErr) throw firstErr;
 
   const checklistData: ChecklistData = {
-    personalAsignadoCount,
-    personalRequeridoCount,
+    personalAsignadoCount: (personalAsig ?? []).length,
+    personalRequeridoCount: (personalReq ?? []).length,
     ordenCompra: ordenCompra ?? null,
     menajeReserva: menajeReserva ?? null,
     transporteOrden: transporteOrden ?? null,
     fechaEvento: evento.fecha_evento,
     estadoLiquidacion: evento.estado_liquidacion ?? "",
-    ingredientesDespachados: (despachoIng ?? []).length > 0,
     menajeDespachado: (despachoMenaje ?? []).length > 0,
   };
 

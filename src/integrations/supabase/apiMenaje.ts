@@ -351,7 +351,9 @@ export async function getSalidasConfirmadas(): Promise<SalidaConEvento[]> {
  *  DESPACHO DESDE RESERVA
  * ========================= */
 
-/** Create "salida" movement from a confirmed reservation with per-item quantities and notes */
+/** Create "salida" movement from a confirmed reservation with per-item quantities and notes.
+ *  Atomic: delegates to the `despachar_menaje_desde_reserva` RPC so the movement
+ *  and its items are inserted in a single transaction. */
 export async function despacharMenajeDesdeReserva(
   reservaId: string,
   eventoId: string,
@@ -362,47 +364,12 @@ export async function despacharMenajeDesdeReserva(
     nota?: string;
   }>
 ): Promise<void> {
-  // Check if already dispatched
-  const { data: existing } = await supabase
-    .from("menaje_movimientos")
-    .select("id")
-    .eq("reserva_id", reservaId)
-    .eq("tipo", "salida")
-    .limit(1)
-    .maybeSingle();
-  if (existing) throw new Error("El menaje ya fue despachado para esta reserva.");
-
-  if (!items || items.length === 0) throw new Error("La reserva no tiene items.");
-
-  // Determine if partial dispatch
-  const isParcial = items.some(i => i.cantidad_despachada < i.cantidad_reservada);
-
-  // Create salida movement
-  const { data: mov, error: mErr } = await supabase
-    .from("menaje_movimientos")
-    .insert({
-      tipo: "salida",
-      estado: "confirmado",
-      evento_id: eventoId,
-      reserva_id: reservaId,
-      fecha: new Date().toISOString().slice(0, 10),
-      notas: isParcial
-        ? "Despacho parcial — ver notas por item"
-        : "Despacho de menaje para evento",
-    })
-    .select("id")
-    .single();
-  if (mErr) throw mErr;
-
-  const movItems = items.map((i) => ({
-    movimiento_id: mov.id,
-    menaje_id: i.menaje_id,
-    cantidad: Number(i.cantidad_despachada) || 0,
-    merma: 0,
-    nota: i.nota || null,
-  }));
-  const { error: miErr } = await supabase.from("menaje_mov_items").insert(movItems);
-  if (miErr) throw miErr;
+  const { error } = await supabase.rpc("despachar_menaje_desde_reserva", {
+    p_reserva_id: reservaId,
+    p_evento_id: eventoId,
+    p_items: items,
+  });
+  if (error) throw error;
 }
 
 /** Get dispatched items for a reservation (from the salida movement) */
@@ -438,7 +405,9 @@ export async function getSalidaItemsForReserva(
   }));
 }
 
-/** Register menaje return with breakage/loss per item */
+/** Register menaje return with breakage/loss per item.
+ *  Atomic: delegates to the `registrar_devolucion_menaje` RPC so movement,
+ *  items, stock decrement and reservation state change all commit together. */
 export async function registrarDevolucionMenaje(
   reservaId: string,
   eventoId: string,
@@ -450,60 +419,12 @@ export async function registrarDevolucionMenaje(
     nota?: string;
   }>
 ): Promise<void> {
-  // Determine if there are shortages
-  const hayFaltante = items.some(i => {
-    const faltante = i.cantidad_despachada - i.cantidad_devuelta - i.merma;
-    return faltante > 0;
+  const { error } = await supabase.rpc("registrar_devolucion_menaje", {
+    p_reserva_id: reservaId,
+    p_evento_id: eventoId,
+    p_items: items,
   });
-
-  // Create ingreso movement
-  const { data: mov, error: mErr } = await supabase
-    .from("menaje_movimientos")
-    .insert({
-      tipo: "ingreso",
-      estado: "confirmado",
-      evento_id: eventoId,
-      reserva_id: reservaId,
-      fecha: new Date().toISOString().slice(0, 10),
-      notas: hayFaltante
-        ? "Inventario descompletado — ver detalle por item"
-        : "Devolución de menaje de evento",
-    })
-    .select("id")
-    .single();
-  if (mErr) throw mErr;
-
-  const movItems = items.map((i) => ({
-    movimiento_id: mov.id,
-    menaje_id: i.menaje_id,
-    cantidad: Number(i.cantidad_devuelta) || 0,
-    merma: Number(i.merma) || 0,
-    nota: i.nota || null,
-  }));
-  const { error: miErr } = await supabase.from("menaje_mov_items").insert(movItems);
-  if (miErr) throw miErr;
-
-  // Decrement stock_total by merma and faltante for each item
-  for (const i of items) {
-    const faltante = Math.max(0, i.cantidad_despachada - i.cantidad_devuelta - i.merma);
-    const totalLoss = (Number(i.merma) || 0) + faltante;
-    if (totalLoss > 0) {
-      const { data: cat } = await supabase
-        .from("menaje_catalogo")
-        .select("stock_total")
-        .eq("id", i.menaje_id)
-        .single();
-      if (cat) {
-        await supabase
-          .from("menaje_catalogo")
-          .update({ stock_total: Math.max(0, Number(cat.stock_total) - totalLoss) })
-          .eq("id", i.menaje_id);
-      }
-    }
-  }
-
-  // Update reservation to "devuelto"
-  await setReservaEstado(reservaId, "devuelto");
+  if (error) throw error;
 }
 
 /* =========================

@@ -297,9 +297,9 @@ export default function CotizacionesListPage() {
       {/* Filtros y búsqueda */}
       <Card>
         <CardContent className="p-6">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             {/* Búsqueda */}
-            <div className="flex items-center space-x-3 flex-1 lg:max-w-md">
+            <div className="flex items-center w-full lg:max-w-md">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-500" />
                 <Input
@@ -322,7 +322,7 @@ export default function CotizacionesListPage() {
             </div>
 
             {/* Filtros */}
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
               <div className="flex items-center space-x-2">
                 <Filter className="h-4 w-4 text-slate-600" />
                 <span className="text-sm font-semibold text-slate-700">Estado:</span>

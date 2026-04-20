@@ -29,6 +29,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { EventoConPersonal, Personal } from "@/types/database";
+import { parseLocalDate, formatLocalDate } from "@/lib/dateLocal";
 
 export function ProximosEventos() {
   const [eventos, setEventos] = useState<EventoConPersonal[]>([]);
@@ -201,8 +202,8 @@ export function ProximosEventos() {
 
     const mensaje = `📅 Hola ${empleado.nombre_completo}! Tu cronograma para los próximos eventos:\n\n` +
       eventosEmpleado.map((evento, index) => {
-        const fecha = new Date(evento.fecha_evento).toLocaleDateString('es-CO', { 
-          weekday: 'long', day: 'numeric', month: 'long' 
+        const fecha = formatLocalDate(evento.fecha_evento, 'es-CO', {
+          weekday: 'long', day: 'numeric', month: 'long'
         });
         const personal = evento.personal?.find(p => p.id === empleado.id);
         const horario = personal?.hora_inicio && personal?.hora_fin 
@@ -409,14 +410,14 @@ export function ProximosEventos() {
                         <TableCell>
                           <div className="space-y-1">
                             <div className="font-semibold text-slate-800">
-                              {new Date(evento.fecha_evento).toLocaleDateString('es-CO', {
+                              {formatLocalDate(evento.fecha_evento, 'es-CO', {
                                 day: '2-digit',
                                 month: '2-digit',
                                 year: '2-digit'
                               })}
                             </div>
                             <div className="text-sm text-slate-500 capitalize">
-                              {new Date(evento.fecha_evento).toLocaleDateString('es-CO', {
+                              {formatLocalDate(evento.fecha_evento, 'es-CO', {
                                 weekday: 'long'
                               })}
                             </div>
@@ -585,7 +586,7 @@ export function ProximosEventos() {
                                 <span>{evento.ubicacion}</span>
                               </div>
                               <div className="text-sm font-medium text-slate-700 capitalize">
-                                {new Date(evento.fecha_evento).toLocaleDateString('es-CO', {
+                                {formatLocalDate(evento.fecha_evento, 'es-CO', {
                                   weekday: 'long',
                                   day: 'numeric',
                                   month: 'long'

@@ -2,9 +2,9 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { reservasCalendario } from "@/integrations/supabase/apiMenaje";
 import { MenajeReservaCal } from "@/types/menaje";
-import { Calendar as BigCalendar, momentLocalizer, Views } from "react-big-calendar";
-import moment from "moment";
-import "moment/locale/es";
+import { Calendar as BigCalendar, dateFnsLocalizer, Views } from "react-big-calendar";
+import { format, parse, startOfWeek, getDay } from "date-fns";
+import { es } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,8 +17,13 @@ import {
 } from "lucide-react";
 import ReservaDetalleDialog from "./ReservaDetalleDialog";
 
-moment.locale("es");
-const localizer = momentLocalizer(moment);
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
+  getDay,
+  locales: { es },
+});
 
 type CalEvent = {
   id: string;
@@ -40,8 +45,8 @@ export default function ReservasCalendar() {
   const [selectedReserva, setSelectedReserva] = useState<MenajeReservaCal | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const fromStr = moment(range.from).format("YYYY-MM-DD");
-  const toStr = moment(range.to).format("YYYY-MM-DD");
+  const fromStr = format(range.from, "yyyy-MM-dd");
+  const toStr = format(range.to, "yyyy-MM-dd");
 
   const { data: reservas, isLoading } = useQuery({
     queryKey: ["bodega-cal", fromStr, toStr],
@@ -62,9 +67,9 @@ export default function ReservasCalendar() {
   const stats = useMemo(() => {
     const totalReservas = reservas?.length ?? 0;
     const totalItems = reservas?.reduce((sum, r) => sum + r.items.length, 0) ?? 0;
+    const now = new Date();
     const eventosActivos = reservas?.filter(r =>
-      moment(r.fecha_inicio).isSameOrBefore(moment()) &&
-      moment(r.fecha_fin).isSameOrAfter(moment())
+      new Date(r.fecha_inicio) <= now && new Date(r.fecha_fin) >= now
     ).length ?? 0;
 
     return { totalReservas, totalItems, eventosActivos };
@@ -200,7 +205,7 @@ export default function ReservasCalendar() {
 
             <div className="flex items-center space-x-2">
               <Badge className="bg-blue-100 text-blue-700 border-blue-200">
-                {moment(range.from).format("MMM YYYY")}
+                {format(range.from, "MMM yyyy", { locale: es })}
               </Badge>
               {isLoading && (
                 <div className="flex items-center space-x-2 text-sm text-slate-500">
@@ -253,6 +258,7 @@ export default function ReservasCalendar() {
 
             <BigCalendar
               localizer={localizer}
+              culture="es"
               events={events}
               startAccessor="start"
               endAccessor="end"

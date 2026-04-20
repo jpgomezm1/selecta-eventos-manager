@@ -17,6 +17,7 @@ import { computeChecklist } from "@/lib/eventoChecklist";
 import type { ChecklistResult } from "@/lib/eventoChecklist";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from "react-router-dom";
+import { parseLocalDate } from "@/lib/dateLocal";
 
 import moment from 'moment';
 import 'moment/locale/es';
@@ -167,7 +168,7 @@ export default function EventosPage() {
   };
 
   const getEventStatus = (fechaEvento: string) => {
-    const eventDate = new Date(fechaEvento);
+    const eventDate = parseLocalDate(fechaEvento) ?? new Date();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     eventDate.setHours(0, 0, 0, 0);
@@ -194,13 +195,16 @@ export default function EventosPage() {
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedEventos = filteredEventos.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  const calendarEvents: CalendarEvent[] = filteredEventos.map(evento => ({
-    id: evento.id,
-    title: evento.nombre_evento,
-    start: new Date(evento.fecha_evento),
-    end: new Date(evento.fecha_evento),
-    resource: evento
-  }));
+  const calendarEvents: CalendarEvent[] = filteredEventos.map(evento => {
+    const date = parseLocalDate(evento.fecha_evento) ?? new Date();
+    return {
+      id: evento.id,
+      title: evento.nombre_evento,
+      start: date,
+      end: date,
+      resource: evento,
+    };
+  });
 
   const eventStyleGetter = (event: CalendarEvent) => {
     const { status } = getEventStatus(event.resource.fecha_evento);
@@ -375,7 +379,7 @@ export default function EventosPage() {
                               {evento.nombre_evento}
                             </h3>
                             <p className="text-sm text-slate-500 mt-0.5">
-                              {format(new Date(evento.fecha_evento), "EEE, d MMM yyyy", { locale: es })}
+                              {format(parseLocalDate(evento.fecha_evento) ?? new Date(), "EEE, d MMM yyyy", { locale: es })}
                             </p>
                           </div>
                           <div className="flex gap-1.5 ml-2">

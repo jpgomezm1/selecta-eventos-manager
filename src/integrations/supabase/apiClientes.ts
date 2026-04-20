@@ -54,8 +54,7 @@ export async function searchClientes(term: string): Promise<Cliente[]> {
     .or(`nombre.ilike.${pattern},empresa.ilike.${pattern},correo.ilike.${pattern}`)
     .order("nombre", { ascending: true })
     .limit(10);
-  // If table doesn't exist yet, gracefully return empty
-  if (error) return [];
+  if (error) throw error;
   return (data ?? []) as Cliente[];
 }
 
@@ -124,7 +123,7 @@ export async function listContactos(clienteId: string): Promise<ContactoCliente[
     .eq("cliente_id", clienteId)
     .order("es_principal", { ascending: false })
     .order("nombre", { ascending: true });
-  if (error) return [];
+  if (error) throw error;
   return (data ?? []) as ContactoCliente[];
 }
 

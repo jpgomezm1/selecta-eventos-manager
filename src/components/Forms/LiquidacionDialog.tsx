@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EventoConPersonal } from "@/types/database";
+import { formatLocalDate } from "@/lib/dateLocal";
 import { calcularPagoPersonal, getModalidadCobroLabel, requiereRegistroHoras } from "@/lib/calcularPagoPersonal";
 
 interface LiquidacionDialogProps {
@@ -173,7 +174,7 @@ export function LiquidacionDialog({ evento, isOpen, onClose, onLiquidationComple
                     <span className="text-slate-400">•</span>
                     <span className="flex items-center space-x-1">
                       <CalendarDays className="h-4 w-4" />
-                      <span>{new Date(evento.fecha_evento).toLocaleDateString('es-CO')}</span>
+                      <span>{formatLocalDate(evento.fecha_evento, 'es-CO')}</span>
                     </span>
                     <span className="text-slate-400">•</span>
                     <span className="flex items-center space-x-1">

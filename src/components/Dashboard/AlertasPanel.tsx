@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { parseLocalDate } from "@/lib/dateLocal";
 
 interface Alerta {
   id: string;
@@ -53,7 +54,7 @@ export function AlertasPanel() {
 
       if (eventosProximos) {
         for (const evento of eventosProximos) {
-          const fechaEvento = new Date(evento.fecha_evento);
+          const fechaEvento = parseLocalDate(evento.fecha_evento) ?? new Date();
           const hoy = new Date();
           const diasRestantes = Math.ceil((fechaEvento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
           
@@ -120,7 +121,7 @@ export function AlertasPanel() {
       // Alertas de pagos pendientes > 30 días
       if (pagosPendientes) {
         const pagosVencidos = pagosPendientes.filter((pago: any) => {
-          const fechaEvento = new Date(pago.evento.fecha_evento);
+          const fechaEvento = parseLocalDate(pago.evento.fecha_evento) ?? new Date();
           const hoy = new Date();
           const diasVencido = Math.floor((hoy.getTime() - fechaEvento.getTime()) / (1000 * 60 * 60 * 24));
           return diasVencido > 30;

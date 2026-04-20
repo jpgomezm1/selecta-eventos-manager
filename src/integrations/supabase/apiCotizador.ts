@@ -245,92 +245,80 @@ export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
 
 /** =====================
  *   CREAR CON VERSIONES
- *  ===================== */
-export async function createCotizacionWithVersions(payload: CotizacionWithVersionsDraft) {
-  // 1) Insert cabecera
-  const insertData: any = {
-    nombre_cotizacion: payload.cotizacion.nombre_cotizacion,
-    cliente_nombre: payload.cotizacion.cliente_nombre,
-    numero_invitados: payload.cotizacion.numero_invitados,
-    fecha_evento_estimada: payload.cotizacion.fecha_evento_estimada
-      ? payload.cotizacion.fecha_evento_estimada.toISOString().slice(0, 10)
-      : null,
-    ubicacion_evento: payload.cotizacion.ubicacion_evento,
-    comercial_encargado: payload.cotizacion.comercial_encargado,
-    total_cotizado: payload.cotizacion.total_cotizado,
-    estado: payload.cotizacion.estado,
-    contacto_telefono: payload.cotizacion.contacto_telefono || null,
-    contacto_correo: payload.cotizacion.contacto_correo || null,
-    hora_inicio: payload.cotizacion.hora_inicio || null,
-    hora_fin: payload.cotizacion.hora_fin || null,
-    hora_montaje_inicio: payload.cotizacion.hora_montaje_inicio || null,
-    hora_montaje_fin: payload.cotizacion.hora_montaje_fin || null,
+ *  =====================
+ *  Atomic: delega a la RPC `create_cotizacion_with_versions`. Todo el payload
+ *  (cabecera + lugares[] + versiones[] con sus 4 tipos de items) se inserta
+ *  en una única transacción — si algo falla, nada queda a medias. */
+export async function createCotizacionWithVersions(
+  payload: CotizacionWithVersionsDraft
+): Promise<{ id: string }> {
+  const rpcPayload = {
+    cotizacion: {
+      nombre_cotizacion: payload.cotizacion.nombre_cotizacion,
+      cliente_nombre: payload.cotizacion.cliente_nombre,
+      numero_invitados: payload.cotizacion.numero_invitados,
+      fecha_evento_estimada: payload.cotizacion.fecha_evento_estimada
+        ? payload.cotizacion.fecha_evento_estimada.toISOString().slice(0, 10)
+        : null,
+      ubicacion_evento: payload.cotizacion.ubicacion_evento ?? null,
+      comercial_encargado: payload.cotizacion.comercial_encargado,
+      total_cotizado: payload.cotizacion.total_cotizado,
+      estado: payload.cotizacion.estado,
+      contacto_telefono: payload.cotizacion.contacto_telefono ?? null,
+      contacto_correo: payload.cotizacion.contacto_correo ?? null,
+      hora_inicio: payload.cotizacion.hora_inicio ?? null,
+      hora_fin: payload.cotizacion.hora_fin ?? null,
+      hora_montaje_inicio: payload.cotizacion.hora_montaje_inicio ?? null,
+      hora_montaje_fin: payload.cotizacion.hora_montaje_fin ?? null,
+      cliente_id: payload.cotizacion.cliente_id ?? null,
+      contacto_id: payload.cotizacion.contacto_id ?? null,
+    },
+    lugares: (payload.lugares ?? []).map((l) => ({
+      nombre: l.nombre,
+      direccion: l.direccion ?? null,
+      ciudad: l.ciudad ?? null,
+      capacidad_estimada: l.capacidad_estimada ?? null,
+      precio_referencia: l.precio_referencia ?? 0,
+      notas: l.notas ?? null,
+      es_seleccionado: l.es_seleccionado,
+    })),
+    versiones: payload.versiones.map((v) => ({
+      nombre_opcion: v.nombre_opcion,
+      version_index: v.version_index,
+      total: v.total,
+      estado: v.estado,
+      is_definitiva: v.is_definitiva ?? false,
+      items: {
+        platos: v.items.platos.map((p) => ({
+          plato_id: p.plato_id,
+          cantidad: p.cantidad,
+          precio_unitario: p.precio_unitario,
+        })),
+        personal: v.items.personal.map((p) => ({
+          personal_costo_id: p.personal_costo_id,
+          cantidad: p.cantidad,
+          tarifa_estimada_por_persona: p.tarifa_estimada_por_persona,
+        })),
+        transportes: v.items.transportes.map((t) => ({
+          transporte_id: t.transporte_id,
+          cantidad: t.cantidad,
+          tarifa_unitaria: t.tarifa_unitaria,
+        })),
+        menaje: (v.items.menaje ?? []).map((m) => ({
+          menaje_id: m.menaje_id,
+          cantidad: m.cantidad,
+          precio_alquiler: m.precio_alquiler,
+        })),
+      },
+    })),
   };
 
-  await checkMigration();
-
-  // Only include cliente_id if the column exists
-  if (payload.cotizacion.cliente_id && _hasClienteIdCol) {
-    insertData.cliente_id = payload.cotizacion.cliente_id;
-  }
-
-  // Only include contacto_id if the column exists
-  if (payload.cotizacion.contacto_id && _hasContactoIdCol) {
-    insertData.contacto_id = payload.cotizacion.contacto_id;
-  }
-
-  const { data: cab, error: errCab } = await supabase
-    .from("cotizaciones")
-    .insert(insertData)
-    .select("id")
-    .single();
-
-  if (errCab) throw errCab;
-  const cotizacion_id = cab!.id as string;
-
-  try {
-    // 2) Insert lugares if table exists
-    if (_hasLugaresTable && payload.lugares && payload.lugares.length > 0) {
-      const lugarRows = payload.lugares.map((l, i) => ({
-        cotizacion_id,
-        nombre: l.nombre,
-        direccion: l.direccion || null,
-        ciudad: l.ciudad || null,
-        capacidad_estimada: l.capacidad_estimada || null,
-        precio_referencia: l.precio_referencia || 0,
-        notas: l.notas || null,
-        es_seleccionado: l.es_seleccionado,
-        orden: i + 1,
-      }));
-      const { error: lugarErr } = await supabase.from("cotizacion_lugares").insert(lugarRows);
-      if (lugarErr) throw lugarErr;
-    }
-
-    // 3) Insert versiones + items
-    for (const v of payload.versiones) {
-      const { data: ver, error: errVer } = await supabase
-        .from("cotizacion_versiones")
-        .insert({
-          cotizacion_id,
-          nombre_opcion: v.nombre_opcion,
-          version_index: v.version_index,
-          total: v.total,
-          estado: v.estado,
-          is_definitiva: v.is_definitiva ?? false,
-        })
-        .select("id")
-        .single();
-      if (errVer) throw errVer;
-
-      const cotizacion_version_id = ver!.id as string;
-      await insertItemsForVersion(cotizacion_id, cotizacion_version_id, v.items);
-    }
-
-    return { id: cotizacion_id };
-  } catch (err) {
-    await supabase.from("cotizaciones").delete().eq("id", cotizacion_id);
-    throw err;
-  }
+  const { data, error } = await supabase.rpc("create_cotizacion_with_versions", {
+    p_payload: rpcPayload,
+  });
+  if (error) throw error;
+  if (!data) throw new Error("create_cotizacion_with_versions no devolvió id");
+  return { id: data as string };
 }
 
 /** Agregar una versión a una cotización existente */
@@ -363,12 +351,25 @@ export async function updateVersionCotizacion(
   items: CotizacionItemsState,
   nombre_opcion?: string
 ) {
-  // Calcular nuevo total
+  // Carga el precio del lugar seleccionado de la cotización para incluirlo en el
+  // total. El lugar vive a nivel cotización (no versión), así que aplica a todas
+  // las versiones por igual.
+  const { data: lugares } = await supabase
+    .from("cotizacion_lugares")
+    .select("precio_referencia, es_seleccionado, orden")
+    .eq("cotizacion_id", cotizacion_id)
+    .order("orden", { ascending: true });
+  const lugarSel =
+    (lugares ?? []).find((l: any) => l.es_seleccionado) ?? (lugares ?? [])[0];
+  const lugarPrecio = Number((lugarSel as any)?.precio_referencia ?? 0);
+
+  // Calcular nuevo total (items + lugar)
   const total =
     items.platos.reduce((a, p) => a + p.precio_unitario * p.cantidad, 0) +
     items.personal.reduce((a, p) => a + p.tarifa_estimada_por_persona * p.cantidad, 0) +
     items.transportes.reduce((a, t) => a + t.tarifa_unitaria * t.cantidad, 0) +
-    (items.menaje ?? []).reduce((a, m) => a + m.precio_alquiler * m.cantidad, 0);
+    (items.menaje ?? []).reduce((a, m) => a + m.precio_alquiler * m.cantidad, 0) +
+    lugarPrecio;
 
   // Actualizar total (y nombre si se proporcionó) de la versión
   const updateData: Record<string, any> = { total };
@@ -405,132 +406,68 @@ export async function ensureEventFromVersion(opts: {
   ubicacion?: string | null;
   descripcion?: string | null;
 }): Promise<{ evento_id: string }> {
-  // ¿ya existe?
-  const { data: existing, error: e0 } = await supabase
-    .from("eventos")
-    .select("id")
-    .eq("cotizacion_version_id", opts.cotizacion_version_id)
-    .maybeSingle();
-  if (e0) throw e0;
-  if (existing?.id) return { evento_id: existing.id };
-
-  // crear evento
-  const { data: ev, error: e1 } = await supabase
-    .from("eventos")
-    .insert({
-      nombre_evento: opts.nombre_evento,
-      ubicacion: opts.ubicacion ?? "",
-      fecha_evento: opts.fecha_evento ?? new Date().toISOString().slice(0, 10),
-      descripcion: opts.descripcion ?? null,
-      cotizacion_version_id: opts.cotizacion_version_id,
-    })
-    .select("id")
-    .single();
-  if (e1) throw e1;
-  const evento_id = ev!.id as string;
-
-  // cargar items de la versión
-  const [{ data: p }, { data: t }, { data: pe }, { data: me }] = await Promise.all([
-    supabase.from("cotizacion_platos").select("*").eq("cotizacion_version_id", opts.cotizacion_version_id),
-    supabase.from("cotizacion_transporte_items").select("*").eq("cotizacion_version_id", opts.cotizacion_version_id),
-    supabase.from("cotizacion_personal_items").select("*").eq("cotizacion_version_id", opts.cotizacion_version_id),
-    supabase.from("cotizacion_menaje_items").select("*").eq("cotizacion_version_id", opts.cotizacion_version_id),
-  ]);
-
-  // ===== Enriquecer con catálogos (para snapshot legible) =====
-  const platoIds = (p ?? []).map((x: any) => x.plato_id);
-  const transIds = (t ?? []).map((x: any) => x.transporte_id);
-  const persIds  = (pe ?? []).map((x: any) => x.personal_costo_id);
-  const menajeIds = (me ?? []).map((x: any) => x.menaje_id);
-
-  const [{ data: platosCat }, { data: transCat }, { data: persCat }, { data: menajeCat }] = await Promise.all([
-    platoIds.length
-      ? supabase.from("platos_catalogo").select("id,nombre").in("id", platoIds)
-      : Promise.resolve({ data: [] as any[] } as any),
-    transIds.length
-      ? supabase.from("transporte_tarifas").select("id,lugar").in("id", transIds)
-      : Promise.resolve({ data: [] as any[] } as any),
-    persIds.length
-      ? supabase.from("personal_costos_catalogo").select("id,rol").in("id", persIds)
-      : Promise.resolve({ data: [] as any[] } as any),
-    menajeIds.length
-      ? supabase.from("menaje_catalogo").select("id,nombre").in("id", menajeIds)
-      : Promise.resolve({ data: [] as any[] } as any),
-  ]);
-
-  const nameByPlato = new Map((platosCat ?? []).map((r: any) => [r.id, r.nombre]));
-  const lugarByTrans = new Map((transCat ?? []).map((r: any) => [r.id, r.lugar]));
-  const rolByPers = new Map((persCat ?? []).map((r: any) => [r.id, r.rol]));
-  const nameByMenaje = new Map((menajeCat ?? []).map((r: any) => [r.id, r.nombre]));
-
-  // snapshot en tablas evento_requerimiento_*
-  if ((p ?? []).length) {
-    const rows = (p ?? []).map((x: any) => ({
-      evento_id,
-      plato_id: x.plato_id,
-      nombre: nameByPlato.get(x.plato_id) ?? "",
-      precio_unitario: Number(x.precio_unitario) || 0,
-      cantidad: x.cantidad,
-      subtotal: Number(x.subtotal),
-    }));
-    const { error } = await supabase.from("evento_requerimiento_platos").insert(rows);
-    if (error) throw error;
-  }
-  if ((t ?? []).length) {
-    const rows = (t ?? []).map((x: any) => ({
-      evento_id,
-      transporte_id: x.transporte_id,
-      lugar: lugarByTrans.get(x.transporte_id) ?? "",
-      tarifa_unitaria: Number(x.tarifa_unitaria) || 0,
-      cantidad: x.cantidad,
-      subtotal: Number(x.subtotal),
-    }));
-    const { error } = await supabase.from("evento_requerimiento_transporte").insert(rows);
-    if (error) throw error;
-  }
-  if ((pe ?? []).length) {
-    const rows = (pe ?? []).map((x: any) => ({
-      evento_id,
-      personal_costo_id: x.personal_costo_id,
-      rol: rolByPers.get(x.personal_costo_id) ?? "",
-      tarifa_estimada_por_persona: Number(x.tarifa_estimada_por_persona) || 0,
-      cantidad: x.cantidad,
-      subtotal: Number(x.subtotal),
-    }));
-    const { error } = await supabase.from("evento_requerimiento_personal").insert(rows);
-    if (error) throw error;
-  }
-
-  // Snapshot menaje
-  if ((me ?? []).length) {
-    const rows = (me ?? []).map((x: any) => ({
-      evento_id,
-      menaje_id: x.menaje_id,
-      nombre: nameByMenaje.get(x.menaje_id) ?? "",
-      precio_alquiler: Number(x.precio_alquiler) || 0,
-      cantidad: x.cantidad,
-      subtotal: (Number(x.precio_alquiler) || 0) * x.cantidad,
-    }));
-    const { error } = await supabase.from("evento_requerimiento_menaje").insert(rows);
-    if (error) throw error;
-  }
-
-  return { evento_id };
+  // Atomic: la RPC crea el evento (idempotente por cotizacion_version_id) y
+  // hace snapshot de platos/transporte/personal/menaje enriquecidos con
+  // catálogos, todo en una transacción.
+  const { data, error } = await supabase.rpc("ensure_event_from_version", {
+    p_cotizacion_id: opts.cotizacion_id,
+    p_cotizacion_version_id: opts.cotizacion_version_id,
+    p_nombre_evento: opts.nombre_evento,
+    p_fecha_evento: opts.fecha_evento,
+    p_ubicacion: opts.ubicacion ?? "",
+    p_descripcion: opts.descripcion ?? null,
+  });
+  if (error) throw error;
+  if (!data) throw new Error("ensure_event_from_version no devolvió id");
+  return { evento_id: data };
 }
 
 /** Leer snapshot del requerimiento de un evento (con enriquecimiento si faltan campos) */
 export async function getEventoRequerimiento(evento_id: string): Promise<EventoRequerimiento> {
-  const [p, t, pe, m] = await Promise.all([
+  // Pull linked cotización total + selected lugar. Lugares no se copian al evento
+  // (no existe evento_requerimiento_lugares); se leen por join para que el evento
+  // refleje siempre el total de la cotización congelada.
+  const lugarPromise = supabase
+    .from("eventos")
+    .select(`
+      cotizacion_versiones (
+        cotizaciones (
+          total_cotizado,
+          cotizacion_lugares ( nombre, direccion, ciudad, precio_referencia, es_seleccionado, orden )
+        )
+      )
+    `)
+    .eq("id", evento_id)
+    .maybeSingle();
+
+  const [p, t, pe, m, ev] = await Promise.all([
     supabase.from("evento_requerimiento_platos").select("*").eq("evento_id", evento_id),
     supabase.from("evento_requerimiento_transporte").select("*").eq("evento_id", evento_id),
     supabase.from("evento_requerimiento_personal").select("*").eq("evento_id", evento_id),
     supabase.from("evento_requerimiento_menaje").select("*").eq("evento_id", evento_id),
+    lugarPromise,
   ]);
 
   if (p.error) throw p.error;
   if (t.error) throw t.error;
   if (pe.error) throw pe.error;
   if (m.error) throw m.error;
+
+  const cot = (ev.data as any)?.cotizacion_versiones?.cotizaciones;
+  const totalCotizacion = Number(cot?.total_cotizado ?? 0);
+  const lugaresList: any[] = cot?.cotizacion_lugares ?? [];
+  const lugarSel =
+    lugaresList.find((l) => l.es_seleccionado) ??
+    [...lugaresList].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))[0] ??
+    null;
+  const lugar = lugarSel
+    ? {
+        nombre: lugarSel.nombre,
+        direccion: lugarSel.direccion ?? null,
+        ciudad: lugarSel.ciudad ?? null,
+        precio: Number(lugarSel.precio_referencia ?? 0),
+      }
+    : null;
 
   const mapMenaje = (data: any[]) => (data ?? []).map((x: any) => ({
     menaje_id: x.menaje_id,
@@ -581,6 +518,8 @@ export async function getEventoRequerimiento(evento_id: string): Promise<EventoR
         subtotal: Number(x.subtotal),
       })),
       menaje: mapMenaje(m.data),
+      lugar,
+      totalCotizacion,
     };
   }
 
@@ -608,6 +547,8 @@ export async function getEventoRequerimiento(evento_id: string): Promise<EventoR
       subtotal: Number(x.subtotal),
     })),
     menaje: mapMenaje(m.data),
+    lugar,
+    totalCotizacion,
   };
 }
 
@@ -666,63 +607,14 @@ async function enrichEventoRequerimiento(evento_id: string) {
  *  MARCAR DEFINITIVA
  *  ===================== */
 export async function setVersionDefinitiva(cotizacion_id: string, version_id: string) {
-  // 1) desmarcar todas
-  const { error: e1 } = await supabase
-    .from("cotizacion_versiones")
-    .update({ is_definitiva: false })
-    .eq("cotizacion_id", cotizacion_id);
-  if (e1) throw e1;
-
-  // 2) marcar seleccionada
-  const { data: v, error: e2 } = await supabase
-    .from("cotizacion_versiones")
-    .update({ is_definitiva: true, estado: "Cotización Aprobada" })
-    .eq("id", version_id)
-    .select("id,total")
-    .single();
-  if (e2) throw e2;
-
-  // 3) sincronizar cabecera
-  const totalDef = Number(v!.total);
-  const { error: e3 } = await supabase
-    .from("cotizaciones")
-    .update({ total_cotizado: totalDef, estado: "Cotización Aprobada", fecha_cierre: new Date().toISOString() })
-    .eq("id", cotizacion_id);
-  if (e3) throw e3;
-
-  // 4) crear evento (si no existe) + snapshot enriquecido
-  const { data: cab, error: e4 } = await supabase
-    .from("cotizaciones")
-    .select("nombre_cotizacion, fecha_evento_estimada, ubicacion_evento")
-    .eq("id", cotizacion_id)
-    .single();
-  if (e4) throw e4;
-
-  // Try to get selected lugar
-  await checkMigration();
-  let lugarSel: any = null;
-  if (_hasLugaresTable) {
-    const { data } = await supabase
-      .from("cotizacion_lugares")
-      .select("nombre, direccion, ciudad")
-      .eq("cotizacion_id", cotizacion_id)
-      .eq("es_seleccionado", true)
-      .maybeSingle();
-    lugarSel = data;
-  }
-
-  const ubicacion = lugarSel
-    ? [lugarSel.nombre, lugarSel.direccion, lugarSel.ciudad].filter(Boolean).join(", ")
-    : (cab as any).ubicacion_evento || "";
-
-  await ensureEventFromVersion({
-    cotizacion_id,
-    cotizacion_version_id: version_id,
-    nombre_evento: (cab as any).nombre_cotizacion,
-    fecha_evento: (cab as any).fecha_evento_estimada,
-    ubicacion,
+  // Atomic: desmarca las otras versiones, marca la elegida como aprobada,
+  // sincroniza el total en la cabecera y llama a ensure_event_from_version
+  // internamente (mismo transaction scope).
+  const { error } = await supabase.rpc("set_version_definitiva", {
+    p_cotizacion_id: cotizacion_id,
+    p_version_id: version_id,
   });
-
+  if (error) throw error;
   return { ok: true };
 }
 

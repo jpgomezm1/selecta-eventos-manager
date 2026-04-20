@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { listAllTransporteOrdenes } from "@/integrations/supabase/apiTransporte";
+import { parseLocalDate } from "@/lib/dateLocal";
 
 const estadoConfig: Record<string, { label: string; class: string }> = {
   borrador: { label: "Borrador", class: "bg-slate-100 text-slate-700" },
@@ -174,7 +175,7 @@ export default function TransportePage() {
                       </td>
                       <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
                         {o.fecha_evento
-                          ? format(new Date(o.fecha_evento), "d MMM yyyy", { locale: es })
+                          ? format(parseLocalDate(o.fecha_evento) ?? new Date(), "d MMM yyyy", { locale: es })
                           : "—"}
                       </td>
                       <td className="px-4 py-3">
