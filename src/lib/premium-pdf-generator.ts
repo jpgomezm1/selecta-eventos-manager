@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import type { Cotizacion } from '@/types/cotizador';
+import { formatLocalDate } from '@/lib/dateLocal';
 
 interface CotizacionDetalle {
   cotizacion: Cotizacion;
@@ -29,6 +30,8 @@ export async function generatePremiumCotizacionPDF(
     : data.versiones;
 
   // Configuración de colores premium
+  // `as const` narrows cada tupla para que `pdf.setTextColor(...colors.x)` satisfaga
+  // la firma de 3 args (jspdf rechaza `number[]` de longitud arbitraria).
   const colors = {
     primary: [46, 125, 50],     // Verde Selecta
     secondary: [33, 150, 243],   // Azul elegante
@@ -38,7 +41,7 @@ export async function generatePremiumCotizacionPDF(
     white: [255, 255, 255],
     text: [55, 65, 81],          // Gris texto
     textLight: [107, 114, 128]   // Gris texto claro
-  };
+  } as const;
 
   // Cargar logo con mejor calidad
   let logoImg: string = '';
@@ -118,7 +121,7 @@ export async function generatePremiumCotizacionPDF(
 
     const rightCol = [
       `Fecha: ${data.cotizacion.fecha_evento_estimada ?
-        new Date(data.cotizacion.fecha_evento_estimada).toLocaleDateString('es-CO', {
+        formatLocalDate(data.cotizacion.fecha_evento_estimada, 'es-CO', {
           year: 'numeric',
           month: 'long',
           day: 'numeric'
@@ -232,32 +235,33 @@ export async function generatePremiumCotizacionPDF(
       {
         title: 'EXPERIENCIA GASTRONÓMICA',
         items: version.items.platos,
-        color: [255, 152, 0],
+        color: [255, 152, 0] as const,
         icon: '🍽️'
       },
       {
         title: 'EQUIPO DE PROFESIONALES',
         items: version.items.personal,
-        color: [63, 81, 181],
+        color: [63, 81, 181] as const,
         icon: '👥'
       },
       {
         title: 'LOGÍSTICA ESPECIALIZADA',
         items: version.items.transportes,
-        color: [76, 175, 80],
+        color: [76, 175, 80] as const,
         icon: '🚐'
       }
     ];
 
     categories.forEach((category) => {
       if (category.items.length > 0) {
+        const [cr, cg, cb] = category.color;
         // Header de categoría
-        pdf.setFillColor(...category.color, 0.1);
+        pdf.setFillColor(cr, cg, cb, 0.1);
         pdf.roundedRect(25, yPos, pageWidth - 50, 15, 4, 4, 'F');
 
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(12);
-        pdf.setTextColor(...category.color);
+        pdf.setTextColor(cr, cg, cb);
         pdf.text(`${category.icon} ${category.title}`, 30, yPos + 10);
 
         yPos += 20;

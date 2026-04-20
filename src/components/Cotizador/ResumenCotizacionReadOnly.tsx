@@ -84,10 +84,15 @@ export function ResumenCotizacionReadOnly({
   const costPerGuest = invitados > 0 ? total / invitados : 0;
   const hasItems = totalItems > 0;
 
-  const platosPercentage = total > 0 ? (subtotales.platos / total) * 100 : 0;
-  const personalPercentage = total > 0 ? (subtotales.personal / total) * 100 : 0;
-  const transportesPercentage = total > 0 ? (subtotales.transportes / total) * 100 : 0;
-  const menajePercentage = total > 0 ? ((subtotales.menaje ?? 0) / total) * 100 : 0;
+  // Los % representan distribución dentro de los items (platos/personal/transportes/menaje).
+  // Usar `total` como denominador los deja sub-100% porque `total` incluye el costo del lugar,
+  // que no es una categoría de item. Denominador: suma de items solamente.
+  const itemsTotal =
+    subtotales.platos + subtotales.personal + subtotales.transportes + (subtotales.menaje ?? 0);
+  const platosPercentage = itemsTotal > 0 ? (subtotales.platos / itemsTotal) * 100 : 0;
+  const personalPercentage = itemsTotal > 0 ? (subtotales.personal / itemsTotal) * 100 : 0;
+  const transportesPercentage = itemsTotal > 0 ? (subtotales.transportes / itemsTotal) * 100 : 0;
+  const menajePercentage = itemsTotal > 0 ? ((subtotales.menaje ?? 0) / itemsTotal) * 100 : 0;
 
   const sections = [
     {

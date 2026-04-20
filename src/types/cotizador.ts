@@ -17,7 +17,7 @@ export interface IngredienteCatalogo {
     evento_id: string | null;
     proveedor: string | null;
     notas: string | null;
-    factura_url: string | null;
+    factura_url?: string | null;
   }
 
   export interface InventarioMovItem {
@@ -280,6 +280,8 @@ export interface IngredienteCatalogo {
     transportes: Array<{ transporte_id: string; lugar: string; tarifa_unitaria: number; cantidad: number; subtotal: number }>;
     personal: Array<{ personal_costo_id: string; rol: string; tarifa_estimada_por_persona: number; cantidad: number; subtotal: number }>;
     menaje: Array<{ menaje_id: string; nombre: string; precio_alquiler: number; cantidad: number; subtotal: number }>;
+    lugar: { nombre: string; direccion: string | null; ciudad: string | null; precio: number } | null;
+    totalCotizacion: number;
   }
 
   /** Orden de compra */

@@ -10,7 +10,8 @@ import { getEventoRequerimiento } from "@/integrations/supabase/apiCotizador";
 import { fetchChecklistData } from "@/integrations/supabase/apiEventoChecklist";
 import { computeChecklist } from "@/lib/eventoChecklist";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, ArrowLeft, Users, Truck, UtensilsCrossed, FileText, ShoppingCart, DollarSign, ClipboardList } from "lucide-react";
+import { Calendar, MapPin, ArrowLeft, Users, Truck, UtensilsCrossed, FileText, ShoppingCart, DollarSign, ClipboardList, Building2 } from "lucide-react";
+import { parseLocalDate, formatLocalDate } from "@/lib/dateLocal";
 import PersonalPanel from "@/components/Eventos/PersonalPanel";
 import MenajePanel from "@/components/Eventos/MenajePanel";
 import TransportePanel from "@/components/Eventos/TransportePanel";
@@ -112,14 +113,13 @@ export default function EventoDetallePage() {
     );
   }
 
-  const totalRequerimiento =
-    req.platos.reduce((a, x) => a + x.subtotal, 0) +
-    req.personal.reduce((a, x) => a + x.subtotal, 0) +
-    req.transportes.reduce((a, x) => a + x.subtotal, 0) +
-    (req.menaje ?? []).reduce((a, x) => a + x.subtotal, 0);
+  // Fuente de verdad: cotizaciones.total_cotizado (items + lugar). Los
+  // evento_requerimiento_* no tienen lugar, así que sumar de ahí subcontaría.
+  const totalRequerimiento = req.totalCotizacion;
 
   const getEventStatus = (fechaEvento: string) => {
-    const eventDate = new Date(fechaEvento);
+    const eventDate = parseLocalDate(fechaEvento);
+    if (!eventDate) return { status: "Sin fecha", className: "bg-slate-100 text-slate-700" };
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     eventDate.setHours(0, 0, 0, 0);
@@ -147,7 +147,7 @@ export default function EventoDetallePage() {
                   <div className="flex items-center gap-1.5 text-sm text-slate-600">
                     <Calendar className="h-4 w-4 text-slate-400" />
                     <span>
-                      {new Date(head.fecha_evento).toLocaleDateString('es-CO', {
+                      {formatLocalDate(head.fecha_evento, 'es-CO', {
                         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
                       })}
                     </span>
@@ -254,6 +254,19 @@ export default function EventoDetallePage() {
                 icon={<UtensilsCrossed className="h-4 w-4 text-purple-600" />}
                 rows={(req.menaje ?? []).map((m) => ({ nombre: m.nombre, precio: m.precio_alquiler, cantidad: m.cantidad, subtotal: m.subtotal }))}
               />
+              <SeccionTabla
+                titulo="Salón / Lugar"
+                emptyHint="No se seleccionó un lugar en la cotización."
+                icon={<Building2 className="h-4 w-4 text-emerald-600" />}
+                rows={req.lugar
+                  ? [{
+                      nombre: [req.lugar.nombre, req.lugar.ciudad].filter(Boolean).join(", "),
+                      precio: req.lugar.precio,
+                      cantidad: 1,
+                      subtotal: req.lugar.precio,
+                    }]
+                  : []}
+              />
               <div className="flex justify-end pt-4 border-t border-slate-200">
                 <div className="bg-emerald-50 rounded-lg p-4 text-right">
                   <p className="text-xs text-emerald-600 mb-1">Total Estimado</p>
@@ -332,6 +345,7 @@ export default function EventoDetallePage() {
                 eventoId={head.id}
                 totalRequerimiento={totalRequerimiento}
                 estadoLiquidacion={head.estado_liquidacion}
+                costoLugar={req.lugar?.precio ?? 0}
               />
             </div>
           </Card>

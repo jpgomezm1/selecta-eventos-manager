@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { DollarSign, Users, ShoppingCart, UtensilsCrossed, CheckCircle, Clock } from "lucide-react";
+import { DollarSign, Users, ShoppingCart, UtensilsCrossed, CheckCircle, Clock, Building2 } from "lucide-react";
 
 type Props = {
   eventoId: string;
   totalRequerimiento: number;
   estadoLiquidacion: string;
+  costoLugar?: number;
 };
 
 interface CierreData {
@@ -18,7 +19,7 @@ interface CierreData {
   personalLiquidado: boolean;
 }
 
-export default function CierreEventoPanel({ eventoId, totalRequerimiento, estadoLiquidacion }: Props) {
+export default function CierreEventoPanel({ eventoId, totalRequerimiento, estadoLiquidacion, costoLugar = 0 }: Props) {
   const [data, setData] = useState<CierreData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -79,7 +80,7 @@ export default function CierreEventoPanel({ eventoId, totalRequerimiento, estado
     );
   }
 
-  const costoReal = data.costoPersonal + data.costoCompras + data.costoMenaje;
+  const costoReal = data.costoPersonal + data.costoCompras + data.costoMenaje + costoLugar;
   const diferencia = totalRequerimiento - costoReal;
 
   return (
@@ -126,6 +127,13 @@ export default function CierreEventoPanel({ eventoId, totalRequerimiento, estado
               <span>Menaje (alquiler)</span>
             </div>
             <span className="text-sm font-medium text-slate-900">${data.costoMenaje.toLocaleString()}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <Building2 className="h-4 w-4 text-emerald-500" />
+              <span>Salón / Lugar</span>
+            </div>
+            <span className="text-sm font-medium text-slate-900">${costoLugar.toLocaleString()}</span>
           </div>
         </div>
       </Card>

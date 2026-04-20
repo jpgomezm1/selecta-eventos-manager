@@ -186,59 +186,19 @@ export async function updateOrdenCompraEstado(
   return mapOrden(data);
 }
 
-/** Create inventory "compra" movement from a purchased order */
+/** Create inventory "compra" movement from a purchased order.
+ *  Atomic: delegates to the `registrar_compra_en_inventario` RPC which reads
+ *  the order items, creates the movement + items and sums the stock in a
+ *  single transaction. Returns silently if the order has no items to buy. */
 export async function registrarCompraEnInventario(
   ordenId: string,
   eventoId: string
 ): Promise<void> {
-  // Fetch order items
-  const { data: items, error: iErr } = await supabase
-    .from("evento_orden_compra_items")
-    .select("ingrediente_id, cantidad_comprar, costo_unitario")
-    .eq("orden_id", ordenId);
-  if (iErr) throw iErr;
-
-  const compraItems = (items ?? []).filter((i: any) => Number(i.cantidad_comprar) > 0);
-  if (compraItems.length === 0) return;
-
-  // Create movement
-  const { data: mov, error: mErr } = await supabase
-    .from("inventario_movimientos")
-    .insert({
-      tipo: "compra",
-      estado: "confirmado",
-      evento_id: eventoId,
-      fecha: new Date().toISOString().slice(0, 10),
-      notas: "Compra desde orden de evento",
-    })
-    .select("id")
-    .single();
-  if (mErr) throw mErr;
-
-  // Create movement items
-  const movItems = compraItems.map((i: any) => ({
-    movimiento_id: mov.id,
-    ingrediente_id: i.ingrediente_id,
-    cantidad: Number(i.cantidad_comprar),
-    costo_unitario: Number(i.costo_unitario),
-  }));
-  const { error: miErr } = await supabase.from("inventario_mov_items").insert(movItems);
-  if (miErr) throw miErr;
-
-  // Update stock for each ingredient
-  for (const i of compraItems) {
-    const { data: ing } = await supabase
-      .from("ingredientes_catalogo")
-      .select("stock_actual")
-      .eq("id", i.ingrediente_id)
-      .single();
-    if (ing) {
-      await supabase
-        .from("ingredientes_catalogo")
-        .update({ stock_actual: Number(ing.stock_actual ?? 0) + Number(i.cantidad_comprar) })
-        .eq("id", i.ingrediente_id);
-    }
-  }
+  const { error } = await supabase.rpc("registrar_compra_en_inventario", {
+    p_orden_id: ordenId,
+    p_evento_id: eventoId,
+  });
+  if (error) throw error;
 }
 
 /** Update a single item */

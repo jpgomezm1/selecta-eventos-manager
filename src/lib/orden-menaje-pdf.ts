@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import type { OrdenMenajeItem } from '@/types/menaje';
+import { formatLocalDate } from '@/lib/dateLocal';
 
 export interface OrdenMenajePDFData {
   items: OrdenMenajeItem[];
@@ -67,7 +68,7 @@ export async function generateOrdenMenajePDF(data: OrdenMenajePDFData): Promise<
     // Event name + date on the right
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(9);
-    const fecha = new Date(data.evento.fecha_evento).toLocaleDateString('es-CO', {
+    const fecha = formatLocalDate(data.evento.fecha_evento, 'es-CO', {
       year: 'numeric', month: 'short', day: 'numeric',
     });
     const infoRight = `${data.evento.nombre_evento}  |  ${fecha}`;

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Send, XCircle, RotateCcw, ExternalLink, Calendar, User, Building2, DollarSign } from "lucide-react";
 import type { Cotizacion } from "@/types/cotizador";
 import { cn } from "@/lib/utils";
+import { formatLocalDate } from "@/lib/dateLocal";
 
 type Props = {
   cotizacion: Cotizacion;
@@ -54,7 +55,7 @@ export function PipelineCard({ cotizacion: c, onMarcarEnviada, onRechazar, onRea
         {c.fecha_evento_estimada && (
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
             <Calendar className="h-3.5 w-3.5 shrink-0" />
-            <span>{new Date(c.fecha_evento_estimada).toLocaleDateString("es-CO")}</span>
+            <span>{formatLocalDate(c.fecha_evento_estimada, "es-CO")}</span>
           </div>
         )}
 

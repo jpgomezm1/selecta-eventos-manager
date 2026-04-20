@@ -60,10 +60,7 @@ export default function StockTable() {
           <AlertTriangle className="h-8 w-8 text-red-500" />
           <div>
             <p className="text-sm text-slate-500">Sin stock</p>
-            <div className="flex items-center gap-2">
-              <p className="text-xl font-semibold">{sinStock}</p>
-              {sinStock > 0 && <Badge variant="destructive">{sinStock}</Badge>}
-            </div>
+            <p className="text-xl font-semibold">{sinStock}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-lg border p-4">

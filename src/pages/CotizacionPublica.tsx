@@ -7,6 +7,7 @@ import type {
   CotizacionItemsState,
   LugarOption,
 } from "@/types/cotizador";
+import { parseLocalDate } from "@/lib/dateLocal";
 
 const LOGO_URL = "https://storage.googleapis.com/cluvi/Selecta-Eventos/logo_selecta_nuevo.png";
 const IMG_HERO = "https://storage.googleapis.com/cluvi/Selecta-Eventos/image1_selecta.png";
@@ -141,7 +142,9 @@ export default function CotizacionPublica() {
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return null;
-    return new Date(dateStr).toLocaleDateString("es-CO", {
+    const d = parseLocalDate(dateStr);
+    if (!d) return null;
+    return d.toLocaleDateString("es-CO", {
       weekday: "long",
       year: "numeric",
       month: "long",

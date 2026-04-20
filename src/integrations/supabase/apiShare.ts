@@ -80,30 +80,32 @@ export async function getCotizacionByShareToken(token: string): Promise<{
     .eq("is_active", true)
     .maybeSingle();
 
-  if (tokenErr || !tokenRow) return null;
+  if (tokenErr) throw tokenErr;
+  if (!tokenRow) return null;
 
   const cotizacion_id = tokenRow.cotizacion_id;
 
-  // 2. Fetch cotizacion with optional joins
+  // 2. Fetch cotizacion. Try with joins first (best-effort — RLS/schema cache
+  //    can reject the joined select even when the base table works).
   let cot: any = null;
-  // Try with client join first
-  try {
+  {
     const { data, error } = await supabase
       .from("cotizaciones")
       .select("*, clientes(nombre, empresa, telefono, correo, tipo, cedula), cliente_contactos(nombre, cargo, telefono, correo)")
       .eq("id", cotizacion_id)
       .single();
     if (!error) cot = data;
-  } catch {}
+  }
 
-  // Fallback without joins
+  // Fallback without joins.
   if (!cot) {
     const { data, error } = await supabase
       .from("cotizaciones")
       .select("*")
       .eq("id", cotizacion_id)
       .single();
-    if (error || !data) return null;
+    if (error) throw error;
+    if (!data) return null;
     cot = data;
   }
 
@@ -113,18 +115,15 @@ export async function getCotizacionByShareToken(token: string): Promise<{
     .select("*")
     .eq("cotizacion_id", cotizacion_id)
     .order("version_index", { ascending: true });
-  if (versErr) return null;
+  if (versErr) throw versErr;
 
-  // 4. Fetch lugares
-  let lugares: any[] = [];
-  try {
-    const { data } = await supabase
-      .from("cotizacion_lugares")
-      .select("*")
-      .eq("cotizacion_id", cotizacion_id)
-      .order("orden", { ascending: true });
-    lugares = data ?? [];
-  } catch {}
+  // 4. Fetch lugares (best-effort: empty array is acceptable for the share view)
+  const { data: lugaresData } = await supabase
+    .from("cotizacion_lugares")
+    .select("*")
+    .eq("cotizacion_id", cotizacion_id)
+    .order("orden", { ascending: true });
+  const lugares = lugaresData ?? [];
 
   // 5. Fetch items for each version (same logic as getCotizacionDetalle)
   const versiones = await Promise.all(

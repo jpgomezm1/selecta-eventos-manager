@@ -44,6 +44,7 @@ import { LugaresSelector } from "@/components/Cotizador/LugaresSelector";
 import { ApprovalDialog } from "@/components/Cotizador/ApprovalDialog";
 import { CotizacionChecklist } from "@/components/Cotizador/CotizacionChecklist";
 import { ShareDialog } from "@/components/Cotizador/ShareDialog";
+import { formatLocalDate } from "@/lib/dateLocal";
 
 export default function CotizacionEditorPage() {
   const { id } = useParams();
@@ -332,7 +333,7 @@ export default function CotizacionEditorPage() {
               <span>{cotizacion.numero_invitados} invitados</span>
               {cotizacion.fecha_evento_estimada && (
                 <span>
-                  {new Date(cotizacion.fecha_evento_estimada).toLocaleDateString("es-ES")}
+                  {formatLocalDate(cotizacion.fecha_evento_estimada, "es-ES")}
                 </span>
               )}
             </div>
@@ -378,17 +379,7 @@ export default function CotizacionEditorPage() {
                 {/* Version tabs */}
                 <TabsList className="flex overflow-x-auto gap-1 bg-slate-100 rounded-xl p-1.5 mb-6">
                   {versiones.map((v) => {
-                    const vTotal =
-                      v.items.platos.reduce((a, p) => a + p.precio_unitario * p.cantidad, 0) +
-                      v.items.personal.reduce(
-                        (a, p) => a + p.tarifa_estimada_por_persona * p.cantidad,
-                        0
-                      ) +
-                      v.items.transportes.reduce((a, t) => a + t.tarifa_unitaria * t.cantidad, 0) +
-                      (v.items.menaje ?? []).reduce(
-                        (a, m) => a + m.precio_alquiler * m.cantidad,
-                        0
-                      );
+                    const vTotal = Number(v.total) || 0;
 
                     return (
                       <TabsTrigger

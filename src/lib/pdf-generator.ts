@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import type { Cotizacion } from '@/types/cotizador';
+import { formatLocalDate } from '@/lib/dateLocal';
 
 interface CotizacionDetalle {
   cotizacion: Cotizacion;
@@ -42,10 +43,11 @@ export async function generateCotizacionPDF(
     logoImg = '';
   }
 
-  // Configuración de colores
-  const primaryColor = [46, 125, 50]; // Verde Selecta
-  const secondaryColor = [102, 102, 102]; // Gris
-  const textColor = [51, 51, 51]; // Gris oscuro
+  // Configuración de colores. `as const` narrows a tuple para que `pdf.setTextColor(...color)`
+  // satisfaga la firma de 3 args (jspdf rechaza `number[]` de longitud arbitraria).
+  const primaryColor = [46, 125, 50] as const; // Verde Selecta
+  const secondaryColor = [102, 102, 102] as const; // Gris
+  const textColor = [51, 51, 51] as const; // Gris oscuro
 
   let yPosition = margin;
 
@@ -82,7 +84,7 @@ export async function generateCotizacionPDF(
     `Cliente: ${data.cotizacion.cliente_nombre || 'Por definir'}`,
     `Número de invitados: ${data.cotizacion.numero_invitados}`,
     `Fecha estimada: ${data.cotizacion.fecha_evento_estimada ?
-      new Date(data.cotizacion.fecha_evento_estimada).toLocaleDateString('es-CO') : 'Por definir'}`,
+      formatLocalDate(data.cotizacion.fecha_evento_estimada, 'es-CO') : 'Por definir'}`,
     `Ubicación: ${data.cotizacion.ubicacion_evento || 'Por definir'}`,
     `Comercial encargado: ${data.cotizacion.comercial_encargado}`,
     `Estado: ${data.cotizacion.estado}`

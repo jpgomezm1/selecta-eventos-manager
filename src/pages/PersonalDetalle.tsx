@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Personal, EventoPersonal, Evento } from "@/types/database";
 import { RegistroPagos } from "@/components/Forms/RegistroPagos";
 import { getModalidadCobroLabel } from "@/lib/calcularPagoPersonal";
+import { parseLocalDate, formatLocalDate } from "@/lib/dateLocal";
 
 interface TrabajoConEvento extends EventoPersonal {
   evento: Evento;
@@ -310,7 +311,7 @@ export default function PersonalDetalle() {
     }
 
     if (fechaEvento) {
-      const fechaEventoDate = new Date(fechaEvento);
+      const fechaEventoDate = parseLocalDate(fechaEvento) ?? new Date();
       const hoy = new Date();
       const diffDias = Math.floor((hoy.getTime() - fechaEventoDate.getTime()) / (1000 * 60 * 60 * 24));
 
@@ -601,7 +602,7 @@ export default function PersonalDetalle() {
                           </TableCell>
                         )}
                         <TableCell className="text-slate-600">
-                          {new Date(trabajo.evento.fecha_evento).toLocaleDateString('es-CO', {
+                          {formatLocalDate(trabajo.evento.fecha_evento, 'es-CO', {
                             day: '2-digit',
                             month: 'short',
                             year: 'numeric'
@@ -863,7 +864,7 @@ export default function PersonalDetalle() {
                 {eventosSeleccionadosList.map((trabajo) => (
                   <div key={trabajo.id} className="flex justify-between items-center px-3 py-2 text-sm">
                     <div>
-                      <span className="text-slate-600">{new Date(trabajo.evento.fecha_evento).toLocaleDateString('es-CO')}</span>
+                      <span className="text-slate-600">{formatLocalDate(trabajo.evento.fecha_evento, 'es-CO')}</span>
                       <span className="ml-2 text-slate-900">{trabajo.evento.nombre_evento}</span>
                     </div>
                     <span className="font-medium text-slate-900">${(trabajo.pago_calculado || 0).toLocaleString()}</span>

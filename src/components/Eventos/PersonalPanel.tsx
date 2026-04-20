@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  listPersonal,
+  listEventoPersonal,
+  addEventoPersonal,
+  updateEventoPersonal,
+  removeEventoPersonal,
+} from "@/integrations/supabase/apiPersonal";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -38,44 +44,12 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data: pers, error: e1 } = await supabase
-        .from("personal")
-        .select("*")
-        .order("nombre_completo");
-      if (e1) throw e1;
-
-      const { data: evPers, error: e2 } = await supabase
-        .from("evento_personal")
-        .select(`
-          id,
-          hora_inicio,
-          hora_fin,
-          horas_trabajadas,
-          pago_calculado,
-          estado_pago,
-          fecha_pago,
-          metodo_pago,
-          notas_pago,
-          personal (*)
-        `)
-        .eq("evento_id", eventoId);
-      if (e2) throw e2;
-
-      const list: PersonalAsignado[] = (evPers || []).map((ep: any) => ({
-        ...ep.personal,
-        hora_inicio: ep.hora_inicio,
-        hora_fin: ep.hora_fin,
-        horas_trabajadas: ep.horas_trabajadas,
-        pago_calculado: ep.pago_calculado,
-        estado_pago: ep.estado_pago,
-        fecha_pago: ep.fecha_pago,
-        metodo_pago: ep.metodo_pago,
-        notas_pago: ep.notas_pago,
-        evento_personal_id: ep.id,
-      }));
-
-      setCatalogo((pers || []) as Personal[]);
-      setAsignados(list);
+      const [catalog, assigned] = await Promise.all([
+        listPersonal(),
+        listEventoPersonal(eventoId),
+      ]);
+      setCatalogo(catalog);
+      setAsignados(assigned);
     } catch (err: any) {
       toast({ title: "Error", description: err.message ?? "No se pudo cargar personal.", variant: "destructive" });
     } finally {
@@ -103,13 +77,12 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
       const pagoInicial = !requiereRegistroHoras(persona.modalidad_cobro) && tarifa > 0
         ? calcularPagoPersonal(persona.modalidad_cobro, tarifa)
         : null;
-      const { error } = await supabase.from("evento_personal").insert({
+      await addEventoPersonal({
         evento_id: eventoId,
         personal_id: persona.id,
         estado_pago: "pendiente",
         ...(pagoInicial != null ? { pago_calculado: pagoInicial } : {}),
       });
-      if (error) throw error;
       setSelectToAdd("");
       await fetchData();
       onChanged?.();
@@ -121,8 +94,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
 
   const handleRemove = async (evento_personal_id: string) => {
     try {
-      const { error } = await supabase.from("evento_personal").delete().eq("id", evento_personal_id);
-      if (error) throw error;
+      await removeEventoPersonal(evento_personal_id);
       await fetchData();
       onChanged?.();
     } catch (err: any) {
@@ -143,21 +115,18 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
   };
 
   const handleSaveRow = async (row: PersonalAsignado) => {
+    if (!row.evento_personal_id) return;
     try {
-      const { error } = await supabase
-        .from("evento_personal")
-        .update({
-          hora_inicio: row.hora_inicio || null,
-          hora_fin: row.hora_fin || null,
-          horas_trabajadas: row.horas_trabajadas != null ? Number(row.horas_trabajadas) : null,
-          pago_calculado: row.pago_calculado != null ? Number(row.pago_calculado) : null,
-          estado_pago: row.estado_pago || "pendiente",
-          fecha_pago: row.fecha_pago || null,
-          metodo_pago: row.metodo_pago || null,
-          notas_pago: row.notas_pago || null,
-        })
-        .eq("id", row.evento_personal_id);
-      if (error) throw error;
+      await updateEventoPersonal(row.evento_personal_id, {
+        hora_inicio: row.hora_inicio || null,
+        hora_fin: row.hora_fin || null,
+        horas_trabajadas: row.horas_trabajadas != null ? Number(row.horas_trabajadas) : null,
+        pago_calculado: row.pago_calculado != null ? Number(row.pago_calculado) : null,
+        estado_pago: row.estado_pago || "pendiente",
+        fecha_pago: row.fecha_pago || null,
+        metodo_pago: row.metodo_pago || null,
+        notas_pago: row.notas_pago || null,
+      });
       toast({ title: "Guardado", description: `${row.nombre_completo}: cambios aplicados.` });
       await fetchData();
     } catch (err: any) {

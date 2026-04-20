@@ -11,6 +11,7 @@ import { es } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { parseLocalDate } from "@/lib/dateLocal";
 
 interface CronogramaDialogProps {
   isOpen: boolean;
@@ -189,7 +190,7 @@ No tienes eventos programados del ${fechaDesdeFormateada} al ${fechaHastaFormate
 
     eventosData.forEach(evento => {
       // Formatear fecha
-      const fecha = new Date(evento.fecha_evento);
+      const fecha = parseLocalDate(evento.fecha_evento) ?? new Date();
       const fechaFormateada = fecha.toLocaleDateString('es-CO', {
         weekday: 'long',
         day: '2-digit',
