@@ -64,7 +64,17 @@ export function PersonalForm({ personal, onSubmit, onCancel }: PersonalFormProps
           .update(dataToSave)
           .eq("id", personal.id);
 
-        if (error) throw error;
+        if (error) {
+          if (error.code === "23505") {
+            toast({
+              title: "Error",
+              description: "Ya existe una persona con este número de cédula",
+              variant: "destructive",
+            });
+            return;
+          }
+          throw error;
+        }
 
         toast({
           title: "Personal actualizado",

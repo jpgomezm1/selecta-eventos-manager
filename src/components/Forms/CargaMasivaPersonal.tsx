@@ -23,6 +23,7 @@ export function CargaMasivaPersonal({ isOpen, onClose, onSuccess }: CargaMasivaP
   const [datosPreview, setDatosPreview] = useState<PersonalExcelProcesado[]>([]);
   const [cargando, setCargando] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const [erroresInsercion, setErroresInsercion] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -62,6 +63,53 @@ export function CargaMasivaPersonal({ isOpen, onClose, onSuccess }: CargaMasivaP
           datosProcesados.push(resultado);
         }
       });
+
+      // Detectar duplicados intra-archivo (misma cédula en varias filas).
+      // La primera ocurrencia queda OK; las siguientes reciben el error con
+      // referencia a la fila ganadora.
+      const primeraOcurrencia = new Map<string, number>();
+      datosProcesados.forEach((d) => {
+        if (!d.numero_cedula) return;
+        const cedulaKey = String(d.numero_cedula).trim();
+        if (!cedulaKey) return;
+        const previa = primeraOcurrencia.get(cedulaKey);
+        if (previa === undefined) {
+          primeraOcurrencia.set(cedulaKey, d.fila_excel);
+        } else {
+          d.errores = [...(d.errores ?? []), `Cédula duplicada en el archivo (ya aparece en fila ${previa})`];
+        }
+      });
+
+      // Detectar cédulas que ya existen en DB. Consultamos solo las que pasaron
+      // la validación previa para no hacer ruido con filas inválidas.
+      const cedulasValidasParaCheck = datosProcesados
+        .filter((d) => (!d.errores || d.errores.length === 0) && d.numero_cedula)
+        .map((d) => String(d.numero_cedula).trim());
+
+      if (cedulasValidasParaCheck.length > 0) {
+        const { data: existentes, error: checkError } = await supabase
+          .from("personal")
+          .select("numero_cedula, nombre_completo")
+          .in("numero_cedula", cedulasValidasParaCheck);
+
+        if (checkError) {
+          // No bloqueamos el preview — el check de DB es preventivo. El INSERT
+          // posterior seguirá tropezando con el UNIQUE si hay choque real.
+          console.warn("No se pudo consultar cédulas existentes:", checkError);
+        } else {
+          const mapaExistentes = new Map<string, string>(
+            (existentes ?? []).map((e: any) => [String(e.numero_cedula).trim(), e.nombre_completo])
+          );
+          datosProcesados.forEach((d) => {
+            if (d.errores && d.errores.length > 0) return; // ya inválida
+            const cedulaKey = String(d.numero_cedula).trim();
+            const existingName = mapaExistentes.get(cedulaKey);
+            if (existingName) {
+              d.errores = [`Cédula ya existe en el sistema (${existingName})`];
+            }
+          });
+        }
+      }
 
       setDatosPreview(datosProcesados);
 
@@ -137,24 +185,28 @@ export function CargaMasivaPersonal({ isOpen, onClose, onSuccess }: CargaMasivaP
         }
       }
 
-      // Mostrar resultado
+      // Persistir errores en estado para renderizarlos en el dialog.
+      setErroresInsercion(erroresDetalle);
+
       if (exitosos > 0) {
         toast({
-          title: "✅ Carga completada",
-          description: `${exitosos} registros guardados exitosamente${fallidos > 0 ? `, ${fallidos} fallaron` : ''}`,
+          title: fallidos > 0 ? "⚠️ Carga parcial" : "✅ Carga completada",
+          description: `${exitosos} guardados${fallidos > 0 ? `, ${fallidos} fallaron (ver detalle)` : ''}`,
+          variant: fallidos > 0 ? "destructive" : undefined,
         });
 
-        if (erroresDetalle.length > 0 && erroresDetalle.length <= 5) {
-          // Mostrar errores si son pocos
-          console.log("Errores detallados:", erroresDetalle);
+        if (fallidos === 0) {
+          onSuccess();
+          handleCerrar();
+        } else {
+          // Refrescar la tabla detrás del dialog pero dejar el dialog abierto
+          // para que el usuario vea los errores y decida corregir el Excel.
+          onSuccess();
         }
-
-        onSuccess();
-        handleCerrar();
       } else {
         toast({
           title: "Error al guardar",
-          description: "No se pudo guardar ningún registro",
+          description: "No se pudo guardar ningún registro. Revisa el detalle abajo.",
           variant: "destructive",
         });
       }
@@ -174,6 +226,7 @@ export function CargaMasivaPersonal({ isOpen, onClose, onSuccess }: CargaMasivaP
   const handleCerrar = () => {
     setArchivo(null);
     setDatosPreview([]);
+    setErroresInsercion([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -408,6 +461,26 @@ export function CargaMasivaPersonal({ isOpen, onClose, onSuccess }: CargaMasivaP
                         </p>
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Errores al guardar (se producen si algo se escapa del check
+                  previo, ej. race con otro usuario creando en paralelo). */}
+              {erroresInsercion.length > 0 && (
+                <Card className="border-red-200 bg-red-50/50">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-red-900 flex items-center gap-2">
+                      <XCircle className="h-5 w-5 text-red-600" />
+                      Errores al guardar ({erroresInsercion.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-1 text-sm text-red-800 list-disc list-inside">
+                      {erroresInsercion.map((e, i) => (
+                        <li key={i}>{e}</li>
+                      ))}
+                    </ul>
                   </CardContent>
                 </Card>
               )}
