@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Edit, Trash2, Users, Eye, UserPlus, Upload, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Edit, Users, Eye, UserPlus, Upload, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,10 +8,10 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PersonalForm } from "@/components/Forms/PersonalForm";
 import { CargaMasivaPersonal } from "@/components/Forms/CargaMasivaPersonal";
+import { EliminarPersonalDialog } from "@/components/Personal/EliminarPersonalDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Personal, ROLES_PERSONAL } from "@/types/database";
 
@@ -81,29 +81,6 @@ export default function PersonalPage() {
     fetchPersonal();
     setIsDialogOpen(false);
     setSelectedPersonal(null);
-  };
-
-  const handleDeletePersonal = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from("personal")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Personal eliminado",
-        description: "El personal ha sido eliminado exitosamente",
-      });
-      fetchPersonal();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al eliminar el personal",
-        variant: "destructive",
-      });
-    }
   };
 
   const getRoleBadgeVariant = (rol: string) => {
@@ -309,31 +286,10 @@ export default function PersonalPage() {
                         >
                           <Edit className="h-4 w-4 text-slate-500" />
                         </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <Trash2 className="h-4 w-4 text-slate-500" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>¿Eliminar empleado?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta acción no se puede deshacer. Se eliminará permanentemente
-                                a <span className="font-medium">{person.nombre_completo}</span> del sistema.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeletePersonal(person.id)}
-                                className="bg-red-600 hover:bg-red-700"
-                              >
-                                Eliminar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <EliminarPersonalDialog
+                          person={{ id: person.id, nombre_completo: person.nombre_completo }}
+                          onDeleted={fetchPersonal}
+                        />
                       </div>
                     </TableCell>
                   </TableRow>
