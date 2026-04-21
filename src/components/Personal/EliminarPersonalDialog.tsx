@@ -127,8 +127,8 @@ export function EliminarPersonalDialog({ person, onDeleted }: Props) {
                         {impact.trabajosPendientes} trabajo(s) pendiente(s) de pago
                       </p>
                       <p className="text-red-800">
-                        Si eliminás, perderás la información de esos trabajos pendientes.
-                        Considerá liquidarlos primero.
+                        Al eliminar, se perderá la información de esos trabajos pendientes.
+                        Se recomienda liquidarlos antes.
                       </p>
                     </div>
                   </div>
