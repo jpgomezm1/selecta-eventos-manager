@@ -20,7 +20,9 @@ import ReservaDetalleDialog from "./ReservaDetalleDialog";
 const localizer = dateFnsLocalizer({
   format,
   parse,
-  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
+  // startOfWeek debe respetar la fecha que recibe (NO usar new Date());
+  // si no, el grid del calendario muestra los eventos en columna equivocada.
+  startOfWeek: (date: Date) => startOfWeek(date, { weekStartsOn: 1 }),
   getDay,
   locales: { es },
 });
