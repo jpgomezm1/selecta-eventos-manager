@@ -196,14 +196,19 @@ export default function Auth() {
         {/* Footer */}
         <footer className="mt-12 flex items-center justify-between border-t border-border pt-5 text-[10.5px] font-medium uppercase tracking-[0.16em] text-muted-foreground md:mt-16">
           <span>Selecta Eventos · Catering</span>
-          <span className="flex items-center gap-2">
+          <a
+            href="https://irrelevant.com.co"
+            target="_blank"
+            rel="noreferrer"
+            className="group flex items-center gap-2 transition-opacity"
+          >
             <span>por</span>
             <img
               src="https://storage.googleapis.com/cluvi/nuevo_irre-removebg-preview.png"
               alt="Irrelevant"
-              className="h-3 w-auto opacity-60"
+              className="h-[18px] w-auto opacity-60 transition-opacity group-hover:opacity-90 [filter:brightness(0)]"
             />
-          </span>
+          </a>
         </footer>
       </div>
     </div>

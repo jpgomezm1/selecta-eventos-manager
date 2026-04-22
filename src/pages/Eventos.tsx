@@ -438,18 +438,22 @@ export default function EventosPage() {
                         {/* Progress bar */}
                         {cl && (
                           <div className="mb-3">
-                            <div className="flex items-center justify-between text-xs mb-1">
-                              <span className="text-slate-500">{cl.completedCount}/{cl.totalCount} tareas</span>
-                              <span className="font-medium text-slate-700">{cl.percent}%</span>
+                            <div className="mb-1 flex items-center justify-between text-[11px]">
+                              <span className="text-muted-foreground">
+                                {cl.completedCount}/{cl.totalCount} tareas
+                              </span>
+                              <span className="font-mono font-semibold tabular-nums text-foreground/80">
+                                {cl.percent}%
+                              </span>
                             </div>
-                            <div className="w-full bg-slate-100 rounded-full h-1.5">
+                            <div className="h-[3px] w-full overflow-hidden rounded-full bg-muted/70">
                               <div
-                                className="bg-emerald-500 h-1.5 rounded-full transition-all"
+                                className="h-full rounded-full bg-primary/80 transition-all"
                                 style={{ width: `${cl.percent}%` }}
                               />
                             </div>
                             {hints.length > 0 && (
-                              <p className="text-xs text-slate-400 mt-1 truncate">
+                              <p className="mt-1.5 truncate text-[11px] text-muted-foreground/70">
                                 Falta: {hints.join(", ")}
                               </p>
                             )}

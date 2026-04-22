@@ -229,16 +229,21 @@ export function AppSidebar() {
           </Tooltip>
 
           {!isCollapsed && (
-            <div className="flex items-center justify-center gap-2 border-t border-sidebar-border/40 pt-3">
+            <a
+              href="https://irrelevant.com.co"
+              target="_blank"
+              rel="noreferrer"
+              className="group flex items-center justify-center gap-2 border-t border-sidebar-border/40 pt-3"
+            >
               <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-sidebar-foreground/35">
                 by
               </span>
               <img
                 src="https://storage.googleapis.com/cluvi/nuevo_irre-removebg-preview.png"
                 alt="Irrelevant"
-                className="h-3 w-auto opacity-50 transition-opacity hover:opacity-90"
+                className="h-[18px] w-auto opacity-70 transition-opacity group-hover:opacity-100 [filter:brightness(0)_invert(1)]"
               />
-            </div>
+            </a>
           )}
         </div>
       </aside>
