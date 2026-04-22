@@ -31,8 +31,8 @@ export default function PipelinePage() {
       queryClient.invalidateQueries({ queryKey: ["cotizaciones"] });
       toast({ title: "Cotización marcada como Enviada", description: "Se registró la fecha de envío." });
     },
-    onError: () => {
-      toast({ title: "Error", description: "No se pudo marcar como enviada.", variant: "destructive" });
+    onError: (err: any) => {
+      toast({ title: "Error", description: err?.message ?? "No se pudo marcar como enviada.", variant: "destructive" });
     },
   });
 
@@ -44,8 +44,8 @@ export default function PipelinePage() {
       setRechazoDialog({ open: false, cotizacionId: "", cotizacionName: "" });
       toast({ title: "Cotización rechazada", description: "Se registró el motivo de rechazo." });
     },
-    onError: () => {
-      toast({ title: "Error", description: "No se pudo rechazar la cotización.", variant: "destructive" });
+    onError: (err: any) => {
+      toast({ title: "Error", description: err?.message ?? "No se pudo rechazar la cotización.", variant: "destructive" });
     },
   });
 
@@ -55,8 +55,8 @@ export default function PipelinePage() {
       queryClient.invalidateQueries({ queryKey: ["cotizaciones"] });
       toast({ title: "Cotización reabierta", description: "Vuelve al estado Pendiente por Aprobación." });
     },
-    onError: () => {
-      toast({ title: "Error", description: "No se pudo reabrir la cotización.", variant: "destructive" });
+    onError: (err: any) => {
+      toast({ title: "Error", description: err?.message ?? "No se pudo reabrir la cotización.", variant: "destructive" });
     },
   });
 
