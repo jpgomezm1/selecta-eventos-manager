@@ -56,6 +56,20 @@ import { Badge } from "@/components/ui/badge";
 const UNIDADES_BASE = ["gr", "kg", "ml", "lt", "und", "lb", "oz"];
 const UNIDADES_PRESENTACION = ["gr", "kg", "ml", "lt", "und", "lb", "oz"];
 
+const PESO = new Set(["gr", "kg", "lb", "oz"]);
+const VOLUMEN = new Set(["ml", "lt"]);
+
+/**
+ * Dos unidades son compatibles si ambas son peso, ambas volumen, o son la misma.
+ * `und` solo es compatible consigo misma.
+ */
+function sonUnidadesCompatibles(a: string, b: string): boolean {
+  if (a === b) return true;
+  if (PESO.has(a) && PESO.has(b)) return true;
+  if (VOLUMEN.has(a) && VOLUMEN.has(b)) return true;
+  return false;
+}
+
 export default function IngredientesTable() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -106,6 +120,13 @@ export default function IngredientesTable() {
 
   const saveEdit = () => {
     if (!editingId) return;
+    const original = ingredientes.find((i) => i.id === editingId);
+    if (original && editValues.unidad && editValues.unidad !== original.unidad) {
+      const ok = window.confirm(
+        `Cambiar la unidad base de "${original.nombre}" (${original.unidad} → ${editValues.unidad}) invalida los costos calculados de los proveedores actuales. Revisar cada proveedor después del cambio. ¿Continuar?`
+      );
+      if (!ok) return;
+    }
     updateMut.mutate({ id: editingId, updates: editValues });
   };
 
@@ -273,6 +294,14 @@ function NuevoIngredienteDialog({ open, onOpenChange }: { open: boolean; onOpenC
 
   const handleSave = async () => {
     if (!nombre.trim()) return;
+    if (hasProveedor && !sonUnidadesCompatibles(unidadPres, unidad)) {
+      toast({
+        title: "Unidades incompatibles",
+        description: `La presentación (${unidadPres}) no puede convertirse a la unidad base (${unidad}). Elige unidades del mismo tipo (peso con peso, volumen con volumen) o idénticas.`,
+        variant: "destructive",
+      });
+      return;
+    }
     setSaving(true);
     try {
       const ing = await createIngrediente({
@@ -467,6 +496,14 @@ function ProveedoresSubtable({ ingrediente }: { ingrediente: IngredienteCatalogo
 
   const handleAdd = () => {
     if (!newProv.trim() || !newCantidad || !newPrecio) return;
+    if (!sonUnidadesCompatibles(newUnidadPres, ingrediente.unidad)) {
+      toast({
+        title: "Unidades incompatibles",
+        description: `La presentación (${newUnidadPres}) no puede convertirse a la unidad base (${ingrediente.unidad}). Elige unidades del mismo tipo (peso con peso, volumen con volumen) o idénticas.`,
+        variant: "destructive",
+      });
+      return;
+    }
     const cantNum = Number(newCantidad);
     const precioNum = Number(newPrecio);
     const cantEnBase = convertirAUnidadBase(cantNum, newUnidadPres, ingrediente.unidad);
@@ -534,7 +571,16 @@ function ProveedoresSubtable({ ingrediente }: { ingrediente: IngredienteCatalogo
                         )}
                       </TableCell>
                       <TableCell>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deleteMut.mutate(p.id)}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => {
+                            if (window.confirm(`¿Eliminar el proveedor "${p.proveedor}" de ${ingrediente.nombre}?`)) {
+                              deleteMut.mutate(p.id);
+                            }
+                          }}
+                        >
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
                       </TableCell>

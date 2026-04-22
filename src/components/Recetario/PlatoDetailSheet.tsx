@@ -159,6 +159,10 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
     : form.precio ?? 0;
 
   const handleSavePlato = () => {
+    if (!form.nombre?.trim()) {
+      toast({ title: "Nombre requerido", description: "Ingresa el nombre del plato antes de guardar.", variant: "destructive" });
+      return;
+    }
     const precioFinal = (form.margen_ganancia != null && costoPorcion > 0)
       ? Math.round(costoPorcion * (1 + form.margen_ganancia / 100))
       : form.precio ?? 0;
