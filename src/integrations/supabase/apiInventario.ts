@@ -66,28 +66,39 @@ export async function inventarioMovimientoConfirmar(
   tipo: InventarioMovimiento["tipo"],
   items: InventarioMovItem[]
 ) {
-  // Update stock for each item based on movement type
+  // Update stock for each item based on movement type.
+  // NOTA: este loop NO es atómico. Si una fila falla a mitad de camino,
+  // las anteriores quedan aplicadas (TODO.md describe el RPC necesario).
   for (const item of items) {
     const { data: ing, error: eRead } = await supabase
       .from("ingredientes_catalogo")
-      .select("stock_actual")
+      .select("nombre, stock_actual")
       .eq("id", item.ingrediente_id)
       .single();
     if (eRead) throw eRead;
 
     const currentStock = Number((ing as any).stock_actual) || 0;
+    const cantidad = Number(item.cantidad);
     let newStock: number;
 
     switch (tipo) {
       case "compra":
-        newStock = currentStock + Number(item.cantidad);
+        newStock = currentStock + cantidad;
         break;
       case "uso":
       case "devolucion":
-        newStock = Math.max(0, currentStock - Number(item.cantidad));
+        // Antes usaba Math.max(0, currentStock - cantidad), que silenciaba
+        // consumos mayores al stock y dejaba el stock en 0 sin rastro.
+        if (currentStock < cantidad) {
+          const nombre = (ing as any)?.nombre ?? item.ingrediente_id;
+          throw new Error(
+            `Stock insuficiente para "${nombre}": hay ${currentStock}, se intenta descontar ${cantidad}.`
+          );
+        }
+        newStock = currentStock - cantidad;
         break;
       case "ajuste":
-        newStock = Number(item.cantidad);
+        newStock = cantidad;
         break;
       default:
         newStock = currentStock;

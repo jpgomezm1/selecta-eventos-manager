@@ -181,7 +181,14 @@ export default function MovimientosPanel() {
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8 text-green-600"
-                                  onClick={() => confirmarMut.mutate(mov)}
+                                  onClick={() => {
+                                    const etiqueta = tipoBadge[mov.tipo]?.label ?? mov.tipo;
+                                    if (window.confirm(
+                                      `Confirmar este movimiento (${etiqueta}) aplica el cambio de stock para ${mov.items.length} ingrediente(s). ¿Continuar?`
+                                    )) {
+                                      confirmarMut.mutate(mov);
+                                    }
+                                  }}
                                   disabled={confirmarMut.isPending}
                                 >
                                   <Check className="h-4 w-4" />
