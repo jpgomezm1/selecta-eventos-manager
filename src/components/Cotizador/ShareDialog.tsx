@@ -150,9 +150,9 @@ export function ShareDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Link2 className="h-5 w-5 text-blue-600" />
-            Compartir Cotización
+          <DialogTitle className="flex items-center gap-2 font-serif">
+            <Link2 className="h-5 w-5 text-primary" strokeWidth={1.75} />
+            Compartir cotización
           </DialogTitle>
           <DialogDescription>
             {cotizacionName}
@@ -162,8 +162,8 @@ export function ShareDialog({
         <div className="space-y-4 py-2">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-8 space-y-3">
-              <Loader2 className="h-8 w-8 text-slate-400 animate-spin" />
-              <p className="text-sm text-slate-500">Verificando enlace...</p>
+              <div className="h-8 w-8 rounded-full bg-muted/70 animate-pulse" />
+              <p className="text-sm text-muted-foreground">Verificando enlace...</p>
             </div>
           ) : token && baseUrl ? (
             <>
@@ -171,7 +171,7 @@ export function ShareDialog({
                 <Input
                   readOnly
                   value={shareUrl}
-                  className="text-sm font-mono bg-slate-50"
+                  className="text-sm font-mono bg-muted/40"
                 />
                 <Button
                   size="icon"
@@ -180,9 +180,9 @@ export function ShareDialog({
                   className="shrink-0"
                 >
                   {copied ? (
-                    <Check className="h-4 w-4 text-green-600" />
+                    <Check className="h-4 w-4 text-primary" strokeWidth={1.75} />
                   ) : (
-                    <Copy className="h-4 w-4" />
+                    <Copy className="h-4 w-4" strokeWidth={1.75} />
                   )}
                 </Button>
               </div>
@@ -190,16 +190,16 @@ export function ShareDialog({
               {/* Version selector */}
               {versiones.length > 1 && (
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <p className="kicker text-muted-foreground">
                     Opciones a compartir
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     <button
                       onClick={() => setSelectedVersion("all")}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all border ${
                         selectedVersion === "all"
-                          ? "bg-slate-900 text-white border-slate-900"
-                          : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-card text-muted-foreground border-border hover:border-border/80"
                       }`}
                     >
                       Todas las opciones
@@ -208,10 +208,10 @@ export function ShareDialog({
                       <button
                         key={v.id}
                         onClick={() => setSelectedVersion(v.id)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all border ${
                           selectedVersion === v.id
-                            ? "bg-slate-900 text-white border-slate-900"
-                            : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-card text-muted-foreground border-border hover:border-border/80"
                         }`}
                       >
                         {v.nombre_opcion}
@@ -227,39 +227,37 @@ export function ShareDialog({
                   className="w-full"
                   onClick={() => window.open(shareUrl, "_blank")}
                 >
-                  <ExternalLink className="h-4 w-4 mr-2" />
+                  <ExternalLink className="h-4 w-4 mr-2" strokeWidth={1.75} />
                   Abrir vista previa
                 </Button>
 
                 <Button
                   variant="ghost"
-                  className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="w-full text-muted-foreground hover:text-destructive"
                   onClick={handleDeactivate}
                   disabled={deactivating}
                 >
                   {deactivating ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
-                    <Unlink className="h-4 w-4 mr-2" />
+                    <Unlink className="h-4 w-4 mr-2" strokeWidth={1.75} />
                   )}
                   Desactivar enlace
                 </Button>
               </div>
 
-              <p className="text-xs text-slate-400 text-center">
+              <p className="text-xs text-muted-foreground text-center">
                 Cualquier persona con este enlace puede ver la cotización
               </p>
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-6 space-y-4">
-              <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center">
-                <LinkIcon className="h-7 w-7 text-blue-500" />
-              </div>
+              <LinkIcon className="h-8 w-8 text-primary" strokeWidth={1.5} />
               <div className="text-center space-y-1">
-                <p className="font-medium text-slate-800">
+                <p className="font-serif text-base text-foreground">
                   Genera un enlace compartible
                 </p>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-muted-foreground">
                   El enlace permite ver la cotización sin necesidad de cuenta.
                   Ideal para enviar por WhatsApp o email.
                 </p>
@@ -272,7 +270,7 @@ export function ShareDialog({
                 {generating ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
-                  <Link2 className="h-4 w-4 mr-2" />
+                  <Link2 className="h-4 w-4 mr-2" strokeWidth={1.75} />
                 )}
                 {generating ? "Generando..." : "Generar enlace"}
               </Button>

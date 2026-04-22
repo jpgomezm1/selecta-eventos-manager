@@ -17,9 +17,7 @@ import {
   ChefHat,
   Truck,
   Package,
-  DollarSign,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import type { CotizacionItemsState } from "@/types/cotizador";
 
 type Props = {
@@ -54,10 +52,10 @@ export function ApprovalDialog({
   const menajeCount = (items?.menaje ?? []).length;
 
   const sections = [
-    { icon: Utensils, label: "Platos", count: platosCount, color: "text-orange-600", bg: "bg-orange-50" },
-    { icon: ChefHat, label: "Personal", count: personalCount, color: "text-blue-600", bg: "bg-blue-50" },
-    { icon: Truck, label: "Transporte", count: transportesCount, color: "text-green-600", bg: "bg-green-50" },
-    { icon: Package, label: "Menaje", count: menajeCount, color: "text-purple-600", bg: "bg-purple-50" },
+    { icon: Utensils, label: "platos", count: platosCount },
+    { icon: ChefHat, label: "personal", count: personalCount },
+    { icon: Truck, label: "transporte", count: transportesCount },
+    { icon: Package, label: "menaje", count: menajeCount },
   ].filter((s) => s.count > 0);
 
   return (
@@ -65,10 +63,8 @@ export function ApprovalDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 bg-green-100 rounded-xl">
-              <ShieldCheck className="h-5 w-5 text-green-600" />
-            </div>
-            <DialogTitle className="text-lg">Aprobar cotización</DialogTitle>
+            <ShieldCheck className="h-5 w-5 text-primary" strokeWidth={1.75} />
+            <DialogTitle className="font-serif text-lg">Aprobar cotización</DialogTitle>
           </div>
           <DialogDescription>
             Confirma la aprobación de esta opción de cotización.
@@ -77,12 +73,14 @@ export function ApprovalDialog({
 
         <div className="space-y-4 py-2">
           {/* Version summary */}
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+          <div className="p-4 bg-muted/40 rounded-md border border-border space-y-3">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-slate-800">{versionName}</span>
-              <div className="flex items-center gap-1 text-emerald-600 font-bold">
-                <DollarSign className="h-4 w-4" />
-                {versionTotal.toLocaleString()}
+              <span className="font-serif text-lg text-foreground">{versionName}</span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-xs text-muted-foreground">$</span>
+                <span className="font-semibold text-primary tabular-nums">
+                  {versionTotal.toLocaleString()}
+                </span>
               </div>
             </div>
 
@@ -92,10 +90,10 @@ export function ApprovalDialog({
                   <Badge
                     key={s.label}
                     variant="outline"
-                    className={cn("text-xs font-medium", s.bg, s.color, "border-transparent")}
+                    className="text-xs font-normal tabular-nums"
                   >
-                    <s.icon className="h-3 w-3 mr-1" />
-                    {s.count} {s.label.toLowerCase()}
+                    <s.icon className="h-3 w-3 mr-1" strokeWidth={1.75} />
+                    {s.count} {s.label}
                   </Badge>
                 ))}
               </div>
@@ -103,16 +101,16 @@ export function ApprovalDialog({
           </div>
 
           {/* Warning */}
-          <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
-            <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-amber-800">
+          <div className="flex items-start gap-3 p-3 bg-muted/40 rounded-md border border-border">
+            <AlertTriangle className="h-4 w-4 text-[hsl(30_55%_42%)] mt-0.5 flex-shrink-0" strokeWidth={1.75} />
+            <p className="text-sm text-muted-foreground">
               Se creará un evento automáticamente a partir de esta opción.
               Las demás opciones quedarán como referencia.
             </p>
           </div>
 
           {/* Confirmation checkbox */}
-          <div className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-slate-200">
+          <div className="flex items-center space-x-3 p-3 bg-card rounded-md border border-border">
             <Checkbox
               id="confirm-approval"
               checked={confirmed}
@@ -120,7 +118,7 @@ export function ApprovalDialog({
             />
             <label
               htmlFor="confirm-approval"
-              className="text-sm font-medium text-slate-700 cursor-pointer select-none"
+              className="text-sm font-medium text-foreground cursor-pointer select-none"
             >
               Confirmo que deseo aprobar esta opción
             </label>
@@ -138,17 +136,16 @@ export function ApprovalDialog({
           <Button
             onClick={onConfirm}
             disabled={!confirmed || isPending}
-            className="bg-green-600 hover:bg-green-700 text-white"
           >
             {isPending ? (
               <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                <div className="w-4 h-4 rounded-full bg-primary-foreground/30 animate-pulse mr-2" />
                 Aprobando...
               </>
             ) : (
               <>
-                <ShieldCheck className="h-4 w-4 mr-1.5" />
-                Confirmar Aprobación
+                <ShieldCheck className="h-4 w-4 mr-1.5" strokeWidth={1.75} />
+                Confirmar aprobación
               </>
             )}
           </Button>
