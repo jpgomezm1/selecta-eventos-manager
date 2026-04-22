@@ -39,15 +39,40 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
     setOrden({ ...orden, ...patch });
   };
 
-  const onSave = async () => {
-    if (!orden) return;
+  const validarRangos = (o: TransporteOrden): string | null => {
+    if (o.hora_recepcion_inicio && o.hora_recepcion_fin && o.hora_recepcion_inicio > o.hora_recepcion_fin) {
+      return "La ventana de recepción tiene hora de fin anterior al inicio.";
+    }
+    if (o.hora_recogida_inicio && o.hora_recogida_fin && o.hora_recogida_inicio > o.hora_recogida_fin) {
+      return "La ventana de recogida tiene hora de fin anterior al inicio.";
+    }
+    return null;
+  };
+
+  const validarCompletos = (o: TransporteOrden): string | null => {
+    if (!o.pickup_nombre || !o.destino_direccion || !o.contacto_nombre) {
+      return "Complete nombre de recogida, dirección del evento y contacto antes de programar o finalizar.";
+    }
+    return null;
+  };
+
+  const onSave = async (): Promise<TransporteOrden | null> => {
+    if (!orden) return null;
+    const errorRango = validarRangos(orden);
+    if (errorRango) {
+      toast({ title: "Horario inválido", description: errorRango, variant: "destructive" });
+      return null;
+    }
     setSaving(true);
     try {
       const saved = await saveTransporteOrden(orden);
       setOrden(saved);
       toast({ title: "Orden de transporte guardada" });
+      onChanged?.();
+      return saved;
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
+      return null;
     } finally {
       setSaving(false);
     }
@@ -55,8 +80,21 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
 
   const onEstado = async (estado: TransporteOrden["estado"]) => {
     if (!orden?.id) return;
+    if (estado === "programado" || estado === "finalizado") {
+      const errorCompletos = validarCompletos(orden);
+      if (errorCompletos) {
+        toast({ title: "Información incompleta", description: errorCompletos, variant: "destructive" });
+        return;
+      }
+      const errorRango = validarRangos(orden);
+      if (errorRango) {
+        toast({ title: "Horario inválido", description: errorRango, variant: "destructive" });
+        return;
+      }
+    }
     try {
-      const updated = await setTransporteOrdenEstado(orden.id, estado);
+      const saved = await saveTransporteOrden(orden);
+      const updated = await setTransporteOrdenEstado(saved.id!, estado);
       setOrden(updated);
       onChanged?.();
       toast({ title: "Estado actualizado", description: `Orden ${estado}` });
