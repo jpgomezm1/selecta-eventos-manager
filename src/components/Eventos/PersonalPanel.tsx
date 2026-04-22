@@ -23,10 +23,12 @@ type Props = {
   eventoId: string;
   fechaEvento: string;
   estadoLiquidacion: "pendiente" | "liquidado";
+  nombreEvento: string;
+  ubicacion: string;
   onChanged?: () => void;
 };
 
-export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion, onChanged }: Props) {
+export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion, nombreEvento, ubicacion, onChanged }: Props) {
   const { toast } = useToast();
   const [catalogo, setCatalogo] = useState<Personal[]>([]);
   const [asignados, setAsignados] = useState<PersonalAsignado[]>([]);
@@ -64,6 +66,19 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
 
   const totalCalculado = useMemo(
     () => asignados.reduce((acc, p) => acc + (Number(p.pago_calculado) || 0), 0),
+    [asignados]
+  );
+
+  const sinHoras = useMemo(
+    () => asignados.filter(p => requiereRegistroHoras(p.modalidad_cobro) && (!p.horas_trabajadas || p.horas_trabajadas <= 0)),
+    [asignados]
+  );
+
+  const sinPagoExclusivo = useMemo(
+    () => asignados.filter(p =>
+      (!p.pago_calculado || Number(p.pago_calculado) <= 0) &&
+      !(requiereRegistroHoras(p.modalidad_cobro) && (!p.horas_trabajadas || p.horas_trabajadas <= 0))
+    ),
     [asignados]
   );
 
@@ -128,9 +143,9 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
         notas_pago: row.notas_pago || null,
       });
       toast({ title: "Guardado", description: `${row.nombre_completo}: cambios aplicados.` });
-      await fetchData();
     } catch (err: any) {
       toast({ title: "Error", description: err.message ?? "No se pudo guardar.", variant: "destructive" });
+      await fetchData();
     }
   };
 
@@ -159,8 +174,8 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
     }
     const evento: EventoConPersonal = {
       id: eventoId,
-      nombre_evento: "",
-      ubicacion: "",
+      nombre_evento: nombreEvento,
+      ubicacion: ubicacion,
       fecha_evento: fechaEvento,
       descripcion: null,
       estado_liquidacion: estadoLiquidacion,
@@ -292,6 +307,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
                         type="time"
                         className="w-28 text-center h-8"
                         value={p.hora_inicio ?? ""}
+                        disabled={p.estado_pago === 'pagado'}
                         onChange={(e) => handleUpdateRow(p.evento_personal_id!, { hora_inicio: e.target.value })}
                       />
                     </TableCell>
@@ -300,6 +316,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
                         type="time"
                         className="w-28 text-center h-8"
                         value={p.hora_fin ?? ""}
+                        disabled={p.estado_pago === 'pagado'}
                         onChange={(e) => handleUpdateRow(p.evento_personal_id!, { hora_fin: e.target.value })}
                       />
                     </TableCell>
@@ -311,6 +328,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
                         className={`w-20 text-center h-8 ${!requiereRegistroHoras(p.modalidad_cobro) ? 'opacity-60' : ''}`}
                         value={p.horas_trabajadas ?? (requiereRegistroHoras(p.modalidad_cobro) ? '' : 0)}
                         placeholder={requiereRegistroHoras(p.modalidad_cobro) ? 'Req.' : 'Opc.'}
+                        disabled={p.estado_pago === 'pagado'}
                         onChange={(e) => handleHorasChange(p.evento_personal_id!, Number(e.target.value), p)}
                       />
                     </TableCell>
@@ -322,6 +340,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
                           step={1000}
                           className="w-28 text-right h-8 ml-auto"
                           value={p.pago_calculado ?? 0}
+                          disabled={p.estado_pago === 'pagado'}
                           onChange={(e) => handleUpdateRow(p.evento_personal_id!, { pago_calculado: Number(e.target.value) })}
                         />
                         {!requiereRegistroHoras(p.modalidad_cobro) && (
@@ -332,6 +351,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
                     <TableCell className="text-center">
                       <Select
                         value={p.estado_pago ?? "pendiente"}
+                        disabled={p.estado_pago === 'pagado'}
                         onValueChange={(v) => handleUpdateRow(p.evento_personal_id!, { estado_pago: v as any })}
                       >
                         <SelectTrigger className="w-28 mx-auto h-8">
@@ -345,11 +365,11 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="outline" size="sm" onClick={() => handleSaveRow(p)} className="h-8">
+                        <Button variant="outline" size="sm" onClick={() => handleSaveRow(p)} disabled={p.estado_pago === 'pagado'} className="h-8">
                           <Save className="h-3 w-3 mr-1" />
                           Guardar
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleRemove(p.evento_personal_id!)} className="h-8 w-8 p-0 text-slate-500 hover:text-red-600 hover:bg-red-50">
+                        <Button variant="ghost" size="sm" onClick={() => handleRemove(p.evento_personal_id!)} disabled={p.estado_pago === 'pagado'} className="h-8 w-8 p-0 text-slate-500 hover:text-red-600 hover:bg-red-50">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -408,27 +428,25 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
             </Button>
           </div>
 
-          {asignados.some(p => requiereRegistroHoras(p.modalidad_cobro) && (!p.horas_trabajadas || p.horas_trabajadas <= 0)) && (
+          {sinHoras.length > 0 && (
             <div className="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200 flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-orange-800">Horas requeridas</p>
                 <p className="text-xs text-orange-700">
-                  {asignados.filter(p => requiereRegistroHoras(p.modalidad_cobro) && (!p.horas_trabajadas || p.horas_trabajadas <= 0))
-                    .map(p => p.nombre_completo).join(', ')} — cobran por hora y necesitan horas definidas.
+                  {sinHoras.map(p => p.nombre_completo).join(', ')} — cobran por hora y necesitan horas definidas.
                 </p>
               </div>
             </div>
           )}
 
-          {asignados.some(p => !p.pago_calculado || Number(p.pago_calculado) <= 0) && (
+          {sinPagoExclusivo.length > 0 && (
             <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200 flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-red-800">Sin pago calculado</p>
                 <p className="text-xs text-red-700">
-                  {asignados.filter(p => !p.pago_calculado || Number(p.pago_calculado) <= 0)
-                    .map(p => p.nombre_completo).join(', ')} — no tienen pago asignado.
+                  {sinPagoExclusivo.map(p => p.nombre_completo).join(', ')} — no tienen pago asignado.
                 </p>
               </div>
             </div>
