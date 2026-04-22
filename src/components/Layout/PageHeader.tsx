@@ -1,6 +1,39 @@
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
+type KPITone = "neutral" | "primary" | "warning" | "destructive";
+
+interface KPIProps {
+  kicker: string;
+  value: ReactNode;
+  suffix?: string;
+  tone?: KPITone;
+  hint?: ReactNode;
+}
+
+/** Métrica editorial — Fraunces grande + kicker uppercase. Sin icon-box coloreado. */
+export function KPI({ kicker, value, suffix, tone = "neutral", hint }: KPIProps) {
+  const toneClass =
+    tone === "primary"
+      ? "text-primary"
+      : tone === "warning"
+      ? "text-[hsl(30_55%_42%)]"
+      : tone === "destructive"
+      ? "text-destructive"
+      : "text-foreground";
+
+  return (
+    <div>
+      <div className="kicker mb-2">{kicker}</div>
+      <div className={cn("font-serif text-[40px] leading-none tracking-[-0.025em] tabular-nums md:text-[48px]", toneClass)}>
+        {value}
+        {suffix && <span className="text-[26px] md:text-[30px] text-muted-foreground">{suffix}</span>}
+      </div>
+      {hint && <div className="mt-2 text-[11.5px] text-muted-foreground">{hint}</div>}
+    </div>
+  );
+}
+
 interface PageHeaderProps {
   kicker?: string;
   title: ReactNode;

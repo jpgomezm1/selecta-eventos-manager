@@ -19,9 +19,6 @@ import {
   DollarSign,
   Calendar,
   Eye,
-  FileText,
-  TrendingUp,
-  CheckCircle,
   AlertTriangle,
   X,
   ArrowUpDown,
@@ -31,7 +28,7 @@ import {
   User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PageHeader } from "@/components/Layout/PageHeader";
+import { PageHeader, KPI } from "@/components/Layout/PageHeader";
 
 export default function CotizacionesListPage() {
   const nav = useNavigate();
@@ -245,52 +242,17 @@ export default function CotizacionesListPage() {
         }
       />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <Calculator className="h-5 w-5 text-blue-600" />
-              <div>
-                <div className="text-2xl font-semibold text-slate-900">{stats.total}</div>
-                <p className="text-sm text-slate-500">Total</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <FileText className="h-5 w-5 text-slate-600" />
-              <div>
-                <div className="text-2xl font-semibold text-slate-900">{stats.pendiente}</div>
-                <p className="text-sm text-slate-500">Pendientes</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <div>
-                <div className="text-2xl font-semibold text-slate-900">{stats.aprobado}</div>
-                <p className="text-sm text-slate-500">Aprobadas</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <TrendingUp className="h-5 w-5 text-emerald-600" />
-              <div>
-                <div className="text-xl font-semibold text-slate-900">${(stats.totalValue / 1000000).toFixed(1)}M</div>
-                <p className="text-sm text-slate-500">Valor Total</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* KPI editorial */}
+      <div className="grid grid-cols-2 gap-x-8 gap-y-6 border-y border-border py-6 md:grid-cols-4">
+        <KPI kicker="Total" value={stats.total} />
+        <KPI kicker="Pendientes" value={stats.pendiente} tone={stats.pendiente > 0 ? "warning" : "neutral"} />
+        <KPI kicker="Aprobadas" value={stats.aprobado} tone="primary" />
+        <KPI
+          kicker="Valor total"
+          value={`$${(stats.totalValue / 1000000).toFixed(1)}`}
+          suffix="M"
+          tone="primary"
+        />
       </div>
 
       {/* Filtros y búsqueda */}
@@ -521,17 +483,12 @@ export default function CotizacionesListPage() {
                       )}
                     </div>
 
-                    {/* Total destacado */}
-                    <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200/60">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <DollarSign className="h-5 w-5 text-emerald-600" />
-                          <span className="text-sm font-semibold text-emerald-700">Total Cotizado:</span>
-                        </div>
-                        <div className="text-xl font-bold text-emerald-600">
-                          ${c.total_cotizado.toLocaleString()}
-                        </div>
-                      </div>
+                    {/* Total */}
+                    <div className="flex items-baseline justify-between border-t border-border pt-3">
+                      <span className="kicker">Total cotizado</span>
+                      <span className="font-serif text-[22px] leading-none tracking-tight tabular-nums text-foreground">
+                        ${c.total_cotizado.toLocaleString()}
+                      </span>
                     </div>
 
                     {/* Botones de acción */}
