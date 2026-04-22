@@ -122,8 +122,13 @@ export default function ClientesPage() {
       try {
         const data = await listContactos(cliente.id);
         setContactos(data);
-      } catch {
+      } catch (err: any) {
         setContactos([]);
+        toast({
+          title: "No se pudieron cargar los contactos",
+          description: err?.message ?? "Error al consultar contactos de la empresa.",
+          variant: "destructive",
+        });
       } finally {
         setLoadingContactos(false);
       }
@@ -183,7 +188,10 @@ export default function ClientesPage() {
       toast({ title: "Cliente eliminado", description: "El cliente fue eliminado exitosamente" });
       fetchClientes();
     } catch (error: any) {
-      toast({ title: "Error", description: error?.message || "Error al eliminar cliente", variant: "destructive" });
+      const msg = error?.message?.includes("violates foreign key")
+        ? "No se puede eliminar: este cliente tiene cotizaciones o eventos asociados."
+        : error?.message || "Error al eliminar cliente";
+      toast({ title: "Error", description: msg, variant: "destructive" });
     }
   };
 
@@ -219,10 +227,11 @@ export default function ClientesPage() {
     }
   };
 
-  const handleDeleteContacto = async (contactoId: string) => {
+  const handleDeleteContacto = async (contacto: ContactoCliente) => {
+    if (!window.confirm(`¿Eliminar el contacto "${contacto.nombre}"?`)) return;
     try {
-      await deleteContacto(contactoId);
-      setContactos((prev) => prev.filter((c) => c.id !== contactoId));
+      await deleteContacto(contacto.id);
+      setContactos((prev) => prev.filter((c) => c.id !== contacto.id));
       toast({ title: "Contacto eliminado" });
     } catch (err: any) {
       toast({ title: "Error", description: err?.message || "Error al eliminar", variant: "destructive" });
@@ -231,12 +240,9 @@ export default function ClientesPage() {
 
   const handleTogglePrincipal = async (contacto: ContactoCliente) => {
     try {
-      // Unset all, then set the selected one
-      for (const c of contactos) {
-        if (c.es_principal && c.id !== contacto.id) {
-          await updateContacto(c.id, { es_principal: false });
-        }
-      }
+      // Desmarcar en paralelo cualquier otro principal antes de setear el nuevo
+      const otrosPrincipales = contactos.filter((c) => c.es_principal && c.id !== contacto.id);
+      await Promise.all(otrosPrincipales.map((c) => updateContacto(c.id, { es_principal: false })));
       const updated = await updateContacto(contacto.id, { es_principal: !contacto.es_principal });
       setContactos((prev) =>
         prev.map((c) =>
@@ -695,7 +701,7 @@ export default function ClientesPage() {
                             variant="ghost"
                             size="sm"
                             className="h-7 w-7 p-0"
-                            onClick={() => handleDeleteContacto(c.id)}
+                            onClick={() => handleDeleteContacto(c)}
                           >
                             <Trash2 className="h-3.5 w-3.5 text-slate-500" />
                           </Button>
