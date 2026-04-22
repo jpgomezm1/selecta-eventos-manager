@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { DollarSign, Users, ShoppingCart, UtensilsCrossed, CheckCircle, Clock, Building2 } from "lucide-react";
 
 type Props = {
@@ -20,6 +21,7 @@ interface CierreData {
 }
 
 export default function CierreEventoPanel({ eventoId, totalRequerimiento, estadoLiquidacion, costoLugar = 0 }: Props) {
+  const { toast } = useToast();
   const [data, setData] = useState<CierreData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -63,14 +65,18 @@ export default function CierreEventoPanel({ eventoId, totalRequerimiento, estado
           menajeDevuelto: reserva?.estado === "devuelto",
           personalLiquidado: estadoLiquidacion === "liquidado",
         });
-      } catch {
-        // fail silently
+      } catch (err: any) {
+        toast({
+          title: "Error al cargar cierre",
+          description: err?.message ?? "No se pudieron obtener los costos del evento.",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [eventoId, estadoLiquidacion]);
+  }, [eventoId, estadoLiquidacion, toast]);
 
   if (loading || !data) {
     return (
