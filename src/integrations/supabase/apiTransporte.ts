@@ -8,7 +8,7 @@ export async function getOrCreateTransporteOrden(evento_id: string): Promise<Tra
     .select("*")
     .eq("evento_id", evento_id)
     .maybeSingle();
-  if (e1 && (e1 as any).code !== "PGRST116") throw e1;
+  if (e1 && (e1 as { code?: string }).code !== "PGRST116") throw e1;
   if (ex) return ex as TransporteOrden;
 
   // leer datos del evento para prefill destino
@@ -24,7 +24,7 @@ export async function getOrCreateTransporteOrden(evento_id: string): Promise<Tra
     .insert({
       evento_id,
       estado: "borrador",
-      destino_direccion: (ev as any)?.ubicacion ?? null,
+      destino_direccion: (ev as { ubicacion?: string | null } | null)?.ubicacion ?? null,
     })
     .select("*")
     .single();
@@ -76,7 +76,7 @@ export async function listAllTransporteOrdenes(): Promise<
     .order("created_at", { ascending: false });
   if (error) throw error;
 
-  return (data || []).map((row: any) => {
+  return (data || []).map((row) => {
     const { eventos, ...orden } = row;
     return {
       ...orden,

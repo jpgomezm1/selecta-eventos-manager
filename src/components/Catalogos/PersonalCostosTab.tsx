@@ -81,7 +81,7 @@ export default function PersonalCostosTab() {
       setNewItem({ rol: ROLES[0], modalidad_cobro: MODALIDADES[0].value, tarifa: 0 });
       toast({ title: "Costo creado", description: "El costo de personal se agregó correctamente." });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const updateMut = useMutation({
@@ -93,7 +93,7 @@ export default function PersonalCostosTab() {
       setEditDraft({});
       toast({ title: "Actualizado", description: "Los cambios se guardaron correctamente." });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const delMut = useMutation({
@@ -102,7 +102,7 @@ export default function PersonalCostosTab() {
       qc.invalidateQueries({ queryKey: ["catalogos", "personal-costos"] });
       toast({ title: "Eliminado", description: "El costo se eliminó correctamente." });
     },
-    onError: (e: any) => {
+    onError: (e) => {
       const msg = e.message?.includes("violates foreign key")
         ? "No se puede eliminar: este registro está en uso en cotizaciones existentes."
         : e.message;
@@ -388,7 +388,16 @@ export default function PersonalCostosTab() {
                               <Button variant="ghost" size="sm" onClick={() => startEdit(item)} className="text-blue-600 hover:bg-blue-50">
                                 <Edit3 className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => delMut.mutate(item.id)} className="text-red-600 hover:bg-red-50">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  if (window.confirm(`¿Eliminar el costo de "${item.rol}" (${modalidadLabel(item.modalidad_cobro)})?`)) {
+                                    delMut.mutate(item.id);
+                                  }
+                                }}
+                                className="text-red-600 hover:bg-red-50"
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </>

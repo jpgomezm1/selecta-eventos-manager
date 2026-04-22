@@ -143,7 +143,7 @@ export async function generatePremiumCotizacionPDF(
   };
 
   // Función para crear sección de opción premium
-  const addVersionSection = (version: any, yPos: number) => {
+  const addVersionSection = (version, yPos: number) => {
     const sectionHeight = 120; // Altura mínima estimada
 
     // Verificar si necesitamos nueva página
@@ -267,7 +267,7 @@ export async function generatePremiumCotizacionPDF(
         yPos += 20;
 
         // Items con diseño elegante
-        category.items.forEach((item: any, index: number) => {
+        category.items.forEach((item, index: number) => {
           const itemY = yPos + (index * 8);
 
           // Fondo alternado
@@ -314,11 +314,11 @@ export async function generatePremiumCotizacionPDF(
   };
 
   // Función auxiliar para calcular total
-  const calculateVersionTotal = (version: any) => {
+  const calculateVersionTotal = (version) => {
     return (
-      version.items.platos.reduce((sum: number, p: any) => sum + (p.precio_unitario * p.cantidad), 0) +
-      version.items.personal.reduce((sum: number, p: any) => sum + (p.tarifa_estimada_por_persona * p.cantidad), 0) +
-      version.items.transportes.reduce((sum: number, t: any) => sum + (t.tarifa_unitaria * t.cantidad), 0)
+      version.items.platos.reduce((sum: number, p) => sum + (p.precio_unitario * p.cantidad), 0) +
+      version.items.personal.reduce((sum: number, p) => sum + (p.tarifa_estimada_por_persona * p.cantidad), 0) +
+      version.items.transportes.reduce((sum: number, t) => sum + (t.tarifa_unitaria * t.cantidad), 0)
     );
   };
 

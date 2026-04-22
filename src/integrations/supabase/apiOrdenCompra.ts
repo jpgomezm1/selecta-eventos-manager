@@ -23,7 +23,7 @@ export async function generateOrdenCompra(
   }
 
   // 2. Get plato ingredients with catalog info
-  const platoIds = reqPlatos.map((r: any) => r.plato_id);
+  const platoIds = reqPlatos.map((r) => r.plato_id);
 
   const [{ data: platoIngredientes }, { data: platosCatalogo }] = await Promise.all([
     supabase
@@ -37,10 +37,10 @@ export async function generateOrdenCompra(
   ]);
 
   const porcionesMap = new Map(
-    (platosCatalogo ?? []).map((p: any) => [p.id, p.porciones_receta || 1])
+    (platosCatalogo ?? []).map((p) => [p.id, p.porciones_receta || 1])
   );
   const platoCantMap = new Map(
-    reqPlatos.map((r: any) => [r.plato_id, r.cantidad])
+    reqPlatos.map((r) => [r.plato_id, r.cantidad])
   );
 
   // 3. Aggregate ingredients
@@ -49,8 +49,9 @@ export async function generateOrdenCompra(
     { nombre: string; unidad: string; costo: number; stock: number; totalNecesario: number }
   >();
 
-  for (const pi of platoIngredientes ?? []) {
-    const ing = (pi as any).ingredientes_catalogo;
+  type PIWithIng = typeof platoIngredientes extends (infer U)[] | null ? U & { ingredientes_catalogo?: { nombre: string; unidad: string; costo_por_unidad: number | string; stock_actual?: number | string } | null } : never;
+  for (const pi of (platoIngredientes ?? []) as PIWithIng[]) {
+    const ing = pi.ingredientes_catalogo;
     if (!ing) continue;
 
     const porcionesReceta = porcionesMap.get(pi.plato_id) || 1;
@@ -150,7 +151,7 @@ export async function getOrdenCompra(
     .order("nombre");
 
   // Refresh cantidad_inventario with live stock from ingredientes_catalogo
-  const mapped = (items ?? []).map((r: any) => {
+  const mapped = (items ?? []).map((r) => {
     const liveStock = Number(r.ingredientes_catalogo?.stock_actual ?? 0);
     const item = mapItem(r);
     item.cantidad_inventario = liveStock;
@@ -206,7 +207,7 @@ export async function updateOrdenCompraItem(
   itemId: string,
   patch: Partial<Pick<OrdenCompraItem, "cantidad_comprar" | "costo_unitario">>
 ): Promise<OrdenCompraItem> {
-  const updates: any = { ...patch };
+  const updates: Record<string, unknown> = { ...patch };
   if (patch.cantidad_comprar != null && patch.costo_unitario != null) {
     updates.subtotal = patch.cantidad_comprar * patch.costo_unitario;
   }
@@ -240,14 +241,14 @@ export async function recalcOrdenTotal(ordenId: string): Promise<void> {
     .from("evento_orden_compra_items")
     .select("subtotal")
     .eq("orden_id", ordenId);
-  const total = (items ?? []).reduce((a: number, r: any) => a + Number(r.subtotal), 0);
+  const total = (items ?? []).reduce((a: number, r) => a + Number(r.subtotal), 0);
   await supabase
     .from("evento_orden_compra")
     .update({ total_estimado: Math.round(total), updated_at: new Date().toISOString() })
     .eq("id", ordenId);
 }
 
-function mapOrden(r: any): OrdenCompra {
+function mapOrden(r): OrdenCompra {
   return {
     id: r.id,
     evento_id: r.evento_id,
@@ -259,7 +260,7 @@ function mapOrden(r: any): OrdenCompra {
   };
 }
 
-function mapItem(r: any): OrdenCompraItem {
+function mapItem(r): OrdenCompraItem {
   return {
     id: r.id,
     orden_id: r.orden_id,

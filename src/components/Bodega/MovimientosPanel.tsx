@@ -48,12 +48,15 @@ export default function MovimientosPanel() {
     const map = new Map<string, DiscrepancyInfo>();
     if (!data) return map;
 
-    // Build a lookup of salidas by evento_id+reserva_id
+    // Build a lookup of salidas by evento_id+reserva_id. Puede haber más de
+    // una salida confirmada por reserva (despachos parciales), así que
+    // concatenamos todas las items en vez de pisar la última con la anterior.
     const salidaMap = new Map<string, MenajeMovimientoItem[]>();
     for (const m of data) {
       if (m.tipo === "salida" && m.estado === "confirmado" && m.evento_id) {
         const key = `${m.evento_id}|${m.reserva_id ?? ""}`;
-        salidaMap.set(key, m.items);
+        const existing = salidaMap.get(key) ?? [];
+        salidaMap.set(key, [...existing, ...m.items]);
       }
     }
 
@@ -120,11 +123,11 @@ export default function MovimientosPanel() {
       reserva_id: null,
       notas: "",
       items: [],
-    } as any);
+    });
     setOpen(true);
   };
 
-  const handleEdit = (movimiento: any) => {
+  const handleEdit = (movimiento: MenajeMovimiento & { items: MenajeMovimientoItem[] }) => {
     setEditing(movimiento);
     setOpen(true);
   };
@@ -165,7 +168,7 @@ export default function MovimientosPanel() {
       setEditing(null);
       qc.invalidateQueries({ queryKey: ["movimientos"] });
       qc.invalidateQueries({ queryKey: ["salidas-confirmadas"] });
-    } catch (e: any) {
+    } catch (e) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
   };
@@ -180,7 +183,7 @@ export default function MovimientosPanel() {
         description: "El stock se ha actualizado correctamente."
       });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const deleteMut = useMutation({
@@ -193,7 +196,7 @@ export default function MovimientosPanel() {
         description: "El registro se removió del sistema."
       });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const getEstadoBadge = (estado: string) => {
@@ -428,8 +431,8 @@ export default function MovimientosPanel() {
                       </TableCell>
 
                       <TableCell>
-                        {(m as any).nombre_evento ? (
-                          <span className="text-sm font-medium text-slate-700">{(m as any).nombre_evento}</span>
+                        {(m as { nombre_evento?: string }).nombre_evento ? (
+                          <span className="text-sm font-medium text-slate-700">{(m as { nombre_evento?: string }).nombre_evento}</span>
                         ) : (
                           <span className="text-slate-400 text-sm">&mdash;</span>
                         )}
@@ -515,7 +518,11 @@ export default function MovimientosPanel() {
                           {m.estado !== "confirmado" && (
                             <Button
                               size="sm"
-                              onClick={() => confirmMut.mutate(m.id)}
+                              onClick={() => {
+                                if (window.confirm(`Confirmar este ${m.tipo} aplica el cambio de stock y no se puede revertir fácilmente. ¿Continuar?`)) {
+                                  confirmMut.mutate(m.id);
+                                }
+                              }}
                               disabled={confirmMut.isPending}
                               className="bg-green-500 hover:bg-green-600 text-white text-xs px-3"
                             >
@@ -530,7 +537,13 @@ export default function MovimientosPanel() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => deleteMut.mutate(m.id)}
+                            onClick={() => {
+                              const etiqueta = m.tipo === "ingreso" ? "ingreso" : "salida";
+                              const fecha = moment(m.fecha).format("DD/MM/YYYY");
+                              if (window.confirm(`¿Eliminar este movimiento de ${etiqueta} del ${fecha}?`)) {
+                                deleteMut.mutate(m.id);
+                              }
+                            }}
                             disabled={deleteMut.isPending}
                             className="text-red-600 hover:bg-red-50"
                           >
@@ -552,7 +565,7 @@ export default function MovimientosPanel() {
         <MovimientoDialog
           open={open}
           onOpenChange={setOpen}
-          movimiento={editing as any}
+          movimiento={editing}
           onSave={handleSave}
         />
       )}

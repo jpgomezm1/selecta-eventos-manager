@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -38,11 +38,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
   const [saving, setSaving] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
-  useEffect(() => {
-    loadOrden();
-  }, [eventoId, fechaEvento]);
-
-  const loadOrden = async () => {
+  const loadOrden = useCallback(async () => {
     setLoading(true);
     try {
       const result = await getOrdenMenaje(eventoId, fechaEvento);
@@ -53,12 +49,16 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
         setReserva(null);
         setItems([]);
       }
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err) {
+      toast({ title: "Error", description: (err as Error)?.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventoId, fechaEvento, toast]);
+
+  useEffect(() => {
+    loadOrden();
+  }, [loadOrden]);
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -68,7 +68,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
       setItems(result.items);
       toast({ title: "Orden generada", description: "La orden de menaje fue creada desde el requerimiento." });
       onChanged?.();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setGenerating(false);
@@ -83,7 +83,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
       setItems(result.items);
       toast({ title: "Orden regenerada" });
       onChanged?.();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setGenerating(false);
@@ -92,7 +92,21 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
 
   const handleItemUpdate = (menaje_id: string, field: "cantidad_reservar" | "precio_alquiler", value: number) => {
     setItems((prev) =>
-      prev.map((i) => (i.menaje_id === menaje_id ? { ...i, [field]: Math.max(0, value) } : i))
+      prev.map((i) => {
+        if (i.menaje_id !== menaje_id) return i;
+        if (field === "cantidad_reservar") {
+          const clamped = Math.max(0, Math.min(value, i.disponible));
+          if (value > i.disponible) {
+            toast({
+              title: "Stock insuficiente",
+              description: `${i.nombre}: solo hay ${i.disponible} disponibles.`,
+              variant: "destructive",
+            });
+          }
+          return { ...i, cantidad_reservar: clamped };
+        }
+        return { ...i, [field]: Math.max(0, value) };
+      })
     );
   };
 
@@ -105,7 +119,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
         items.filter((i) => i.cantidad_reservar > 0).map((i) => ({ menaje_id: i.menaje_id, cantidad: i.cantidad_reservar }))
       );
       toast({ title: "Reserva guardada" });
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);
@@ -114,6 +128,16 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
 
   const handleConfirmar = async () => {
     if (!reserva) return;
+    const insuficientes = items.filter((i) => i.cantidad_reservar < i.cantidad_requerida);
+    if (insuficientes.length > 0) {
+      const resumen = insuficientes
+        .map((i) => `${i.nombre}: ${i.cantidad_reservar}/${i.cantidad_requerida}`)
+        .join("\n");
+      const ok = window.confirm(
+        `Hay ${insuficientes.length} item(s) por debajo del requerimiento:\n\n${resumen}\n\n¿Confirmar de todos modos?`
+      );
+      if (!ok) return;
+    }
     setSaving(true);
     try {
       await saveReservaItems(
@@ -124,7 +148,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
       setReserva({ ...reserva, estado: "confirmado" });
       toast({ title: "Orden confirmada", description: "El menaje quedó reservado y visible en el calendario de Bodega." });
       onChanged?.();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);
@@ -139,7 +163,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
       setItems([]);
       toast({ title: "Orden cancelada" });
       onChanged?.();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
@@ -150,7 +174,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
     try {
       await generateOrdenMenajePDF({ items, evento: eventoInfo });
       toast({ title: "PDF generado" });
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error al generar PDF", description: err.message, variant: "destructive" });
     } finally {
       setDownloadingPdf(false);
@@ -292,18 +316,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      {reserva.estado === "borrador" ? (
-                        <Input
-                          type="number"
-                          min={0}
-                          step={100}
-                          className="w-28 text-right h-8 ml-auto"
-                          value={item.precio_alquiler}
-                          onChange={(e) => handleItemUpdate(item.menaje_id, "precio_alquiler", Number(e.target.value))}
-                        />
-                      ) : (
-                        <span className="text-slate-600">${item.precio_alquiler.toLocaleString()}</span>
-                      )}
+                      <span className="text-slate-600">${item.precio_alquiler.toLocaleString()}</span>
                     </TableCell>
                     <TableCell className="text-right font-medium text-slate-900">
                       ${subtotal.toLocaleString()}

@@ -9,6 +9,18 @@ import {
 import { scanInvoice, type InvoiceExtractedItem, type InvoiceExtraction } from "@/services/invoiceScanner";
 import { uploadFactura } from "@/services/facturaStorage";
 import { convertirAUnidadBase } from "@/integrations/supabase/apiCotizador";
+
+const PESO = new Set(["gr", "kg", "lb", "oz"]);
+const VOLUMEN = new Set(["ml", "lt"]);
+
+function sonUnidadesCompatibles(a: string, b: string): boolean {
+  const x = a.toLowerCase();
+  const y = b.toLowerCase();
+  if (x === y) return true;
+  if (PESO.has(x) && PESO.has(y)) return true;
+  if (VOLUMEN.has(x) && VOLUMEN.has(y)) return true;
+  return false;
+}
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -115,7 +127,7 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
       setNextKey(key);
       setStep("review");
     },
-    onError: (err: any) => {
+    onError: (err) => {
       toast({ title: "Error al escanear", description: err.message, variant: "destructive" });
       setStep("upload");
     },
@@ -180,6 +192,26 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
       const validItems = items.filter((it) => it.ingrediente_id);
       if (validItems.length === 0) throw new Error("No hay items asignados a ingredientes del catálogo");
 
+      // Validar que las unidades de la factura sean convertibles a las unidades
+      // base del catálogo. Sin esto convertirAUnidadBase silenciosamente devuelve
+      // la cantidad sin convertir e inyecta stock en la unidad equivocada.
+      const incompatibles = validItems.filter((it) => {
+        const matchedIng = ingredientes.find((i) => i.id === it.ingrediente_id);
+        if (!matchedIng || !it.unidad) return false;
+        return !sonUnidadesCompatibles(it.unidad, matchedIng.unidad);
+      });
+      if (incompatibles.length > 0) {
+        const detalle = incompatibles
+          .map((it) => {
+            const m = ingredientes.find((i) => i.id === it.ingrediente_id);
+            return `${it.nombre_factura || m?.nombre}: ${it.unidad} → ${m?.unidad}`;
+          })
+          .join("; ");
+        throw new Error(
+          `Unidades incompatibles (${incompatibles.length}): ${detalle}. Cambiá la unidad de la factura o el ingrediente asignado.`
+        );
+      }
+
       // Convert quantities from invoice units to catalog base units
       const convertedItems = validItems.map((it) => {
         const matchedIng = ingredientes.find((i) => i.id === it.ingrediente_id);
@@ -212,14 +244,18 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
         convertedItems
       );
 
-      // Upload invoice file
+      // Upload invoice file. Es no-bloqueante (el movimiento ya existe)
+      // pero el usuario debe saber que quedó sin adjunto.
       if (file) {
         try {
           const path = await uploadFactura(file, mov.id);
           await inventarioMovimientoUpdateFacturaUrl(mov.id, path);
-        } catch {
-          // Non-blocking: movement created but file upload failed
-          console.warn("No se pudo subir la factura, el movimiento fue creado");
+        } catch (err) {
+          toast({
+            title: "Movimiento creado, pero la factura no se subió",
+            description: err?.message ?? "Podés reintentar la subida desde el detalle del movimiento.",
+            variant: "destructive",
+          });
         }
       }
 
@@ -248,7 +284,7 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
       });
       resetAndClose();
     },
-    onError: (err: any) => {
+    onError: (err) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });

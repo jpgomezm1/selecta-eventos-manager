@@ -66,7 +66,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
         .in("estado", ["confirmado", "borrador"])
         .not("evento_id", "is", null);
       if (error) throw error;
-      return (data ?? []).map((r: any) => ({
+      return (data ?? []).map((r) => ({
         evento_id: r.evento_id,
         nombre_evento: r.eventos?.nombre_evento ?? "",
         fecha_evento: r.eventos?.fecha_evento ?? "",
@@ -129,7 +129,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
   const handleSelectSalida = (salidaId: string) => {
     if (salidaId === "__none__") {
       setSelectedSalidaId(null);
-      setMov({ ...mov, evento_id: null, reserva_id: null } as any);
+      setMov({ ...mov, evento_id: null, reserva_id: null });
       setItems([]);
       setAutoPopulated(false);
       return;
@@ -138,7 +138,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
     if (!salida) return;
 
     setSelectedSalidaId(salidaId);
-    setMov({ ...mov, evento_id: salida.evento_id, reserva_id: salida.reserva_id } as any);
+    setMov({ ...mov, evento_id: salida.evento_id, reserva_id: salida.reserva_id });
 
     const newItems: DialogItem[] = salida.items.map((si) => ({
       menaje_id: si.menaje_id,
@@ -195,7 +195,18 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
       return hasDiff && !i.nota.trim();
     });
 
-  const isValid = mov.fecha && items.length > 0 && !hasDiscrepancyWithoutNote;
+  // Si se va a guardar como confirmado, la salida no puede exceder el stock
+  // disponible (el warning ya existía pero no bloqueaba el submit).
+  const stockInsuficienteAlConfirmar =
+    mov.tipo === "salida" &&
+    mov.estado === "confirmado" &&
+    items.some((i) => {
+      const c = catalogo?.find((x) => x.id === i.menaje_id);
+      return !!c && i.cantidad + (i.merma || 0) > c.stock_total;
+    });
+
+  const isValid =
+    !!mov.fecha && items.length > 0 && !hasDiscrepancyWithoutNote && !stockInsuficienteAlConfirmar;
 
   // Find the selected salida's event name for read-only display
   const selectedSalida = salidasConfirmadas?.find((s) => s.movimiento_id === selectedSalidaId);
@@ -249,7 +260,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Estado</label>
-                  <Select value={mov.estado} onValueChange={(v) => setMov({ ...mov, estado: v as any })}>
+                  <Select value={mov.estado} onValueChange={(v) => setMov({ ...mov, estado: v as MenajeMovimiento["estado"] })}>
                     <SelectTrigger className="bg-white border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
                       <SelectValue />
                     </SelectTrigger>
@@ -343,12 +354,12 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
                       value={mov.evento_id ?? "__none__"}
                       onValueChange={(v) => {
                         if (v === "__none__") {
-                          setMov({ ...mov, evento_id: null, reserva_id: null } as any);
+                          setMov({ ...mov, evento_id: null, reserva_id: null });
                           setItems([]);
                           setAutoPopulated(false);
                         } else {
                           const match = eventosConReserva?.find((e) => e.evento_id === v);
-                          setMov({ ...mov, evento_id: v, reserva_id: match?.reserva_id ?? null } as any);
+                          setMov({ ...mov, evento_id: v, reserva_id: match?.reserva_id ?? null });
                           // Auto-populate will happen via useEffect when reservaData loads
                           setAutoPopulated(false);
                         }
@@ -656,6 +667,8 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
             {!mov.fecha && "Ingrese una fecha"}
             {mov.fecha && items.length === 0 && "Agregue al menos un elemento"}
             {mov.fecha && items.length > 0 && hasDiscrepancyWithoutNote && "Agregue nota en los items con diferencia"}
+            {mov.fecha && items.length > 0 && !hasDiscrepancyWithoutNote && stockInsuficienteAlConfirmar &&
+              "No se puede confirmar: algunos elementos exceden el stock. Guarde como borrador o reduzca la cantidad."}
           </div>
 
           <div className="flex gap-3">

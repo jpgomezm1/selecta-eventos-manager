@@ -25,5 +25,18 @@ export default tseslint.config(
       ],
       "@typescript-eslint/no-unused-vars": "off",
     },
+  },
+  {
+    // shadcn/ui components y hooks con Provider exportan variantes, contextos
+    // y hooks junto al componente — es el patrón de shadcn y de context+hook
+    // providers. Fast Refresh en estos archivos no es crítico.
+    files: [
+      "src/components/ui/**",
+      "src/hooks/useAuth.tsx",
+      "src/hooks/useSidebar.tsx",
+    ],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
   }
 );

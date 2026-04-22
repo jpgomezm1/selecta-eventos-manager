@@ -105,9 +105,9 @@ export async function listClientes(): Promise<Cliente[]> {
     .select("*")
     .order("nombre", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((d: any) => ({
+  return (data ?? []).map((d) => ({
     ...d,
-    tipo: d.tipo || 'persona_natural',
+    tipo: (d.tipo || 'persona_natural') as Cliente["tipo"],
     cedula: d.cedula || null,
   })) as Cliente[];
 }

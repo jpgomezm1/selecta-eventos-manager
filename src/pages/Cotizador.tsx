@@ -412,7 +412,7 @@ export default function Cotizador() {
       setLugares([{ nombre: "", es_seleccionado: true }]);
       nav(`/cotizaciones/${res.id}`);
     },
-    onError: (e: any) => {
+    onError: (e) => {
       toast({
         title: "Error al crear cotización",
         description: e.message ?? "Ocurrió un error inesperado.",
@@ -488,6 +488,9 @@ export default function Cotizador() {
   // Totales de la pestaña activa para el Resumen
   const subt = calcSubtotales(current.items);
 
+  // Extraído del watch para que el dep array del useMemo sea estático.
+  const comercialEncargado = watch("comercial_encargado");
+
   // Stepper steps definition
   const steps = useMemo(
     () => [
@@ -495,7 +498,7 @@ export default function Cotizador() {
         index: 1,
         label: "Información del Evento",
         icon: ClipboardList,
-        isComplete: !!nombreCotizacion?.trim() && !!watch("comercial_encargado")?.trim(),
+        isComplete: !!nombreCotizacion?.trim() && !!comercialEncargado?.trim(),
         isSkippable: false,
       },
       {
@@ -538,7 +541,7 @@ export default function Cotizador() {
         isSkippable: false,
       },
     ],
-    [nombreCotizacion, watch("comercial_encargado"), current.items]
+    [nombreCotizacion, comercialEncargado, current.items]
   );
 
   // Navigation — scroll to top on every step change

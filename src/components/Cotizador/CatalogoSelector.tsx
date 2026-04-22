@@ -37,6 +37,7 @@ type CatalogoSelectorProps<T> = {
   showPriceRange?: boolean;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function CatalogoSelector<T extends Record<string, any>>({
   titulo,
   items,

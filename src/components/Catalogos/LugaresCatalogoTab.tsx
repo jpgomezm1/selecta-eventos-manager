@@ -71,7 +71,7 @@ export default function LugaresCatalogoTab() {
       setNewItem({ nombre: "", direccion: "", ciudad: "", capacidad_estimada: null, precio_referencia: 0 });
       toast({ title: "Lugar creado", description: "El lugar se agregó al catálogo correctamente." });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const updateMut = useMutation({
@@ -83,7 +83,7 @@ export default function LugaresCatalogoTab() {
       setEditDraft({});
       toast({ title: "Actualizado", description: "Los cambios se guardaron correctamente." });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const delMut = useMutation({
@@ -92,7 +92,12 @@ export default function LugaresCatalogoTab() {
       qc.invalidateQueries({ queryKey: ["catalogos", "lugares"] });
       toast({ title: "Eliminado", description: "El lugar se eliminó correctamente." });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => {
+      const msg = e.message?.includes("violates foreign key")
+        ? "No se puede eliminar: este lugar está en uso en cotizaciones o eventos existentes."
+        : e.message;
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    },
   });
 
   const toggleActivo = (item: LugarCatalogo) => {
@@ -424,7 +429,17 @@ export default function LugaresCatalogoTab() {
                               <Button variant="ghost" size="sm" onClick={() => startEdit(item)} className="text-blue-600 hover:bg-blue-50">
                                 <Edit3 className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => delMut.mutate(item.id)} className="text-red-600 hover:bg-red-50">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const where = item.ciudad ? ` (${item.ciudad})` : "";
+                                  if (window.confirm(`¿Eliminar el lugar "${item.nombre}"${where}?`)) {
+                                    delMut.mutate(item.id);
+                                  }
+                                }}
+                                className="text-red-600 hover:bg-red-50"
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </>

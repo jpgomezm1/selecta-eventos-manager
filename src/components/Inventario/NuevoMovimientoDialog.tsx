@@ -101,7 +101,7 @@ export default function NuevoMovimientoDialog({ open, onOpenChange }: Props) {
       });
       resetAndClose();
     },
-    onError: (err: any) => {
+    onError: (err) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });

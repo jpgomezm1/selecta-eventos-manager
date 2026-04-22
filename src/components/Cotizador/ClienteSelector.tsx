@@ -109,7 +109,7 @@ export function ClienteSelector({ value, onChange, selectedCliente }: Props) {
       setOpen(false);
       setNewCliente({ nombre: "", telefono: "", correo: "", empresa: "", nit: "", cedula: "" });
       setNewTipo('persona_natural');
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error al crear cliente", description: err?.message || "Intenta de nuevo.", variant: "destructive" });
     } finally {
       setCreating(false);

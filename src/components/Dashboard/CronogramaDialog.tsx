@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -49,19 +49,7 @@ export function CronogramaDialog({ isOpen, onClose }: CronogramaDialogProps) {
   
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (isOpen) {
-      cargarEmpleados();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (empleadoSeleccionado) {
-      cargarEventosEmpleado();
-    }
-  }, [empleadoSeleccionado, fechaDesde, fechaHasta]);
-
-  const cargarEmpleados = async () => {
+  const cargarEmpleados = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("personal")
@@ -79,13 +67,13 @@ export function CronogramaDialog({ isOpen, onClose }: CronogramaDialogProps) {
       console.error("Error cargando empleados:", error);
       toast({
         title: "Error",
-        description: "Error al cargar lista de empleados",
+        description: (error as Error)?.message ?? "Error al cargar lista de empleados",
         variant: "destructive"
       });
     }
-  };
+  }, [toast]);
 
-  const cargarEventosEmpleado = async () => {
+  const cargarEventosEmpleado = useCallback(async () => {
     if (!empleadoSeleccionado) return;
 
     setLoading(true);
@@ -160,7 +148,20 @@ Si el problema persiste, contacta al administrador.`;
     } finally {
       setLoading(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empleadoSeleccionado, fechaDesde, fechaHasta, empleados, toast]);
+
+  useEffect(() => {
+    if (isOpen) {
+      cargarEmpleados();
+    }
+  }, [isOpen, cargarEmpleados]);
+
+  useEffect(() => {
+    if (empleadoSeleccionado) {
+      cargarEventosEmpleado();
+    }
+  }, [empleadoSeleccionado, fechaDesde, fechaHasta, cargarEventosEmpleado]);
 
   const generarMensaje = (eventosData: EventoEmpleado[]) => {
     const empleado = empleados.find(e => e.id === empleadoSeleccionado);
@@ -281,7 +282,7 @@ No tienes eventos programados del ${fechaDesdeFormateada} al ${fechaHastaFormate
     let nuevaFechaHasta = new Date(hoy);
 
     switch (preset) {
-      case 'esta-semana':
+      case 'esta-semana': {
         const inicioSemana = new Date(hoy);
         inicioSemana.setDate(hoy.getDate() - hoy.getDay() + 1); // Lunes
         const finSemana = new Date(inicioSemana);
@@ -289,6 +290,7 @@ No tienes eventos programados del ${fechaDesdeFormateada} al ${fechaHastaFormate
         nuevaFechaDesde = inicioSemana;
         nuevaFechaHasta = finSemana;
         break;
+      }
       case 'proximos-7':
         nuevaFechaHasta.setDate(hoy.getDate() + 7);
         break;

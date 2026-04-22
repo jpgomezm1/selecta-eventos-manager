@@ -167,7 +167,7 @@ export function ResumenCotizacion({
     }
   ].filter(section => section.items.length > 0);
 
-  const renderItemRow = (item: any, sectionColor: string) => (
+  const renderItemRow = (item, sectionColor: string) => (
     <div
       key={`${item.tipo}-${item.id}`}
       className="bg-white rounded-xl p-4 border border-slate-200 hover:shadow-md transition-all duration-200 flex flex-col gap-2"

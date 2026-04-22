@@ -121,7 +121,7 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
         toast({ title: "Plato creado" });
       }
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const updateMut = useMutation({
@@ -132,7 +132,7 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
       queryClient.invalidateQueries({ queryKey: ["plato-detail", effectiveId] });
       toast({ title: "Plato actualizado" });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const upsertIngMut = useMutation({
@@ -143,7 +143,7 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
       queryClient.invalidateQueries({ queryKey: ["plato-ingredientes-all"] });
       toast({ title: "Ingredientes guardados" });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   // Compute ingredient costs (must be before precioCalculado)
@@ -159,6 +159,10 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
     : form.precio ?? 0;
 
   const handleSavePlato = () => {
+    if (!form.nombre?.trim()) {
+      toast({ title: "Nombre requerido", description: "Ingresa el nombre del plato antes de guardar.", variant: "destructive" });
+      return;
+    }
     const precioFinal = (form.margen_ganancia != null && costoPorcion > 0)
       ? Math.round(costoPorcion * (1 + form.margen_ganancia / 100))
       : form.precio ?? 0;
@@ -175,9 +179,9 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
         rendimiento: form.rendimiento ?? null,
         notas: form.notas ?? null,
         margen_ganancia: form.margen_ganancia ?? null,
-      } as any);
+      });
     } else {
-      const { ingredientes: _, ...updates } = form as any;
+      const { ingredientes: _ingredientes, ...updates } = form as Partial<PlatoCatalogo> & { ingredientes?: unknown };
       updateMut.mutate({ ...updates, precio: precioFinal }, {
         onSuccess: () => {
           // Also save ingredients when updating plato
@@ -234,7 +238,7 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
         );
       }
       toast({ title: "Receta generada", description: "Revisa los datos y ajusta lo que necesites." });
-    } catch (e: any) {
+    } catch (e) {
       toast({ title: "Error al generar receta", description: e.message, variant: "destructive" });
     } finally {
       setAiLoading(false);
@@ -323,7 +327,7 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-slate-500">Tipo menú</label>
-                  <Select value={form.tipo_menu ?? "Menu General"} onValueChange={(v) => setForm({ ...form, tipo_menu: v as any })}>
+                  <Select value={form.tipo_menu ?? "Menu General"} onValueChange={(v) => setForm({ ...form, tipo_menu: v as PlatoCatalogo["tipo_menu"] })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Menu General">Menu General</SelectItem>

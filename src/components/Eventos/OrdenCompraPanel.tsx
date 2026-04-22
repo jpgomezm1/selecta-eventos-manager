@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,11 +36,7 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
   const [generating, setGenerating] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
-  useEffect(() => {
-    loadOrden();
-  }, [eventoId]);
-
-  const loadOrden = async () => {
+  const loadOrden = useCallback(async () => {
     setLoading(true);
     try {
       const result = await getOrdenCompra(eventoId);
@@ -51,12 +47,16 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
         setOrden(null);
         setItems([]);
       }
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err) {
+      toast({ title: "Error", description: (err as Error)?.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventoId, toast]);
+
+  useEffect(() => {
+    loadOrden();
+  }, [loadOrden]);
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -66,7 +66,7 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
       setItems(result.items);
       toast({ title: "Orden generada", description: "La orden de compra fue creada desde el requerimiento." });
       onChanged?.();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setGenerating(false);
@@ -81,7 +81,7 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
       setItems(result.items);
       toast({ title: "Orden regenerada" });
       onChanged?.();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setGenerating(false);
@@ -98,7 +98,7 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
         : `Orden ${estado}`;
       toast({ title: "Estado actualizado", description: desc });
       onChanged?.();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
@@ -109,7 +109,7 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
     try {
       await generateOrdenCompraPDF({ orden, items, evento: eventoInfo });
       toast({ title: "PDF generado" });
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error al generar PDF", description: err.message, variant: "destructive" });
     } finally {
       setDownloadingPdf(false);
@@ -117,12 +117,11 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
   };
 
   const handleItemUpdate = async (item: OrdenCompraItem, field: "cantidad_comprar" | "costo_unitario", value: number) => {
-    const patch = { [field]: value } as any;
-    if (field === "cantidad_comprar") {
-      patch.costo_unitario = item.costo_unitario;
-    } else {
-      patch.cantidad_comprar = item.cantidad_comprar;
-    }
+    const patch = {
+      cantidad_comprar: field === "cantidad_comprar" ? value : item.cantidad_comprar,
+      costo_unitario: field === "costo_unitario" ? value : item.costo_unitario,
+      subtotal: 0,
+    };
     patch.subtotal = patch.cantidad_comprar * patch.costo_unitario;
 
     // Optimistic update
@@ -144,7 +143,7 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
         const result = await getOrdenCompra(eventoId);
         if (result) setOrden(result.orden);
       }
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
       loadOrden();
     }

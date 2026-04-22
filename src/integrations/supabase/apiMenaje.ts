@@ -21,7 +21,7 @@ export async function menajeCatalogoList(): Promise<MenajeCatalogo[]> {
     .order("categoria")
     .order("nombre");
   if (error) throw error;
-  return (data ?? []).map((d: any) => ({ ...d, stock_total: Number(d.stock_total), precio_alquiler: Number(d.precio_alquiler ?? 0) }));
+  return (data ?? []).map((d) => ({ ...d, stock_total: Number(d.stock_total), precio_alquiler: Number(d.precio_alquiler ?? 0) }));
 }
 
 export async function menajeCatalogoCreate(
@@ -65,7 +65,7 @@ export async function menajeDisponiblePorRango(
     _fin: fin,
   });
   if (error) throw error;
-  return (data ?? []).map((d: any) => ({
+  return (data ?? []).map((d) => ({
     ...d,
     stock_total: Number(d.stock_total),
     reservado: Number(d.reservado),
@@ -88,7 +88,7 @@ export async function getOrCreateReservaForEvento(
     .maybeSingle();
 
   // PGRST116 = no rows, en algunos drivers no aparece; por eso simplemente si no hay ex, creamos
-  if (e1 && (e1 as any).code !== "PGRST116") throw e1;
+  if (e1 && (e1 as { code?: string }).code !== "PGRST116") throw e1;
 
   if (ex) return ex as MenajeReserva;
 
@@ -124,9 +124,9 @@ export async function readReserva(reserva_id: string): Promise<MenajeReservaFull
   // Guardamos baseline en memoria (para cálculos en MenajePanel si lo necesitas)
   const full: MenajeReservaFull = {
     ...(r as MenajeReserva),
-    items: (items ?? []) as any,
+    items: (items ?? []) as unknown as MenajeReservaFull["items"],
   };
-  (full as any)._baseline_items = full.items.map((i) => ({
+  (full as MenajeReservaFull & { _baseline_items?: Array<{ menaje_id: string; cantidad: number }> })._baseline_items = full.items.map((i) => ({
     menaje_id: i.menaje_id,
     cantidad: i.cantidad,
   }));
@@ -197,16 +197,17 @@ export async function movimientosList(): Promise<
   if (e1) throw e1;
 
   const result: (MenajeMovimiento & { items: MenajeMovimientoItem[]; nombre_evento?: string })[] = [];
-  for (const m of movs ?? []) {
+  type MovWithJoin = MenajeMovimiento & { eventos?: { nombre_evento?: string } | null };
+  for (const m of (movs ?? []) as unknown as MovWithJoin[]) {
     const { data: it, error: e2 } = await supabase
       .from("menaje_mov_items")
       .select("*, menaje:menaje_id(id,nombre,categoria,unidad,stock_total)")
-      .eq("movimiento_id", (m as any).id);
+      .eq("movimiento_id", m.id);
     if (e2) throw e2;
     result.push({
       ...(m as MenajeMovimiento),
-      nombre_evento: (m as any).eventos?.nombre_evento ?? undefined,
-      items: (it ?? []) as any,
+      nombre_evento: m.eventos?.nombre_evento ?? undefined,
+      items: (it ?? []) as unknown as MenajeMovimientoItem[],
     });
   }
   return result;
@@ -224,8 +225,9 @@ export async function movimientoCreate(
   if (error) throw error;
 
   if (items.length) {
+    const movRow = mov as MenajeMovimiento;
     const rows = items.map((i) => ({
-      movimiento_id: (mov as any).id,
+      movimiento_id: movRow.id,
       menaje_id: i.menaje_id,
       cantidad: i.cantidad,
       merma: i.merma ?? 0,
@@ -314,33 +316,34 @@ export async function getSalidasConfirmadas(): Promise<SalidaConEvento[]> {
   if (e2) throw e2;
 
   const ingresadoSet = new Set(
-    (ingresos ?? []).map((i: any) => `${i.evento_id}|${i.reserva_id ?? ""}`)
+    (ingresos ?? []).map((i) => `${i.evento_id}|${i.reserva_id ?? ""}`)
   );
 
-  const pendientes = (salidas ?? []).filter((s: any) =>
+  const pendientes = (salidas ?? []).filter((s) =>
     !ingresadoSet.has(`${s.evento_id}|${s.reserva_id ?? ""}`)
   );
 
   // Fetch items for each pending salida
+  type SalidaRow = MenajeMovimiento & { eventos?: { nombre_evento?: string } | null };
   const result: SalidaConEvento[] = [];
-  for (const s of pendientes) {
+  for (const s of pendientes as unknown as SalidaRow[]) {
     const { data: items, error: e3 } = await supabase
       .from("menaje_mov_items")
       .select("menaje_id, cantidad, menaje:menaje_id(nombre, unidad)")
-      .eq("movimiento_id", (s as any).id);
+      .eq("movimiento_id", s.id);
     if (e3) throw e3;
 
     result.push({
-      movimiento_id: (s as any).id,
-      evento_id: (s as any).evento_id,
-      nombre_evento: (s as any).eventos?.nombre_evento ?? "",
-      fecha: (s as any).fecha,
-      reserva_id: (s as any).reserva_id ?? null,
-      items: (items ?? []).map((it: any) => ({
+      movimiento_id: s.id,
+      evento_id: s.evento_id ?? "",
+      nombre_evento: s.eventos?.nombre_evento ?? "",
+      fecha: s.fecha,
+      reserva_id: s.reserva_id ?? null,
+      items: (items ?? []).map((it) => ({
         menaje_id: it.menaje_id,
         cantidad: Number(it.cantidad) || 0,
-        nombre: it.menaje?.nombre ?? "",
-        unidad: it.menaje?.unidad ?? "und",
+        nombre: (it as { menaje?: { nombre?: string; unidad?: string } }).menaje?.nombre ?? "",
+        unidad: (it as { menaje?: { nombre?: string; unidad?: string } }).menaje?.unidad ?? "und",
       })),
     });
   }
@@ -397,7 +400,7 @@ export async function getSalidaItemsForReserva(
     .eq("movimiento_id", mov.id);
   if (error) throw error;
 
-  return (items ?? []).map((i: any) => ({
+  return (items ?? []).map((i) => ({
     menaje_id: i.menaje_id,
     nombre: i.menaje?.nombre ?? "",
     unidad: i.menaje?.unidad ?? "und",
@@ -457,7 +460,7 @@ export async function getOrdenMenaje(
     .eq("evento_id", eventoId);
 
   const reqMap = new Map(
-    (reqs ?? []).map((r: any) => [r.menaje_id, r])
+    (reqs ?? []).map((r) => [r.menaje_id, r])
   );
 
   // Get availability
@@ -514,7 +517,7 @@ export async function generateOrdenMenaje(
   const dispMap = new Map(disponibles.map((d) => [d.id, d]));
 
   // Build items
-  const itemRows: OrdenMenajeItem[] = reqMenaje.map((req: any) => {
+  const itemRows: OrdenMenajeItem[] = reqMenaje.map((req) => {
     const disp = dispMap.get(req.menaje_id);
     const cantRequerida = Number(req.cantidad) || 0;
     const cantDisponible = Number(disp?.disponible) || 0;

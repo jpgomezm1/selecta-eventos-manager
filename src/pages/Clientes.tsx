@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Search, Edit, Trash2, UserCircle, UserPlus, ChevronLeft, ChevronRight, Phone, Mail, Building2, User, Plus, IdCard, Briefcase, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,6 @@ const emptyForm: ClienteInsert & { tipo: 'persona_natural' | 'empresa' } = {
 
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [filteredClientes, setFilteredClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTipo, setFilterTipo] = useState<string>("all");
@@ -49,33 +48,8 @@ export default function ClientesPage() {
   const [editingContacto, setEditingContacto] = useState<ContactoCliente | null>(null);
   const [showContactoForm, setShowContactoForm] = useState(false);
 
-  useEffect(() => {
-    fetchClientes();
-  }, []);
-
-  useEffect(() => {
-    filterData();
-    setCurrentPage(1);
-  }, [clientes, searchTerm, filterTipo]);
-
-  const fetchClientes = async () => {
-    try {
-      const data = await listClientes();
-      setClientes(data);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error?.message || "Error al cargar clientes",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterData = () => {
+  const filteredClientes = useMemo(() => {
     let filtered = clientes;
-
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -87,13 +61,34 @@ export default function ClientesPage() {
           c.nit?.toLowerCase().includes(term)
       );
     }
-
     if (filterTipo !== "all") {
       filtered = filtered.filter((c) => c.tipo === filterTipo);
     }
+    return filtered;
+  }, [clientes, searchTerm, filterTipo]);
 
-    setFilteredClientes(filtered);
-  };
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterTipo]);
+
+  const fetchClientes = useCallback(async () => {
+    try {
+      const data = await listClientes();
+      setClientes(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: (error as Error)?.message || "Error al cargar clientes",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchClientes();
+  }, [fetchClientes]);
 
   const openCreate = () => {
     setSelectedCliente(null);
@@ -122,8 +117,13 @@ export default function ClientesPage() {
       try {
         const data = await listContactos(cliente.id);
         setContactos(data);
-      } catch {
+      } catch (err) {
         setContactos([]);
+        toast({
+          title: "No se pudieron cargar los contactos",
+          description: err?.message ?? "Error al consultar contactos de la empresa.",
+          variant: "destructive",
+        });
       } finally {
         setLoadingContactos(false);
       }
@@ -170,7 +170,7 @@ export default function ClientesPage() {
       setShowContactoForm(false);
       setEditingContacto(null);
       fetchClientes();
-    } catch (error: any) {
+    } catch (error) {
       toast({ title: "Error", description: error?.message || "Error al guardar cliente", variant: "destructive" });
     } finally {
       setSaving(false);
@@ -182,8 +182,11 @@ export default function ClientesPage() {
       await deleteCliente(id);
       toast({ title: "Cliente eliminado", description: "El cliente fue eliminado exitosamente" });
       fetchClientes();
-    } catch (error: any) {
-      toast({ title: "Error", description: error?.message || "Error al eliminar cliente", variant: "destructive" });
+    } catch (error) {
+      const msg = error?.message?.includes("violates foreign key")
+        ? "No se puede eliminar: este cliente tiene cotizaciones o eventos asociados."
+        : error?.message || "Error al eliminar cliente";
+      toast({ title: "Error", description: msg, variant: "destructive" });
     }
   };
 
@@ -214,36 +217,34 @@ export default function ClientesPage() {
       setContactoForm({ nombre: "", cargo: "", telefono: "", correo: "" });
       setEditingContacto(null);
       setShowContactoForm(false);
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err?.message || "Error al guardar contacto", variant: "destructive" });
     }
   };
 
-  const handleDeleteContacto = async (contactoId: string) => {
+  const handleDeleteContacto = async (contacto: ContactoCliente) => {
+    if (!window.confirm(`¿Eliminar el contacto "${contacto.nombre}"?`)) return;
     try {
-      await deleteContacto(contactoId);
-      setContactos((prev) => prev.filter((c) => c.id !== contactoId));
+      await deleteContacto(contacto.id);
+      setContactos((prev) => prev.filter((c) => c.id !== contacto.id));
       toast({ title: "Contacto eliminado" });
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err?.message || "Error al eliminar", variant: "destructive" });
     }
   };
 
   const handleTogglePrincipal = async (contacto: ContactoCliente) => {
     try {
-      // Unset all, then set the selected one
-      for (const c of contactos) {
-        if (c.es_principal && c.id !== contacto.id) {
-          await updateContacto(c.id, { es_principal: false });
-        }
-      }
+      // Desmarcar en paralelo cualquier otro principal antes de setear el nuevo
+      const otrosPrincipales = contactos.filter((c) => c.es_principal && c.id !== contacto.id);
+      await Promise.all(otrosPrincipales.map((c) => updateContacto(c.id, { es_principal: false })));
       const updated = await updateContacto(contacto.id, { es_principal: !contacto.es_principal });
       setContactos((prev) =>
         prev.map((c) =>
           c.id === updated.id ? updated : { ...c, es_principal: false }
         )
       );
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err?.message, variant: "destructive" });
     }
   };
@@ -695,7 +696,7 @@ export default function ClientesPage() {
                             variant="ghost"
                             size="sm"
                             className="h-7 w-7 p-0"
-                            onClick={() => handleDeleteContacto(c.id)}
+                            onClick={() => handleDeleteContacto(c)}
                           >
                             <Trash2 className="h-3.5 w-3.5 text-slate-500" />
                           </Button>

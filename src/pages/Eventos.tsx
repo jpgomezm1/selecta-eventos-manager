@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Calendar, MapPin, Users, DollarSign, Grid3X3, CalendarDays, Search, Eye, ChevronLeft, ChevronRight } from "lucide-react";
-import { format } from "date-fns";
+import { format, parse, startOfWeek, getDay } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as BigCalendar, momentLocalizer, Views } from 'react-big-calendar';
+import { Calendar as BigCalendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,18 +11,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card";
 import { LiquidacionDialog } from "@/components/Forms/LiquidacionDialog";
 import { useToast } from "@/hooks/use-toast";
-import { EventoConPersonal, Personal, PersonalAsignado } from "@/types/database";
+import { EventoConPersonal, PersonalAsignado } from "@/types/database";
 import { fetchChecklistDataBatch } from "@/integrations/supabase/apiEventoChecklist";
 import { computeChecklist } from "@/lib/eventoChecklist";
 import type { ChecklistResult } from "@/lib/eventoChecklist";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from "react-router-dom";
 import { parseLocalDate } from "@/lib/dateLocal";
+import { requiereRegistroHoras } from "@/lib/calcularPagoPersonal";
 
-import moment from 'moment';
-import 'moment/locale/es';
-moment.locale('es');
-const localizer = momentLocalizer(moment);
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  // startOfWeek debe respetar la fecha que recibe (NO usar new Date());
+  // si no, el grid del calendario muestra los eventos en columna equivocada.
+  startOfWeek: (date: Date) => startOfWeek(date, { weekStartsOn: 1 }),
+  getDay,
+  locales: { es },
+});
 
 const ITEMS_PER_PAGE = 9;
 
@@ -37,36 +43,17 @@ interface CalendarEvent {
 export default function EventosPage() {
   const nav = useNavigate();
   const [eventos, setEventos] = useState<EventoConPersonal[]>([]);
-  const [personal, setPersonal] = useState<Personal[]>([]);
   const [loading, setLoading] = useState(true);
   const [liquidacionEvento, setLiquidacionEvento] = useState<EventoConPersonal | null>(null);
   const [isLiquidacionOpen, setIsLiquidacionOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPersonFilter, setSelectedPersonFilter] = useState<string>('all');
+  const [estadoFilter, setEstadoFilter] = useState<'all' | 'proximo' | 'hoy' | 'pasado_pendiente' | 'pasado_liquidado'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [checklistMap, setChecklistMap] = useState<Record<string, ChecklistResult>>({});
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchEventos();
-    fetchPersonal();
-  }, []);
-
-  const fetchPersonal = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("personal")
-        .select("*")
-        .order("nombre_completo");
-      if (error) throw error;
-      setPersonal(data as Personal[] || []);
-    } catch (error) {
-      console.error("Error fetching personal:", error);
-    }
-  };
-
-  const fetchEventos = async () => {
+  const fetchEventos = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("eventos")
@@ -87,7 +74,8 @@ export default function EventosPage() {
           cotizacion_versiones (
             cotizaciones (
               ubicacion_evento,
-              comercial_encargado
+              comercial_encargado,
+              total_cotizado
             )
           )
         `)
@@ -96,23 +84,24 @@ export default function EventosPage() {
       if (error) throw error;
 
       const eventosConPersonal: EventoConPersonal[] = (data || []).map((evento) => {
-        const personalAsignado = evento.evento_personal?.map((ep: any) => ({
+        const personalAsignado: PersonalAsignado[] = (evento.evento_personal?.map((ep) => ({
           ...ep.personal,
           hora_inicio: ep.hora_inicio,
           hora_fin: ep.hora_fin,
           horas_trabajadas: ep.horas_trabajadas,
           pago_calculado: ep.pago_calculado,
-          estado_pago: ep.estado_pago,
+          estado_pago: ep.estado_pago ?? "pendiente",
           fecha_pago: ep.fecha_pago,
           metodo_pago: ep.metodo_pago,
           notas_pago: ep.notas_pago,
           evento_personal_id: ep.id,
-        })) || [];
-        const costoTotal = personalAsignado.reduce((sum: number, p: PersonalAsignado) => sum + (p.pago_calculado || Number(p.tarifa) || 0), 0);
-
+        })) || []) as PersonalAsignado[];
         const cotizacionInfo = evento.cotizacion_versiones?.cotizaciones;
         const ubicacionEvento = cotizacionInfo?.ubicacion_evento || evento.ubicacion;
         const comercialEncargado = cotizacionInfo?.comercial_encargado;
+        // Total cotizado al cliente — el "tamaño" del evento. Lo operativo
+        // (costo a Selecta del personal asignado) vive en el detalle, no acá.
+        const totalCotizado = Number(cotizacionInfo?.total_cotizado ?? 0);
 
         return {
           ...evento,
@@ -120,7 +109,7 @@ export default function EventosPage() {
           comercial_encargado: comercialEncargado,
           estado_liquidacion: (evento.estado_liquidacion as 'pendiente' | 'liquidado') || 'pendiente',
           personal: personalAsignado,
-          costo_total: costoTotal,
+          costo_total: totalCotizado,
         };
       });
 
@@ -138,27 +127,37 @@ export default function EventosPage() {
             }
           }
           setChecklistMap(map);
-        } catch {
-          // fail silently for checklist
+        } catch (err) {
+          toast({
+            title: "Progreso no disponible",
+            description: err?.message ?? "No se pudo cargar el checklist de los eventos.",
+            variant: "destructive",
+          });
         }
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Error al cargar los eventos",
+        description: (error as Error)?.message ?? "Error al cargar los eventos",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchEventos();
+  }, [fetchEventos]);
 
   const handleLiquidarEvento = async (evento: EventoConPersonal) => {
-    const personalSinHoras = evento.personal.filter(p => !p.horas_trabajadas || p.horas_trabajadas <= 0);
+    const personalSinHoras = evento.personal.filter(p =>
+      requiereRegistroHoras(p.modalidad_cobro) && (!p.horas_trabajadas || p.horas_trabajadas <= 0)
+    );
     if (personalSinHoras.length > 0) {
       toast({
         title: "Información faltante",
-        description: `${personalSinHoras.length} empleado(s) no tienen horas definidas.`,
+        description: `${personalSinHoras.length} empleado(s) con cobro por hora no tienen horas definidas.`,
         variant: "destructive",
       });
       return;
@@ -168,7 +167,8 @@ export default function EventosPage() {
   };
 
   const getEventStatus = (fechaEvento: string) => {
-    const eventDate = parseLocalDate(fechaEvento) ?? new Date();
+    const eventDate = parseLocalDate(fechaEvento);
+    if (!eventDate) return { status: "Sin fecha", variant: "bg-slate-100 text-slate-500" };
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     eventDate.setHours(0, 0, 0, 0);
@@ -182,29 +182,51 @@ export default function EventosPage() {
     const matchesSearch = searchTerm === '' ||
       evento.nombre_evento.toLowerCase().includes(searchTerm.toLowerCase()) ||
       evento.ubicacion?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPersonal = selectedPersonFilter === 'all' ||
-      evento.personal.some(p => p.id === selectedPersonFilter);
-    return matchesSearch && matchesPersonal;
+
+    let matchesEstado = true;
+    if (estadoFilter !== 'all') {
+      const { status } = getEventStatus(evento.fecha_evento);
+      const liquidado = evento.estado_liquidacion === 'liquidado';
+      switch (estadoFilter) {
+        case 'proximo':
+          matchesEstado = status === 'Próximo';
+          break;
+        case 'hoy':
+          matchesEstado = status === 'Hoy';
+          break;
+        case 'pasado_pendiente':
+          matchesEstado = status === 'Pasado' && !liquidado;
+          break;
+        case 'pasado_liquidado':
+          matchesEstado = status === 'Pasado' && liquidado;
+          break;
+      }
+    }
+
+    return matchesSearch && matchesEstado;
   });
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedPersonFilter]);
+  }, [searchTerm, estadoFilter]);
 
   const totalPages = Math.ceil(filteredEventos.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedEventos = filteredEventos.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  const calendarEvents: CalendarEvent[] = filteredEventos.map(evento => {
-    const date = parseLocalDate(evento.fecha_evento) ?? new Date();
-    return {
-      id: evento.id,
-      title: evento.nombre_evento,
-      start: date,
-      end: date,
-      resource: evento,
-    };
-  });
+  const calendarEvents: CalendarEvent[] = filteredEventos
+    .map(evento => {
+      const date = parseLocalDate(evento.fecha_evento);
+      if (!date) return null;
+      return {
+        id: evento.id,
+        title: evento.nombre_evento,
+        start: date,
+        end: date,
+        resource: evento,
+      };
+    })
+    .filter((e): e is CalendarEvent => e !== null);
 
   const eventStyleGetter = (event: CalendarEvent) => {
     const { status } = getEventStatus(event.resource.fecha_evento);
@@ -269,36 +291,38 @@ export default function EventosPage() {
                   className="pl-9 h-9"
                 />
               </div>
-              <Select value={selectedPersonFilter} onValueChange={setSelectedPersonFilter}>
-                <SelectTrigger className="w-full sm:w-52 h-9">
-                  <SelectValue placeholder="Filtrar por empleado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los empleados</SelectItem>
-                  {personal.map((person) => (
-                    <SelectItem key={person.id} value={person.id}>
-                      {person.nombre_completo}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-600 whitespace-nowrap">Estado:</span>
+                <Select value={estadoFilter} onValueChange={(v) => setEstadoFilter(v as typeof estadoFilter)}>
+                  <SelectTrigger className="w-full sm:w-56 h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="proximo">Próximos</SelectItem>
+                    <SelectItem value="hoy">Hoy</SelectItem>
+                    <SelectItem value="pasado_pendiente">Pasados · pendientes de liquidar</SelectItem>
+                    <SelectItem value="pasado_liquidado">Pasados · liquidados</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
               <Button
-                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                variant="ghost"
                 size="sm"
                 onClick={() => setViewMode('grid')}
-                className={`h-8 ${viewMode === 'grid' ? 'bg-white shadow-sm' : ''}`}
+                className={`h-8 ${viewMode === 'grid' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-600 hover:bg-slate-200'}`}
               >
                 <Grid3X3 className="h-4 w-4 mr-2" />
                 Tarjetas
               </Button>
               <Button
-                variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                variant="ghost"
                 size="sm"
                 onClick={() => setViewMode('calendar')}
-                className={`h-8 ${viewMode === 'calendar' ? 'bg-white shadow-sm' : ''}`}
+                className={`h-8 ${viewMode === 'calendar' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-600 hover:bg-slate-200'}`}
               >
                 <CalendarDays className="h-4 w-4 mr-2" />
                 Calendario
@@ -314,6 +338,7 @@ export default function EventosPage() {
           <div style={{ height: '600px' }}>
             <BigCalendar
               localizer={localizer}
+              culture="es"
               events={calendarEvents}
               startAccessor="start"
               endAccessor="end"
@@ -379,7 +404,10 @@ export default function EventosPage() {
                               {evento.nombre_evento}
                             </h3>
                             <p className="text-sm text-slate-500 mt-0.5">
-                              {format(parseLocalDate(evento.fecha_evento) ?? new Date(), "EEE, d MMM yyyy", { locale: es })}
+                              {(() => {
+                                const d = parseLocalDate(evento.fecha_evento);
+                                return d ? format(d, "EEE, d MMM yyyy", { locale: es }) : "Sin fecha";
+                              })()}
                             </p>
                           </div>
                           <div className="flex gap-1.5 ml-2">
@@ -401,9 +429,12 @@ export default function EventosPage() {
                               <Users className="h-4 w-4 mr-2 text-slate-400" />
                               <span>{evento.personal?.length || 0} empleados</span>
                             </div>
-                            <span className="font-medium text-slate-900">
-                              ${(evento.costo_total || 0).toLocaleString()}
-                            </span>
+                            <div className="text-right">
+                              <div className="text-[10px] uppercase tracking-wide text-slate-400">Cotizado</div>
+                              <div className="font-medium text-slate-900">
+                                ${(evento.costo_total || 0).toLocaleString()}
+                              </div>
+                            </div>
                           </div>
                         </div>
 

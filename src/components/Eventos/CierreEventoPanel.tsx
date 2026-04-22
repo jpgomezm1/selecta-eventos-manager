@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { DollarSign, Users, ShoppingCart, UtensilsCrossed, CheckCircle, Clock, Building2 } from "lucide-react";
 
 type Props = {
@@ -20,6 +21,7 @@ interface CierreData {
 }
 
 export default function CierreEventoPanel({ eventoId, totalRequerimiento, estadoLiquidacion, costoLugar = 0 }: Props) {
+  const { toast } = useToast();
   const [data, setData] = useState<CierreData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -52,9 +54,9 @@ export default function CierreEventoPanel({ eventoId, totalRequerimiento, estado
             .eq("evento_id", eventoId),
         ]);
 
-        const costoPersonal = (personal ?? []).reduce((a: number, r: any) => a + (Number(r.pago_calculado) || 0), 0);
+        const costoPersonal = (personal ?? []).reduce((a: number, r) => a + (Number(r.pago_calculado) || 0), 0);
         const costoCompras = orden ? Number(orden.total_estimado) : 0;
-        const costoMenaje = (reqMenaje ?? []).reduce((a: number, r: any) => a + (Number(r.subtotal) || 0), 0);
+        const costoMenaje = (reqMenaje ?? []).reduce((a: number, r) => a + (Number(r.subtotal) || 0), 0);
 
         setData({
           costoPersonal,
@@ -63,14 +65,18 @@ export default function CierreEventoPanel({ eventoId, totalRequerimiento, estado
           menajeDevuelto: reserva?.estado === "devuelto",
           personalLiquidado: estadoLiquidacion === "liquidado",
         });
-      } catch {
-        // fail silently
+      } catch (err) {
+        toast({
+          title: "Error al cargar cierre",
+          description: err?.message ?? "No se pudieron obtener los costos del evento.",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [eventoId, estadoLiquidacion]);
+  }, [eventoId, estadoLiquidacion, toast]);
 
   if (loading || !data) {
     return (

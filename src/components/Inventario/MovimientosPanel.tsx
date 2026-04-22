@@ -62,7 +62,7 @@ export default function MovimientosPanel() {
       qc.invalidateQueries({ queryKey: ["ingredientes-stock"] });
       toast({ title: "Movimiento confirmado" });
     },
-    onError: (err: any) => {
+    onError: (err) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });
@@ -79,7 +79,7 @@ export default function MovimientosPanel() {
       qc.invalidateQueries({ queryKey: ["ingredientes-stock"] });
       toast({ title: "Movimiento eliminado" });
     },
-    onError: (err: any) => {
+    onError: (err) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });
@@ -158,13 +158,13 @@ export default function MovimientosPanel() {
                           <TableCell>
                             <span className="inline-flex items-center gap-1.5">
                               {mov.proveedor || (mov.evento_id ? "Evento vinculado" : "—")}
-                              {(mov as any).factura_url && (
+                              {(mov as { factura_url?: string }).factura_url && (
                                 <button
                                   className="text-emerald-600 hover:text-emerald-800"
                                   title="Ver factura"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    openFactura((mov as any).factura_url);
+                                    openFactura((mov as { factura_url?: string }).factura_url);
                                   }}
                                 >
                                   <Receipt className="h-4 w-4" />
@@ -181,7 +181,14 @@ export default function MovimientosPanel() {
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8 text-green-600"
-                                  onClick={() => confirmarMut.mutate(mov)}
+                                  onClick={() => {
+                                    const etiqueta = tipoBadge[mov.tipo]?.label ?? mov.tipo;
+                                    if (window.confirm(
+                                      `Confirmar este movimiento (${etiqueta}) aplica el cambio de stock para ${mov.items.length} ingrediente(s). ¿Continuar?`
+                                    )) {
+                                      confirmarMut.mutate(mov);
+                                    }
+                                  }}
                                   disabled={confirmarMut.isPending}
                                 >
                                   <Check className="h-4 w-4" />

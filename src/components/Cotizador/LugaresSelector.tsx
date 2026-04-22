@@ -34,7 +34,7 @@ export function LugaresSelector({ lugares, onChange, readOnly = false }: Props) 
 
   const activeCatalogo = catalogo.filter((l) => l.activo);
 
-  const handleFieldChange = (index: number, field: keyof LugarOption, value: any) => {
+  const handleFieldChange = (index: number, field: keyof LugarOption, value) => {
     const updated = lugares.map((l, i) =>
       i === index ? { ...l, [field]: value } : l
     );

@@ -60,16 +60,14 @@ export function AppSidebar() {
     }
   };
 
-  // Keyboard shortcut handler
-  const handleKeyboardShortcut = (e: KeyboardEvent) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-      e.preventDefault();
-      toggle();
-    }
-  };
-
-  // Add keyboard listener
+  // Add keyboard listener: Ctrl/Cmd+B alterna el sidebar
   useEffect(() => {
+    const handleKeyboardShortcut = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        toggle();
+      }
+    };
     document.addEventListener('keydown', handleKeyboardShortcut);
     return () => document.removeEventListener('keydown', handleKeyboardShortcut);
   }, [toggle]);

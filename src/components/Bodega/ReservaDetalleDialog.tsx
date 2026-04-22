@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,15 +58,7 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
   const [devolucionItems, setDevolucionItems] = useState<DevolucionItem[]>([]);
   const [returning, setReturning] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      setShowDespacho(false);
-      setShowDevolucion(false);
-      loadDetalle();
-    }
-  }, [open, reservaCal.reserva_id]);
-
-  const loadDetalle = async () => {
+  const loadDetalle = useCallback(async () => {
     setLoading(true);
     setEstado(reservaCal.estado);
     try {
@@ -82,12 +74,20 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
         .limit(1)
         .maybeSingle();
       setDespachado(!!salidaMov);
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err) {
+      toast({ title: "Error", description: (err as Error)?.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  };
+  }, [reservaCal.reserva_id, reservaCal.estado, toast]);
+
+  useEffect(() => {
+    if (open) {
+      setShowDespacho(false);
+      setShowDevolucion(false);
+      loadDetalle();
+    }
+  }, [open, loadDetalle]);
 
   // ---- Despacho ----
 
@@ -139,7 +139,7 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
       setShowDespacho(false);
       toast({ title: "Menaje despachado", description: "Se registró la salida de menaje." });
       onUpdated();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setDispatching(false);
@@ -167,7 +167,7 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
         }))
       );
       setShowDevolucion(true);
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
@@ -209,7 +209,7 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
       setShowDevolucion(false);
       toast({ title: "Devolución registrada", description: "Menaje devuelto y ajustes de stock aplicados." });
       onUpdated();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setReturning(false);

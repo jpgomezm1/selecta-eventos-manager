@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, DollarSign, Clock, CheckCircle, AlertCircle, Eye, Download, BarChart3, User, CreditCard, TrendingUp, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +18,7 @@ import { Personal, EventoPersonal, Evento } from "@/types/database";
 import { RegistroPagos } from "@/components/Forms/RegistroPagos";
 import { getModalidadCobroLabel } from "@/lib/calcularPagoPersonal";
 import { parseLocalDate, formatLocalDate } from "@/lib/dateLocal";
+import * as XLSX from "xlsx";
 
 interface TrabajoConEvento extends EventoPersonal {
   evento: Evento;
@@ -60,17 +61,10 @@ export default function PersonalDetalle() {
   });
 
   useEffect(() => {
-    if (id) {
-      fetchPersonalData();
-      fetchTrabajos();
-    }
-  }, [id]);
-
-  useEffect(() => {
     setCurrentPage(1);
   }, [filtroEstado]);
 
-  const fetchPersonalData = async () => {
+  const fetchPersonalData = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("personal")
@@ -83,14 +77,14 @@ export default function PersonalDetalle() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Error al cargar datos del personal",
+        description: (error as Error)?.message ?? "Error al cargar datos del personal",
         variant: "destructive",
       });
       navigate("/personal");
     }
-  };
+  }, [id, toast, navigate]);
 
-  const fetchTrabajos = async () => {
+  const fetchTrabajos = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("evento_personal")
@@ -106,13 +100,20 @@ export default function PersonalDetalle() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Error al cargar historial de trabajos",
+        description: (error as Error)?.message ?? "Error al cargar historial de trabajos",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, toast]);
+
+  useEffect(() => {
+    if (id) {
+      fetchPersonalData();
+      fetchTrabajos();
+    }
+  }, [id, fetchPersonalData, fetchTrabajos]);
 
   const handleMarcarPagado = async () => {
     if (!trabajoSeleccionado) return;
@@ -169,9 +170,10 @@ export default function PersonalDetalle() {
       setIsDialogOpen(false);
       resetFormulario();
     } catch (error) {
+      console.error("handleMarcarPagado falló:", error);
       toast({
-        title: "Error",
-        description: "Error al registrar el pago",
+        title: "Error al registrar el pago",
+        description: error?.message ?? "Error desconocido",
         variant: "destructive",
       });
     }
@@ -188,6 +190,10 @@ export default function PersonalDetalle() {
 
   // Funciones para selección múltiple
   const eventosPendientes = trabajos.filter(t => t.estado_pago === 'pendiente');
+  // Solo los pendientes que ya tienen el pago calculado (horas cargadas) son
+  // liquidables. Los demás necesitan que primero se carguen las horas en el
+  // evento para que el cálculo se complete.
+  const eventosLiquidables = eventosPendientes.filter(t => Number(t.pago_calculado) > 0);
 
   const handleSeleccionarEvento = (eventoId: string, seleccionado: boolean) => {
     const nuevaSeleccion = new Set(eventosSeleccionados);
@@ -201,8 +207,8 @@ export default function PersonalDetalle() {
 
   const handleSeleccionarTodos = (seleccionarTodos: boolean) => {
     if (seleccionarTodos) {
-      const todosLosPendientes = new Set(eventosPendientes.map(t => t.id));
-      setEventosSeleccionados(todosLosPendientes);
+      const todosLiquidables = new Set(eventosLiquidables.map(t => t.id));
+      setEventosSeleccionados(todosLiquidables);
     } else {
       setEventosSeleccionados(new Set());
     }
@@ -215,6 +221,20 @@ export default function PersonalDetalle() {
 
   const handleLiquidacionMasiva = async () => {
     if (eventosSeleccionados.size === 0) return;
+
+    // Guard final: si entró un trabajo sin pago calculado al set seleccionado
+    // (estado raro), abortar antes de marcar como pagado un monto $0.
+    const sinPagoCalculado = eventosSeleccionadosList.filter(
+      (t) => !(Number(t.pago_calculado) > 0)
+    );
+    if (sinPagoCalculado.length > 0) {
+      toast({
+        title: "No se puede liquidar",
+        description: `${sinPagoCalculado.length} trabajo(s) seleccionado(s) no tienen horas cargadas. Cargar las horas en el evento antes de liquidar.`,
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const { error } = await supabase
@@ -289,6 +309,44 @@ export default function PersonalDetalle() {
 
   const goToPage = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const handleExportarHistorial = () => {
+    if (trabajosFiltrados.length === 0) {
+      toast({
+        title: "Sin datos para exportar",
+        description: "No hay trabajos en el filtro actual.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const filas = trabajosFiltrados.map((t) => ({
+      Fecha: formatLocalDate(t.evento.fecha_evento, "es-CO"),
+      Evento: t.evento.nombre_evento,
+      Ubicacion: t.evento.ubicacion ?? "",
+      Horas: t.horas_trabajadas ?? "",
+      Pago: Number(t.pago_calculado ?? 0),
+      Estado: t.estado_pago === "pagado" ? "Pagado" : "Pendiente",
+      "Fecha Pago": t.fecha_pago ? formatLocalDate(t.fecha_pago, "es-CO") : "",
+      "Metodo Pago": t.metodo_pago ?? "",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(filas);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Historial");
+
+    const safeName = (personal?.nombre_completo ?? "empleado")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    const today = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `historial-${safeName}-${today}.xlsx`);
+
+    toast({
+      title: "Historial exportado",
+      description: `${filas.length} trabajo(s) descargado(s) en Excel.`,
+    });
   };
 
   const totalPendiente = trabajos
@@ -510,20 +568,31 @@ export default function PersonalDetalle() {
                   </Select>
 
                   {eventosPendientes.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="seleccionar-todos"
-                        checked={eventosPendientes.length > 0 && eventosPendientes.every(t => eventosSeleccionados.has(t.id))}
-                        onCheckedChange={handleSeleccionarTodos}
-                      />
-                      <Label htmlFor="seleccionar-todos" className="text-sm text-slate-600 cursor-pointer">
-                        Seleccionar pendientes ({eventosPendientes.length})
-                      </Label>
-                    </div>
+                    eventosLiquidables.length > 0 ? (
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="seleccionar-todos"
+                          checked={eventosLiquidables.every(t => eventosSeleccionados.has(t.id))}
+                          onCheckedChange={handleSeleccionarTodos}
+                        />
+                        <Label htmlFor="seleccionar-todos" className="text-sm text-slate-600 cursor-pointer">
+                          Seleccionar liquidables ({eventosLiquidables.length})
+                          {eventosPendientes.length > eventosLiquidables.length && (
+                            <span className="text-xs text-slate-400 ml-1">
+                              · {eventosPendientes.length - eventosLiquidables.length} sin horas
+                            </span>
+                          )}
+                        </Label>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-slate-500">
+                        {eventosPendientes.length} pendiente(s) sin horas — no liquidables
+                      </div>
+                    )
                   )}
                 </div>
 
-                <Button variant="outline" size="sm" className="h-9">
+                <Button variant="outline" size="sm" className="h-9" onClick={handleExportarHistorial}>
                   <Download className="h-4 w-4 mr-2" />
                   Exportar
                 </Button>
@@ -592,10 +661,16 @@ export default function PersonalDetalle() {
                         {eventosPendientes.length > 0 && (
                           <TableCell>
                             {trabajo.estado_pago === 'pendiente' ? (
-                              <Checkbox
-                                checked={eventosSeleccionados.has(trabajo.id)}
-                                onCheckedChange={(checked) => handleSeleccionarEvento(trabajo.id, checked as boolean)}
-                              />
+                              Number(trabajo.pago_calculado) > 0 ? (
+                                <Checkbox
+                                  checked={eventosSeleccionados.has(trabajo.id)}
+                                  onCheckedChange={(checked) => handleSeleccionarEvento(trabajo.id, checked as boolean)}
+                                />
+                              ) : (
+                                <span title="Faltan horas; cargarlas en el evento antes de liquidar.">
+                                  <Checkbox checked={false} disabled />
+                                </span>
+                              )
                             ) : (
                               <div className="h-4 w-4" />
                             )}
@@ -630,6 +705,7 @@ export default function PersonalDetalle() {
                         <TableCell>
                           <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             {trabajo.estado_pago === 'pendiente' && !eventosSeleccionados.has(trabajo.id) && (
+                              Number(trabajo.pago_calculado) > 0 ? (
                               <Dialog open={isDialogOpen && trabajoSeleccionado?.id === trabajo.id} onOpenChange={(open) => {
                                 if (!open) {
                                   setIsDialogOpen(false);
@@ -748,11 +824,23 @@ export default function PersonalDetalle() {
                                   </div>
                                 </DialogContent>
                               </Dialog>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => navigate(`/eventos/${trabajo.evento.id}`)}
+                                  className="h-8 px-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                  title="Este trabajo no tiene horas cargadas. Complétalas en el evento antes de pagar."
+                                >
+                                  <Clock className="h-4 w-4 mr-1" />
+                                  <span className="text-xs">Cargar horas</span>
+                                </Button>
+                              )
                             )}
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => navigate(`/eventos`)}
+                              onClick={() => navigate(`/eventos/${trabajo.evento.id}`)}
                               className="h-8 w-8 p-0"
                             >
                               <Eye className="h-4 w-4 text-slate-500" />

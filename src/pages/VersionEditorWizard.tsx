@@ -260,7 +260,7 @@ export default function VersionEditorWizard() {
       qc.invalidateQueries({ queryKey: ["cotizacion", id] });
       nav(`/cotizaciones/${id}`);
     },
-    onError: (e: any) =>
+    onError: (e) =>
       toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 

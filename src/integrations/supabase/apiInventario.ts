@@ -1,5 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "./types";
 import type { InventarioMovimiento, InventarioMovItem, IngredienteCatalogo } from "@/types/cotizador";
+
+type MovRow = Database["public"]["Tables"]["inventario_movimientos"]["Row"];
+type MovInsert = Database["public"]["Tables"]["inventario_movimientos"]["Insert"];
+type MovUpdate = Database["public"]["Tables"]["inventario_movimientos"]["Update"];
+type IngRow = Database["public"]["Tables"]["ingredientes_catalogo"]["Row"];
+type IngUpdate = Database["public"]["Tables"]["ingredientes_catalogo"]["Update"];
 
 /* =========================
  *   STOCK DE INGREDIENTES
@@ -26,13 +33,13 @@ export async function inventarioMovimientosList(): Promise<
   if (e1) throw e1;
 
   const result: (InventarioMovimiento & { items: InventarioMovItem[] })[] = [];
-  for (const m of movs ?? []) {
+  for (const m of (movs ?? []) as MovRow[]) {
     const { data: it, error: e2 } = await supabase
       .from("inventario_mov_items")
       .select("*, ingrediente:ingrediente_id(id,nombre,unidad,costo_por_unidad)")
-      .eq("movimiento_id", (m as any).id);
+      .eq("movimiento_id", m.id);
     if (e2) throw e2;
-    result.push({ ...(m as InventarioMovimiento), items: (it ?? []) as any });
+    result.push({ ...(m as unknown as InventarioMovimiento), items: (it ?? []) as unknown as InventarioMovItem[] });
   }
   return result;
 }
@@ -43,14 +50,15 @@ export async function inventarioMovimientoCreate(
 ) {
   const { data: mov, error } = await supabase
     .from("inventario_movimientos")
-    .insert(payload as any)
+    .insert(payload as unknown as MovInsert)
     .select("*")
     .single();
   if (error) throw error;
 
   if (items.length) {
+    const movRow = mov as MovRow;
     const rows = items.map((i) => ({
-      movimiento_id: (mov as any).id,
+      movimiento_id: movRow.id,
       ingrediente_id: i.ingrediente_id,
       cantidad: i.cantidad,
       costo_unitario: i.costo_unitario ?? 0,
@@ -66,28 +74,39 @@ export async function inventarioMovimientoConfirmar(
   tipo: InventarioMovimiento["tipo"],
   items: InventarioMovItem[]
 ) {
-  // Update stock for each item based on movement type
+  // Update stock for each item based on movement type.
+  // NOTA: este loop NO es atómico. Si una fila falla a mitad de camino,
+  // las anteriores quedan aplicadas (TODO.md describe el RPC necesario).
   for (const item of items) {
     const { data: ing, error: eRead } = await supabase
       .from("ingredientes_catalogo")
-      .select("stock_actual")
+      .select("nombre, stock_actual")
       .eq("id", item.ingrediente_id)
       .single();
     if (eRead) throw eRead;
 
-    const currentStock = Number((ing as any).stock_actual) || 0;
+    const currentStock = Number((ing as IngRow).stock_actual) || 0;
+    const cantidad = Number(item.cantidad);
     let newStock: number;
 
     switch (tipo) {
       case "compra":
-        newStock = currentStock + Number(item.cantidad);
+        newStock = currentStock + cantidad;
         break;
       case "uso":
       case "devolucion":
-        newStock = Math.max(0, currentStock - Number(item.cantidad));
+        // Antes usaba Math.max(0, currentStock - cantidad), que silenciaba
+        // consumos mayores al stock y dejaba el stock en 0 sin rastro.
+        if (currentStock < cantidad) {
+          const nombre = (ing as IngRow)?.nombre ?? item.ingrediente_id;
+          throw new Error(
+            `Stock insuficiente para "${nombre}": hay ${currentStock}, se intenta descontar ${cantidad}.`
+          );
+        }
+        newStock = currentStock - cantidad;
         break;
       case "ajuste":
-        newStock = Number(item.cantidad);
+        newStock = cantidad;
         break;
       default:
         newStock = currentStock;
@@ -95,7 +114,7 @@ export async function inventarioMovimientoConfirmar(
 
     const { error: eUp } = await supabase
       .from("ingredientes_catalogo")
-      .update({ stock_actual: newStock } as any)
+      .update({ stock_actual: newStock } as IngUpdate)
       .eq("id", item.ingrediente_id);
     if (eUp) throw eUp;
   }
@@ -103,7 +122,7 @@ export async function inventarioMovimientoConfirmar(
   // Mark movement as confirmed
   const { data, error } = await supabase
     .from("inventario_movimientos")
-    .update({ estado: "confirmado" } as any)
+    .update({ estado: "confirmado" } as MovUpdate)
     .eq("id", id)
     .select("*")
     .single();
@@ -114,7 +133,7 @@ export async function inventarioMovimientoConfirmar(
 export async function inventarioMovimientoUpdateFacturaUrl(id: string, facturaUrl: string) {
   const { error } = await supabase
     .from("inventario_movimientos")
-    .update({ factura_url: facturaUrl } as any)
+    .update({ factura_url: facturaUrl } as MovUpdate)
     .eq("id", id);
   if (error) throw error;
 }
@@ -141,7 +160,7 @@ export async function inventarioMovimientoDeleteConReversa(
       .single();
     if (eRead) throw eRead;
 
-    const currentStock = Number((ing as any).stock_actual) || 0;
+    const currentStock = Number((ing as IngRow).stock_actual) || 0;
     let newStock: number;
 
     switch (tipo) {
@@ -164,7 +183,7 @@ export async function inventarioMovimientoDeleteConReversa(
 
     const { error: eUp } = await supabase
       .from("ingredientes_catalogo")
-      .update({ stock_actual: newStock } as any)
+      .update({ stock_actual: newStock } as IngUpdate)
       .eq("id", item.ingrediente_id);
     if (eUp) throw eUp;
   }

@@ -42,7 +42,7 @@ export default function CotizacionesListPage() {
   const [sortBy, setSortBy] = useState<string>("fecha_desc");
   const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
-  const [selectedCotizacion, setSelectedCotizacion] = useState<any>(null);
+  const [selectedCotizacion, setSelectedCotizacion] = useState<Awaited<ReturnType<typeof getCotizacionDetalle>> | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
@@ -76,7 +76,7 @@ export default function CotizacionesListPage() {
   const filteredAndSortedData = useMemo(() => {
     if (!data) return [];
 
-    let filtered = data.filter(c => {
+    const filtered = data.filter(c => {
       const clienteName = c.cliente?.nombre || c.cliente_nombre || '';
       const clienteEmpresa = c.cliente?.empresa || '';
       const term = searchTerm.toLowerCase();
@@ -134,10 +134,9 @@ export default function CotizacionesListPage() {
       setSelectedCotizacion(detalle);
       setPdfModalOpen(true);
     } catch (error) {
-      console.error('Error loading cotización:', error);
       toast({
         title: "Error",
-        description: "No se pudo cargar la información de la cotización.",
+        description: error?.message ?? "No se pudo cargar la información de la cotización.",
         variant: "destructive"
       });
     }
@@ -165,10 +164,9 @@ export default function CotizacionesListPage() {
       setPdfModalOpen(false);
       setSelectedCotizacion(null);
     } catch (error) {
-      console.error('Error generating PDF:', error);
       toast({
         title: "Error al generar PDF",
-        description: "No se pudo generar la propuesta. Inténtalo de nuevo.",
+        description: error?.message ?? "No se pudo generar la propuesta. Inténtalo de nuevo.",
         variant: "destructive"
       });
     } finally {

@@ -208,7 +208,7 @@ export interface PersonalExcelProcesado {
  * Procesa una fila del Excel y retorna el objeto listo para insertar
  */
 export function procesarFilaExcel(
-  fila: any,
+  fila,
   numeroFila: number
 ): PersonalExcelProcesado | null {
   try {

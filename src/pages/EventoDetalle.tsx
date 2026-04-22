@@ -283,6 +283,8 @@ export default function EventoDetallePage() {
             eventoId={head.id}
             fechaEvento={head.fecha_evento}
             estadoLiquidacion={head.estado_liquidacion}
+            nombreEvento={head.nombre_evento}
+            ubicacion={head.ubicacion}
             onChanged={() => refetchChecklist()}
           />
         </TabsContent>
