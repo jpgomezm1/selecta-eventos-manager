@@ -92,7 +92,21 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
 
   const handleItemUpdate = (menaje_id: string, field: "cantidad_reservar" | "precio_alquiler", value: number) => {
     setItems((prev) =>
-      prev.map((i) => (i.menaje_id === menaje_id ? { ...i, [field]: Math.max(0, value) } : i))
+      prev.map((i) => {
+        if (i.menaje_id !== menaje_id) return i;
+        if (field === "cantidad_reservar") {
+          const clamped = Math.max(0, Math.min(value, i.disponible));
+          if (value > i.disponible) {
+            toast({
+              title: "Stock insuficiente",
+              description: `${i.nombre}: solo hay ${i.disponible} disponibles.`,
+              variant: "destructive",
+            });
+          }
+          return { ...i, cantidad_reservar: clamped };
+        }
+        return { ...i, [field]: Math.max(0, value) };
+      })
     );
   };
 
@@ -114,6 +128,16 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
 
   const handleConfirmar = async () => {
     if (!reserva) return;
+    const insuficientes = items.filter((i) => i.cantidad_reservar < i.cantidad_requerida);
+    if (insuficientes.length > 0) {
+      const resumen = insuficientes
+        .map((i) => `${i.nombre}: ${i.cantidad_reservar}/${i.cantidad_requerida}`)
+        .join("\n");
+      const ok = window.confirm(
+        `Hay ${insuficientes.length} item(s) por debajo del requerimiento:\n\n${resumen}\n\n¿Confirmar de todos modos?`
+      );
+      if (!ok) return;
+    }
     setSaving(true);
     try {
       await saveReservaItems(
@@ -292,18 +316,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      {reserva.estado === "borrador" ? (
-                        <Input
-                          type="number"
-                          min={0}
-                          step={100}
-                          className="w-28 text-right h-8 ml-auto"
-                          value={item.precio_alquiler}
-                          onChange={(e) => handleItemUpdate(item.menaje_id, "precio_alquiler", Number(e.target.value))}
-                        />
-                      ) : (
-                        <span className="text-slate-600">${item.precio_alquiler.toLocaleString()}</span>
-                      )}
+                      <span className="text-slate-600">${item.precio_alquiler.toLocaleString()}</span>
                     </TableCell>
                     <TableCell className="text-right font-medium text-slate-900">
                       ${subtotal.toLocaleString()}
