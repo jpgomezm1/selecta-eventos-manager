@@ -87,25 +87,37 @@ export default function InventarioTable() {
     setEditValues({});
   };
 
-  const saveEditing = (id: string) => {
-    menajeCatalogoUpdate(id, editValues).then(() => {
+  const updateMut = useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<MenajeCatalogo> }) =>
+      menajeCatalogoUpdate(id, patch),
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["menaje-catalogo"] });
       setEditingId(null);
       setEditValues({});
       toast({ title: "Actualizado", description: "Los cambios se guardaron correctamente." });
-    });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const saveEditing = (id: string) => {
+    updateMut.mutate({ id, patch: editValues });
   };
 
   const delMut = useMutation({
     mutationFn: (id: string) => menajeCatalogoDelete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["menaje-catalogo"] });
-      toast({ 
+      toast({
         title: "Elemento eliminado",
         description: "El elemento se removió del inventario."
       });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => {
+      const msg = e.message?.includes("violates foreign key")
+        ? "No se puede eliminar: este elemento está en uso en reservas o movimientos existentes."
+        : e.message;
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    },
   });
 
   const getStockStatus = (stock: number) => {
@@ -452,7 +464,11 @@ export default function InventarioTable() {
                              <Button
                                variant="ghost"
                                size="sm"
-                               onClick={() => delMut.mutate(item.id)}
+                               onClick={() => {
+                                 if (window.confirm(`¿Eliminar "${item.nombre}" del inventario?`)) {
+                                   delMut.mutate(item.id);
+                                 }
+                               }}
                                className="text-red-600 hover:bg-red-50"
                              >
                                <Trash2 className="h-4 w-4" />

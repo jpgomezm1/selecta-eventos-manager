@@ -195,7 +195,18 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
       return hasDiff && !i.nota.trim();
     });
 
-  const isValid = mov.fecha && items.length > 0 && !hasDiscrepancyWithoutNote;
+  // Si se va a guardar como confirmado, la salida no puede exceder el stock
+  // disponible (el warning ya existía pero no bloqueaba el submit).
+  const stockInsuficienteAlConfirmar =
+    mov.tipo === "salida" &&
+    mov.estado === "confirmado" &&
+    items.some((i) => {
+      const c = catalogo?.find((x) => x.id === i.menaje_id);
+      return !!c && i.cantidad + (i.merma || 0) > c.stock_total;
+    });
+
+  const isValid =
+    !!mov.fecha && items.length > 0 && !hasDiscrepancyWithoutNote && !stockInsuficienteAlConfirmar;
 
   // Find the selected salida's event name for read-only display
   const selectedSalida = salidasConfirmadas?.find((s) => s.movimiento_id === selectedSalidaId);
@@ -656,6 +667,8 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
             {!mov.fecha && "Ingrese una fecha"}
             {mov.fecha && items.length === 0 && "Agregue al menos un elemento"}
             {mov.fecha && items.length > 0 && hasDiscrepancyWithoutNote && "Agregue nota en los items con diferencia"}
+            {mov.fecha && items.length > 0 && !hasDiscrepancyWithoutNote && stockInsuficienteAlConfirmar &&
+              "No se puede confirmar: algunos elementos exceden el stock. Guarde como borrador o reduzca la cantidad."}
           </div>
 
           <div className="flex gap-3">
