@@ -3,26 +3,40 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Truck, Search, Eye, Clock, CheckCircle, FileText, XCircle } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Truck, Search, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { listAllTransporteOrdenes } from "@/integrations/supabase/apiTransporte";
 import { parseLocalDate } from "@/lib/dateLocal";
+import { PageHeader, KPI } from "@/components/Layout/PageHeader";
+import { cn } from "@/lib/utils";
 
-const estadoConfig: Record<string, { label: string; class: string }> = {
-  borrador: { label: "Borrador", class: "bg-slate-100 text-slate-700" },
-  programado: { label: "Programado", class: "bg-blue-50 text-blue-700" },
-  finalizado: { label: "Finalizado", class: "bg-emerald-50 text-emerald-700" },
-  cancelado: { label: "Cancelado", class: "bg-red-50 text-red-700" },
+type Estado = "borrador" | "programado" | "finalizado" | "cancelado";
+
+const estadoConfig: Record<Estado, { label: string; class: string }> = {
+  borrador: {
+    label: "Borrador",
+    class: "border-border bg-muted/60 text-muted-foreground",
+  },
+  programado: {
+    label: "Programado",
+    class: "border-primary/30 bg-primary/10 text-primary",
+  },
+  finalizado: {
+    label: "Finalizado",
+    class: "border-border bg-card text-foreground",
+  },
+  cancelado: {
+    label: "Cancelado",
+    class: "border-destructive/30 bg-destructive/10 text-destructive",
+  },
 };
 
 function formatTimeRange(inicio: string | null, fin: string | null) {
   if (!inicio && !fin) return "—";
   const fmt = (t: string | null) => (t ? t.slice(0, 5) : "");
-  if (inicio && fin) return `${fmt(inicio)} – ${fmt(fin)}`;
+  if (inicio && fin) return `${fmt(inicio)}–${fmt(fin)}`;
   return fmt(inicio) || fmt(fin);
 }
 
@@ -58,141 +72,121 @@ export default function TransportePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-slate-200 border-t-selecta-green rounded-full animate-spin" />
-          <p className="text-sm text-slate-500">Cargando órdenes de transporte...</p>
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" />
+          <p className="text-sm italic text-muted-foreground">Cargando órdenes…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-2">
-          <Truck className="h-6 w-6 text-slate-700" />
-          <h1 className="text-2xl font-semibold text-slate-900">Transporte</h1>
-        </div>
-        <p className="text-slate-500 mt-1">
-          Todas las órdenes de transporte de todos los eventos
-        </p>
+    <div className="space-y-8">
+      <PageHeader
+        kicker="Recursos"
+        title="Transporte"
+        description="Órdenes de traslado de todos los eventos — recepción, recogida y destino."
+      />
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 gap-x-8 gap-y-6 border-y border-border py-6 md:grid-cols-4">
+        <KPI kicker="Total" value={stats.total} />
+        <KPI kicker="Programadas" value={stats.programadas} tone="primary" />
+        <KPI kicker="Borradores" value={stats.borradores} />
+        <KPI kicker="Finalizadas" value={stats.finalizadas} tone="primary" />
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <p className="text-sm text-slate-500">Total</p>
-          <p className="text-2xl font-semibold text-slate-900">{stats.total}</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-sm text-blue-600">Programadas</p>
-          <p className="text-2xl font-semibold text-blue-700">{stats.programadas}</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-sm text-slate-500">Borradores</p>
-          <p className="text-2xl font-semibold text-slate-700">{stats.borradores}</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-sm text-emerald-600">Finalizadas</p>
-          <p className="text-2xl font-semibold text-emerald-700">{stats.finalizadas}</p>
-        </Card>
+      {/* Filtros */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" strokeWidth={1.75} />
+          <Input
+            placeholder="Buscar por evento, destino o contacto…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-10 pl-9 text-[13px]"
+          />
+        </div>
+        <Select value={estadoFilter} onValueChange={setEstadoFilter}>
+          <SelectTrigger className="h-10 w-full text-[13px] sm:w-56">
+            <SelectValue placeholder="Estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos los estados</SelectItem>
+            <SelectItem value="borrador">Borradores</SelectItem>
+            <SelectItem value="programado">Programadas</SelectItem>
+            <SelectItem value="finalizado">Finalizadas</SelectItem>
+            <SelectItem value="cancelado">Canceladas</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <div className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="Buscar por evento, destino o contacto..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 h-9"
-              />
-            </div>
-            <Select value={estadoFilter} onValueChange={setEstadoFilter}>
-              <SelectTrigger className="w-full sm:w-48 h-9">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos los estados</SelectItem>
-                <SelectItem value="borrador">Borrador</SelectItem>
-                <SelectItem value="programado">Programado</SelectItem>
-                <SelectItem value="finalizado">Finalizado</SelectItem>
-                <SelectItem value="cancelado">Cancelado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </Card>
-
-      {/* Table */}
+      {/* Tabla / empty */}
       {filtered.length === 0 ? (
-        <Card>
-          <div className="flex flex-col items-center justify-center py-12 px-4">
-            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-              <Truck className="h-6 w-6 text-slate-400" />
-            </div>
-            <p className="text-slate-900 font-medium">
-              {ordenes.length === 0 ? "No hay órdenes de transporte" : "Sin resultados"}
-            </p>
-            <p className="text-slate-500 text-sm mt-1">
-              {ordenes.length === 0
-                ? "Las órdenes se crean desde el detalle de cada evento"
-                : "Intenta con otros criterios de búsqueda"}
-            </p>
-          </div>
-        </Card>
+        <div className="flex flex-col items-center rounded-lg border border-border bg-card py-16 text-center">
+          <Truck className="mb-4 h-10 w-10 text-muted-foreground/60" strokeWidth={1.5} />
+          <p className="font-serif text-[20px] tracking-tight text-foreground">
+            {ordenes.length === 0 ? "Aún no hay órdenes de transporte" : "Sin resultados"}
+          </p>
+          <p className="mt-1 max-w-[40ch] text-[12.5px] text-muted-foreground">
+            {ordenes.length === 0
+              ? "Las órdenes se crean desde el detalle de cada evento."
+              : "Ajustar los filtros o la búsqueda."}
+          </p>
+        </div>
       ) : (
-        <Card>
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-[13px]">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Evento</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Fecha</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Estado</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Recepción</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Recogida</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Destino</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Contacto</th>
-                  <th className="text-right px-4 py-3 font-medium text-slate-600"></th>
+                <tr className="border-b border-border bg-muted/40">
+                  <Th>Evento</Th>
+                  <Th>Fecha</Th>
+                  <Th>Estado</Th>
+                  <Th>Recepción</Th>
+                  <Th>Recogida</Th>
+                  <Th>Destino</Th>
+                  <Th>Contacto</Th>
+                  <Th className="text-right" />
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((o) => {
-                  const cfg = estadoConfig[o.estado] ?? estadoConfig.borrador;
+                  const cfg = estadoConfig[(o.estado as Estado) ?? "borrador"];
                   return (
                     <tr
                       key={o.id}
-                      className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                      className="border-b border-border last:border-b-0 transition-colors hover:bg-muted/40"
                     >
-                      <td className="px-4 py-3 font-medium text-slate-900 max-w-[200px] truncate">
+                      <td className="max-w-[220px] truncate px-4 py-3 font-serif text-[14px] tracking-tight text-foreground">
                         {o.nombre_evento}
                       </td>
-                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-4 py-3 tabular-nums text-muted-foreground">
                         {o.fecha_evento
                           ? format(parseLocalDate(o.fecha_evento) ?? new Date(), "d MMM yyyy", { locale: es })
                           : "—"}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge variant="secondary" className={cfg.class}>
+                        <span
+                          className={cn(
+                            "inline-flex rounded-full border px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.14em]",
+                            cfg.class
+                          )}
+                        >
                           {cfg.label}
-                        </Badge>
+                        </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-4 py-3 tabular-nums text-muted-foreground">
                         {formatTimeRange(o.hora_recepcion_inicio, o.hora_recepcion_fin)}
                       </td>
-                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-4 py-3 tabular-nums text-muted-foreground">
                         {formatTimeRange(o.hora_recogida_inicio, o.hora_recogida_fin)}
                       </td>
-                      <td className="px-4 py-3 text-slate-600 max-w-[180px] truncate">
+                      <td className="max-w-[200px] truncate px-4 py-3 text-muted-foreground">
                         {o.destino_direccion || "—"}
                       </td>
-                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
                         {o.contacto_nombre || "—"}
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -200,9 +194,9 @@ export default function TransportePage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => nav(`/eventos/${o.evento_id}`)}
-                          className="h-8 text-slate-600"
+                          className="h-7 gap-1.5 text-[11.5px] text-muted-foreground hover:text-foreground"
                         >
-                          <Eye className="h-4 w-4 mr-1" />
+                          <Eye className="h-3.5 w-3.5" strokeWidth={1.75} />
                           Ver evento
                         </Button>
                       </td>
@@ -212,8 +206,21 @@ export default function TransportePage() {
               </tbody>
             </table>
           </div>
-        </Card>
+        </div>
       )}
     </div>
+  );
+}
+
+function Th({ children, className }: { children?: React.ReactNode; className?: string }) {
+  return (
+    <th
+      className={cn(
+        "px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground",
+        className
+      )}
+    >
+      {children}
+    </th>
   );
 }

@@ -13,6 +13,7 @@ import { PersonalForm } from "@/components/Forms/PersonalForm";
 import { CargaMasivaPersonal } from "@/components/Forms/CargaMasivaPersonal";
 import { EliminarPersonalDialog } from "@/components/Personal/EliminarPersonalDialog";
 import { useToast } from "@/hooks/use-toast";
+import { PageHeader } from "@/components/Layout/PageHeader";
 import { Personal, ROLES_PERSONAL } from "@/types/database";
 
 const ITEMS_PER_PAGE = 10;
@@ -116,33 +117,24 @@ export default function PersonalPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Personal</h1>
-          <p className="text-slate-500 mt-1">
-            {totalPersonal} empleados registrados
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => setIsCargaMasivaOpen(true)}
-            variant="outline"
-            size="sm"
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Importar
-          </Button>
-
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="bg-selecta-green hover:bg-selecta-green/90">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Agregar
-              </Button>
-            </DialogTrigger>
+    <div className="space-y-8">
+      <PageHeader
+        kicker="Recursos"
+        title="Personal"
+        description={`${totalPersonal} ${totalPersonal === 1 ? "empleado registrado" : "empleados registrados"} · tarifas, modalidades y liquidaciones`}
+        actions={
+          <>
+            <Button onClick={() => setIsCargaMasivaOpen(true)} variant="outline" size="sm" className="gap-2">
+              <Upload className="h-4 w-4" strokeWidth={1.75} />
+              Importar
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-2">
+                  <UserPlus className="h-4 w-4" strokeWidth={1.75} />
+                  Agregar
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>
@@ -165,8 +157,9 @@ export default function PersonalPage() {
               />
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Tabla con filtros integrados */}
       <Card>

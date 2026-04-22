@@ -15,6 +15,7 @@ import {
   listContactos, createContacto, updateContacto, deleteContacto,
 } from "@/integrations/supabase/apiClientes";
 import type { Cliente, ClienteInsert, ContactoCliente, ContactoClienteInsert } from "@/integrations/supabase/apiClientes";
+import { PageHeader } from "@/components/Layout/PageHeader";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -271,21 +272,18 @@ export default function ClientesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Clientes</h1>
-          <p className="text-slate-500 mt-1">
-            {totalClientes} clientes registrados
-          </p>
-        </div>
-
-        <Button size="sm" className="bg-selecta-green hover:bg-selecta-green/90" onClick={openCreate}>
-          <UserPlus className="h-4 w-4 mr-2" />
-          Agregar
-        </Button>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        kicker="Recursos"
+        title="Clientes"
+        description={`${totalClientes} ${totalClientes === 1 ? "cliente registrado" : "clientes registrados"} · personas y empresas con sus contactos`}
+        actions={
+          <Button size="sm" className="gap-2" onClick={openCreate}>
+            <UserPlus className="h-4 w-4" strokeWidth={1.75} />
+            Agregar
+          </Button>
+        }
+      />
 
       {/* Tabla con filtros */}
       <Card>
