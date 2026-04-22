@@ -361,7 +361,16 @@ export default function TransporteTarifasTab() {
                               <Button variant="ghost" size="sm" onClick={() => startEdit(item)} className="text-blue-600 hover:bg-blue-50">
                                 <Edit3 className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => delMut.mutate(item.id)} className="text-red-600 hover:bg-red-50">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  if (window.confirm(`¿Eliminar la tarifa "${item.lugar}" (${item.tipo_evento})?`)) {
+                                    delMut.mutate(item.id);
+                                  }
+                                }}
+                                className="text-red-600 hover:bg-red-50"
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </>
