@@ -15,8 +15,9 @@ const IMG_GASTRO = "https://storage.googleapis.com/cluvi/Selecta-Eventos/image2_
 const IMG_EVENTO = "https://storage.googleapis.com/cluvi/Selecta-Eventos/image3_selecta.png";
 const IMG_FOOTER = "https://storage.googleapis.com/cluvi/Selecta-Eventos/image4_selecta.png";
 
-const TEAL = "#005A64";
-const LIME = "#B1C91E";
+// Selecta editorial palette — olive profundo + sage medio (tokens del design system)
+const TEAL = "#3D5228"; // hsl(82 28% 28%) — primary olive
+const LIME = "#7A9556"; // hsl(82 22% 45%) — sage accent
 
 type PageData = {
   cotizacion: Cotizacion;
@@ -329,10 +330,10 @@ export default function CotizacionPublica() {
   /* ─── RENDER ─── */
   return (
     <div
-      className="min-h-screen bg-white"
+      className="min-h-screen bg-[hsl(42_30%_97%)]"
       style={{
         fontFamily:
-          "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif",
+          "'Instrument Sans', ui-sans-serif, system-ui, -apple-system, sans-serif",
       }}
     >
       {/* ════════════════════════════════════════════
