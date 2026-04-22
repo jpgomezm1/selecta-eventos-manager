@@ -2,80 +2,76 @@ import { ProximosEventos } from "@/components/Dashboard/ProximosEventos";
 import { AlertasPanel } from "@/components/Dashboard/AlertasPanel";
 import { AccionesRapidas } from "@/components/Dashboard/AccionesRapidas";
 
+function formatToday(): string {
+  return new Intl.DateTimeFormat("es-CO", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
+}
+
 export default function Dashboard() {
   return (
-    <div className="min-h-screen relative">
-      {/* Background decorativo sutil */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-selecta-green/3 to-primary/3 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3"></div>
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-slate-100/50 to-selecta-green/5 rounded-full blur-3xl transform -translate-x-1/3 translate-y-1/3"></div>
+    <div className="relative">
+      {/* Page header — editorial */}
+      <header className="animate-rise stagger-1 flex flex-col gap-4 border-b border-border/70 pb-8 md:flex-row md:items-end md:justify-between">
+        <div className="space-y-3">
+          <span className="kicker">Selecta Eventos · Volumen XII</span>
+          <h1 className="font-serif text-[44px] leading-[1.02] tracking-[-0.03em] text-foreground md:text-[56px]">
+            <span className="italic text-primary">Panorama</span>
+            <span className="text-foreground/70"> del día</span>
+          </h1>
+          <p className="max-w-xl text-[14px] leading-relaxed text-muted-foreground">
+            Un resumen curado de los eventos en marcha, las alertas que requieren atención y los
+            accesos rápidos a las operaciones del día.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-6 md:flex-col md:items-end md:gap-1">
+          <div className="text-right">
+            <div className="kicker mb-0.5">Hoy</div>
+            <div className="font-serif text-lg font-medium capitalize tracking-tight text-foreground">
+              {formatToday()}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main grid */}
+      <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
+        {/* Próximos eventos — main column */}
+        <section className="animate-rise stagger-2 lg:col-span-2">
+          <div className="overflow-hidden rounded-lg border border-border bg-card shadow-soft">
+            <ProximosEventos />
+          </div>
+        </section>
+
+        {/* Side column */}
+        <aside className="space-y-6 lg:space-y-8">
+          <section className="animate-rise stagger-3">
+            <div className="overflow-hidden rounded-lg border border-border bg-card shadow-soft">
+              <AlertasPanel />
+            </div>
+          </section>
+
+          <section className="animate-rise stagger-4">
+            <div className="overflow-hidden rounded-lg border border-border bg-card shadow-soft">
+              <AccionesRapidas />
+            </div>
+          </section>
+        </aside>
       </div>
 
-      <div className="relative z-10 space-y-8">
-        {/* Header mejorado */}
-        <div className="text-center lg:text-left">
-          <div className="inline-flex items-center space-x-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-primary rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-xl">📊</span>
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-selecta-green to-primary bg-clip-text text-transparent">
-                Dashboard Operativo
-              </h1>
-              <p className="text-slate-600 text-lg font-medium mt-1">
-                Gestión diaria de eventos y personal
-              </p>
-            </div>
-          </div>
-          
-          {/* Línea decorativa */}
-          <div className="w-32 h-1 bg-gradient-to-r from-selecta-green to-primary rounded-full mx-auto lg:mx-0 mb-2"></div>
-          
-          {/* Indicador de estado */}
-          <div className="inline-flex items-center space-x-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm border border-slate-200/60">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm font-medium text-slate-700">Sistema operativo</span>
-          </div>
-        </div>
-
-        {/* Grid mejorado con mejor spacing y efectos */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Próximos Eventos - Columna principal con efecto glassmorphism */}
-          <div className="lg:col-span-2">
-            <div className="bg-white/60 backdrop-blur-xl rounded-3xl p-1 shadow-xl border border-white/20">
-              <div className="bg-white/90 backdrop-blur-sm rounded-3xl overflow-hidden">
-                <ProximosEventos />
-              </div>
-            </div>
-          </div>
-
-          {/* Sidebar con Alertas y Acciones - Efectos mejorados */}
-          <div className="space-y-8">
-            {/* Alertas Panel con efecto glassmorphism */}
-            <div className="bg-white/60 backdrop-blur-xl rounded-3xl p-1 shadow-xl border border-white/20">
-              <div className="bg-white/90 backdrop-blur-sm rounded-3xl overflow-hidden">
-                <AlertasPanel />
-              </div>
-            </div>
-
-            {/* Acciones Rápidas con efecto glassmorphism */}
-            <div className="bg-white/60 backdrop-blur-xl rounded-3xl p-1 shadow-xl border border-white/20">
-              <div className="bg-white/90 backdrop-blur-sm rounded-3xl overflow-hidden">
-                <AccionesRapidas />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer decorativo sutil */}
-        <div className="text-center pt-8">
-          <div className="inline-flex items-center space-x-2 text-sm text-slate-400">
-            <div className="w-1 h-1 bg-slate-300 rounded-full"></div>
-            <span>Última actualización: {new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</span>
-            <div className="w-1 h-1 bg-slate-300 rounded-full"></div>
-          </div>
-        </div>
-      </div>
+      {/* Footer note */}
+      <footer className="animate-rise stagger-5 mt-12 flex items-center justify-between border-t border-border/70 pt-6 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+        <span>
+          Selecta · donde el anfitrión es otro invitado
+        </span>
+        <span className="tabular-nums">
+          {new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+        </span>
+      </footer>
     </div>
   );
 }

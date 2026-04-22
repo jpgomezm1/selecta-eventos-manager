@@ -1,34 +1,51 @@
 import { SidebarProvider } from "@/hooks/useSidebar";
+import { useLocation } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { MobileSidebar } from "./MobileSidebar";
+import { matchNavItem } from "./navigation";
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  const { pathname } = useLocation();
+  const current = matchNavItem(pathname);
+
   return (
     <SidebarProvider>
-      <div className="h-screen flex w-full overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100/50">
+      <div className="flex h-screen w-full overflow-hidden bg-paper">
         <AppSidebar />
 
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          {/* Header */}
-          <header className="h-14 border-b border-slate-200 bg-white flex items-center px-6 shrink-0">
-            <div className="flex items-center w-full">
-              <MobileSidebar />
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          {/* Topbar — minimal, editorial */}
+          <header className="relative z-10 flex h-14 shrink-0 items-center gap-4 border-b border-border/70 bg-background/80 px-5 backdrop-blur-md lg:px-8">
+            <MobileSidebar />
 
-              <div className="ml-4">
-                <h1 className="font-semibold text-lg text-slate-800">
-                  Sistema de Gestión
-                </h1>
-              </div>
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <span className="kicker hidden sm:inline">Selecta</span>
+              <span className="hidden h-3 w-px bg-border sm:inline-block" />
+              <span className="font-serif text-[15px] font-medium tracking-tight text-foreground truncate">
+                {current?.title ?? "Sistema"}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="hidden items-center gap-2 rounded-full border border-border bg-card px-3 py-1 md:inline-flex">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                </span>
+                <span className="text-[11px] font-medium tracking-wide text-muted-foreground">
+                  En línea
+                </span>
+              </span>
             </div>
           </header>
 
-          {/* Main content - scrollable */}
+          {/* Scroll area */}
           <main className="flex-1 overflow-auto">
-            <div className="p-6">
+            <div className="mx-auto max-w-[1400px] px-5 py-8 lg:px-10 lg:py-10">
               {children}
             </div>
           </main>
