@@ -1,35 +1,40 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  Calendar, 
-  MapPin, 
-  Users, 
-  CheckCircle, 
-  AlertTriangle, 
-  Clock, 
+import {
+  MapPin,
   Search,
-  Filter,
-  Download,
   UserPlus,
   Eye,
   Mail,
   MessageSquare,
   FileText,
-  MoreHorizontal,
-  Star,
-  TrendingUp
+  CalendarOff,
+  Clock,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { EventoConPersonal, Personal } from "@/types/database";
 import { parseLocalDate, formatLocalDate } from "@/lib/dateLocal";
+import { PanelHeader } from "@/components/Layout/PageHeader";
+import { cn } from "@/lib/utils";
+
+type EstadoEvento = "sin-personal" | "sin-horarios" | "completo";
+
+const ESTADO_LABEL: Record<EstadoEvento, string> = {
+  "sin-personal": "Sin personal",
+  "sin-horarios": "Sin horarios",
+  completo: "Listo",
+};
 
 export function ProximosEventos() {
   const [eventos, setEventos] = useState<EventoConPersonal[]>([]);
@@ -47,16 +52,14 @@ export function ProximosEventos() {
 
   const cargarDatos = useCallback(async () => {
     try {
-      // Cargar personal
       const { data: personalData } = await supabase
         .from("personal")
         .select("*")
         .order("nombre_completo");
 
-      // Obtener rango de fechas según filtro
       const hoy = new Date();
       const fechaFin = new Date();
-      
+
       switch (filtroTiempo) {
         case "proximos-3":
           fechaFin.setDate(hoy.getDate() + 3);
@@ -71,38 +74,40 @@ export function ProximosEventos() {
           fechaFin.setFullYear(hoy.getFullYear() + 1);
       }
 
-      // Cargar eventos con personal
       const { data: eventosData } = await supabase
         .from("eventos")
-        .select(`
+        .select(
+          `
           *,
           evento_personal(
             *,
             personal(*)
           )
-        `)
-        .gte("fecha_evento", hoy.toISOString().split('T')[0])
-        .lte("fecha_evento", fechaFin.toISOString().split('T')[0])
+        `
+        )
+        .gte("fecha_evento", hoy.toISOString().split("T")[0])
+        .lte("fecha_evento", fechaFin.toISOString().split("T")[0])
         .order("fecha_evento", { ascending: true });
 
-      // Transformar datos para que coincidan con EventoConPersonal
-      const eventosTransformados = eventosData?.map(evento => ({
-        ...evento,
-        personal: evento.evento_personal?.map((ep) => ({
-          ...ep.personal,
-          ...ep,
-          evento_personal_id: ep.id
-        })) || []
-      })) || [];
+      const eventosTransformados =
+        eventosData?.map((evento) => ({
+          ...evento,
+          personal:
+            evento.evento_personal?.map((ep) => ({
+              ...ep.personal,
+              ...ep,
+              evento_personal_id: ep.id,
+            })) || [],
+        })) || [];
 
-      setPersonal(personalData as Personal[] || []);
+      setPersonal((personalData as Personal[]) || []);
       setEventos(eventosTransformados as EventoConPersonal[]);
     } catch (error) {
       console.error("Error cargando datos:", error);
       toast({
         title: "Error",
         description: (error as Error)?.message ?? "Error al cargar los datos",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -118,26 +123,30 @@ export function ProximosEventos() {
 
       const { data } = await supabase
         .from("eventos")
-        .select(`
+        .select(
+          `
           *,
           evento_personal!inner(
             *,
             personal(*)
           )
-        `)
+        `
+        )
         .eq("evento_personal.personal_id", empleadoSeleccionado.id)
-        .gte("fecha_evento", new Date().toISOString().split('T')[0])
-        .lte("fecha_evento", fechaFin.toISOString().split('T')[0])
+        .gte("fecha_evento", new Date().toISOString().split("T")[0])
+        .lte("fecha_evento", fechaFin.toISOString().split("T")[0])
         .order("fecha_evento", { ascending: true });
 
-      const eventosTransformados = data?.map(evento => ({
-        ...evento,
-        personal: evento.evento_personal?.map((ep) => ({
-          ...ep.personal,
-          ...ep,
-          evento_personal_id: ep.id
-        })) || []
-      })) || [];
+      const eventosTransformados =
+        data?.map((evento) => ({
+          ...evento,
+          personal:
+            evento.evento_personal?.map((ep) => ({
+              ...ep.personal,
+              ...ep,
+              evento_personal_id: ep.id,
+            })) || [],
+        })) || [];
 
       setEventosEmpleado(eventosTransformados as EventoConPersonal[]);
     } catch (error) {
@@ -150,529 +159,461 @@ export function ProximosEventos() {
   }, [cargarDatos]);
 
   useEffect(() => {
-    if (empleadoSeleccionado) {
-      cargarEventosEmpleado();
-    }
+    if (empleadoSeleccionado) cargarEventosEmpleado();
   }, [empleadoSeleccionado, cargarEventosEmpleado]);
 
-  const getEstadoEvento = (evento: EventoConPersonal) => {
+  const getEstadoEvento = (evento: EventoConPersonal): EstadoEvento => {
     const personalAsignado = evento.personal?.length || 0;
-    
-    if (personalAsignado === 0) {
-      return { tipo: 'sin-personal', texto: 'Sin personal', icono: '🚨', color: 'bg-red-100 text-red-800 border-red-200' };
-    }
-    
-    // Verificar si faltan horarios
-    const sinHorarios = evento.personal?.filter(p => !p.hora_inicio || !p.hora_fin).length || 0;
-    if (sinHorarios > 0) {
-      return { tipo: 'sin-horarios', texto: 'Sin horarios', icono: '🕐', color: 'bg-orange-100 text-orange-800 border-orange-200' };
-    }
-    
-    // TODO: Aquí se podría verificar si está completo según requerimientos
-    return { tipo: 'completo', texto: 'Completo', icono: '✅', color: 'bg-green-100 text-green-800 border-green-200' };
+    if (personalAsignado === 0) return "sin-personal";
+    const sinHorarios = evento.personal?.filter((p) => !p.hora_inicio || !p.hora_fin).length || 0;
+    if (sinHorarios > 0) return "sin-horarios";
+    return "completo";
   };
 
-  const eventosFiltrados = eventos.filter(evento => {
-    // Filtro por empleado
+  const eventosFiltrados = eventos.filter((evento) => {
     if (filtroEmpleado !== "todos") {
-      const tieneEmpleado = evento.personal?.some(p => p.id === filtroEmpleado);
+      const tieneEmpleado = evento.personal?.some((p) => p.id === filtroEmpleado);
       if (!tieneEmpleado) return false;
     }
-
-    // Filtro por estado
     if (filtroEstado !== "todos") {
       const estado = getEstadoEvento(evento);
-      if (estado.tipo !== filtroEstado) return false;
+      if (estado !== filtroEstado) return false;
     }
-
-    // Filtro por búsqueda  
     if (busqueda) {
       const termino = busqueda.toLowerCase();
-      const coincide = evento.nombre_evento.toLowerCase().includes(termino) ||
-                     evento.ubicacion.toLowerCase().includes(termino) ||
-                     evento.personal?.some(p => p.nombre_completo.toLowerCase().includes(termino));
+      const coincide =
+        evento.nombre_evento.toLowerCase().includes(termino) ||
+        evento.ubicacion.toLowerCase().includes(termino) ||
+        evento.personal?.some((p) => p.nombre_completo.toLowerCase().includes(termino));
       if (!coincide) return false;
     }
-
     return true;
   });
 
   const generarMensajeWhatsApp = (empleado: Personal) => {
     if (eventosEmpleado.length === 0) return;
 
-    const mensaje = `📅 Hola ${empleado.nombre_completo}! Tu cronograma para los próximos eventos:\n\n` +
-      eventosEmpleado.map((evento, index) => {
-        const fecha = formatLocalDate(evento.fecha_evento, 'es-CO', {
-          weekday: 'long', day: 'numeric', month: 'long'
-        });
-        const personal = evento.personal?.find(p => p.id === empleado.id);
-        const horario = personal?.hora_inicio && personal?.hora_fin 
-          ? `${personal.hora_inicio}-${personal.hora_fin}` 
-          : 'Horario por confirmar';
-        
-        return `• ${fecha.charAt(0).toUpperCase() + fecha.slice(1)} - ${evento.nombre_evento} (${evento.ubicacion}) ${horario}`;
-      }).join('\n') +
-      `\n\nTotal eventos: ${eventosEmpleado.length}\n¡Nos vemos!`;
+    const mensaje =
+      `Hola ${empleado.nombre_completo}, tu cronograma para los próximos eventos:\n\n` +
+      eventosEmpleado
+        .map((evento) => {
+          const fecha = formatLocalDate(evento.fecha_evento, "es-CO", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+          });
+          const personal = evento.personal?.find((p) => p.id === empleado.id);
+          const horario =
+            personal?.hora_inicio && personal?.hora_fin
+              ? `${personal.hora_inicio}-${personal.hora_fin}`
+              : "Horario por confirmar";
+          return `· ${fecha.charAt(0).toUpperCase() + fecha.slice(1)} — ${evento.nombre_evento} (${evento.ubicacion}) ${horario}`;
+        })
+        .join("\n") +
+      `\n\nTotal eventos: ${eventosEmpleado.length}`;
 
     navigator.clipboard.writeText(mensaje);
     toast({
       title: "Mensaje copiado",
-      description: "El cronograma ha sido copiado al portapapeles para enviar por WhatsApp"
+      description: "Cronograma listo para enviar por WhatsApp",
     });
+  };
+
+  const stats = {
+    total: eventosFiltrados.length,
+    sinPersonal: eventosFiltrados.filter((e) => getEstadoEvento(e) === "sin-personal").length,
+    sinHorarios: eventosFiltrados.filter((e) => getEstadoEvento(e) === "sin-horarios").length,
+    completos: eventosFiltrados.filter((e) => getEstadoEvento(e) === "completo").length,
   };
 
   if (loading) {
     return (
-      <Card className="border-0 shadow-none bg-transparent">
-        <CardHeader className="pb-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-primary rounded-2xl flex items-center justify-center animate-pulse">
-              <Calendar className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <div className="h-7 bg-slate-200 rounded-lg w-48 animate-pulse"></div>
-              <div className="h-4 bg-slate-100 rounded w-32 mt-2 animate-pulse"></div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="h-12 bg-slate-100 rounded-xl animate-pulse"></div>
-            <div className="h-32 bg-slate-100 rounded-xl animate-pulse"></div>
-            <div className="h-32 bg-slate-100 rounded-xl animate-pulse"></div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="p-6">
+        <PanelHeader kicker="Agenda" title="Próximos eventos" description="Cargando…" />
+        <div className="mt-6 space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-16 animate-pulse rounded-md bg-muted/70" />
+          ))}
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="border-0 shadow-none bg-transparent">
-      <CardHeader className="pb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-primary rounded-2xl flex items-center justify-center shadow-lg">
-              <Calendar className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-selecta-green to-primary bg-clip-text text-transparent">
-                Próximos Eventos
-              </CardTitle>
-              <p className="text-slate-600 font-medium">Gestión y seguimiento de eventos programados</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="bg-white/80 backdrop-blur-sm border-slate-200/60 hover:bg-white hover:shadow-md transition-all duration-200"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Exportar
-            </Button>
-            <Button 
-              size="sm"
-              className="bg-gradient-primary hover:bg-gradient-primary/90 shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Analizar
-            </Button>
-          </div>
+    <div className="p-6">
+      <PanelHeader
+        kicker="Agenda"
+        title="Próximos eventos"
+        description="Seguimiento de los servicios programados"
+      />
+
+      {/* Filtros */}
+      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-12">
+        <div className="relative md:col-span-5">
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" strokeWidth={1.75} />
+          <Input
+            placeholder="Buscar evento, ubicación o empleado…"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="h-10 pl-9 text-[13px]"
+          />
         </div>
-      </CardHeader>
-
-      <CardContent className="space-y-6">
-        {/* Filtros mejorados */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-200/60 shadow-sm">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Período</label>
-              <Select value={filtroTiempo} onValueChange={(value) => {
-                setFiltroTiempo(value);
-                cargarDatos();
-              }}>
-                <SelectTrigger className="bg-white border-slate-200/60 focus:border-selecta-green/50 h-11">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-white/95 backdrop-blur-xl border-slate-200/60">
-                  <SelectItem value="proximos-3">Próximos 3 días</SelectItem>
-                  <SelectItem value="proximos-7">Próximos 7 días</SelectItem>
-                  <SelectItem value="proximos-30">Próximos 30 días</SelectItem>
-                  <SelectItem value="todos">Todos</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Empleado</label>
-              <Select value={filtroEmpleado} onValueChange={setFiltroEmpleado}>
-                <SelectTrigger className="bg-white border-slate-200/60 focus:border-selecta-green/50 h-11">
-                  <SelectValue placeholder="Todos los empleados" />
-                </SelectTrigger>
-                <SelectContent className="bg-white/95 backdrop-blur-xl border-slate-200/60">
-                  <SelectItem value="todos">Todos los empleados</SelectItem>
-                  {personal.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.nombre_completo} - {p.rol}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Estado</label>
-              <Select value={filtroEstado} onValueChange={setFiltroEstado}>
-                <SelectTrigger className="bg-white border-slate-200/60 focus:border-selecta-green/50 h-11">
-                  <SelectValue placeholder="Todos los estados" />
-                </SelectTrigger>
-                <SelectContent className="bg-white/95 backdrop-blur-xl border-slate-200/60">
-                  <SelectItem value="todos">Todos los estados</SelectItem>
-                  <SelectItem value="sin-personal">Solo sin personal</SelectItem>
-                  <SelectItem value="sin-horarios">Solo sin horarios</SelectItem>
-                  <SelectItem value="completo">Solo completos</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Buscar</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-                <Input
-                  placeholder="Buscar eventos..."
-                  value={busqueda}
-                  onChange={(e) => setBusqueda(e.target.value)}
-                  className="pl-10 bg-white border-slate-200/60 focus:border-selecta-green/50 h-11"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Mostrar botón de cronograma detallado si hay empleado filtrado */}
-          {filtroEmpleado !== "todos" && (
-            <div className="mt-4 pt-4 border-t border-slate-200/60">
-              <Button
-                onClick={() => {
-                  const empleado = personal.find(p => p.id === filtroEmpleado);
-                  if (empleado) {
-                    setEmpleadoSeleccionado(empleado);
-                    setIsModalEmpleadoOpen(true);
-                  }
-                }}
-                variant="outline"
-                className="bg-blue-50/80 hover:bg-blue-100/80 border-blue-200/60 text-blue-700"
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                Ver cronograma detallado del empleado
-              </Button>
-            </div>
-          )}
+        <div className="md:col-span-3">
+          <Select value={filtroTiempo} onValueChange={setFiltroTiempo}>
+            <SelectTrigger className="h-10 text-[13px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="proximos-3">Próximos 3 días</SelectItem>
+              <SelectItem value="proximos-7">Próximos 7 días</SelectItem>
+              <SelectItem value="proximos-30">Próximos 30 días</SelectItem>
+              <SelectItem value="todos">Todos</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+        <div className="md:col-span-2">
+          <Select value={filtroEstado} onValueChange={setFiltroEstado}>
+            <SelectTrigger className="h-10 text-[13px]">
+              <SelectValue placeholder="Estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="sin-personal">Sin personal</SelectItem>
+              <SelectItem value="sin-horarios">Sin horarios</SelectItem>
+              <SelectItem value="completo">Listos</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="md:col-span-2">
+          <Select value={filtroEmpleado} onValueChange={setFiltroEmpleado}>
+            <SelectTrigger className="h-10 text-[13px]">
+              <SelectValue placeholder="Empleado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              {personal.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.nombre_completo}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-        {/* Contenido principal */}
-        {eventosFiltrados.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Calendar className="h-12 w-12 text-slate-400" />
-            </div>
-            <h3 className="text-xl font-semibold text-slate-800 mb-2">
-              {eventos.length === 0 ? "No hay eventos próximos" : "No se encontraron eventos"}
-            </h3>
-            <p className="text-slate-600 max-w-sm mx-auto">
-              {eventos.length === 0 
-                ? "Cuando tengas eventos programados, aparecerán aquí para su gestión." 
-                : "Intenta ajustar los filtros para encontrar los eventos que buscas."
+      {filtroEmpleado !== "todos" && (
+        <div className="mt-3 flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 text-[12px] text-primary hover:bg-accent"
+            onClick={() => {
+              const empleado = personal.find((p) => p.id === filtroEmpleado);
+              if (empleado) {
+                setEmpleadoSeleccionado(empleado);
+                setIsModalEmpleadoOpen(true);
               }
-            </p>
-          </div>
-        ) : (
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-slate-200/60 bg-slate-50/50">
-                    <TableHead className="font-semibold text-slate-700">Fecha</TableHead>
-                    <TableHead className="font-semibold text-slate-700">Evento</TableHead>
-                    <TableHead className="font-semibold text-slate-700">Ubicación</TableHead>
-                    <TableHead className="font-semibold text-slate-700">Personal</TableHead>
-                    <TableHead className="font-semibold text-slate-700">Estado</TableHead>
-                    <TableHead className="text-right font-semibold text-slate-700">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {eventosFiltrados.map((evento) => {
-                    const estado = getEstadoEvento(evento);
-                    const personalAsignado = evento.personal?.length || 0;
-                    
+            }}
+          >
+            <Eye className="h-3.5 w-3.5" strokeWidth={1.75} />
+            Ver cronograma completo del empleado
+          </Button>
+        </div>
+      )}
+
+      {/* Eventos */}
+      {eventosFiltrados.length === 0 ? (
+        <div className="mt-10 flex flex-col items-center py-12 text-center">
+          <CalendarOff className="mb-4 h-10 w-10 text-muted-foreground/60" strokeWidth={1.5} />
+          <p className="font-serif text-[20px] tracking-tight text-foreground">
+            {eventos.length === 0 ? "Aún no hay eventos" : "Sin resultados"}
+          </p>
+          <p className="mt-1 max-w-[40ch] text-[12.5px] text-muted-foreground">
+            {eventos.length === 0
+              ? "Cuando se programen eventos, aparecerán aquí con su estado y personal asignado."
+              : "Ajustar los filtros para encontrar los eventos buscados."}
+          </p>
+        </div>
+      ) : (
+        <div className="mt-6 overflow-hidden rounded-md border border-border">
+          <ul className="divide-y divide-border">
+            {eventosFiltrados.map((evento) => (
+              <EventoRow
+                key={evento.id}
+                evento={evento}
+                estado={getEstadoEvento(evento)}
+                onVer={() => navigate(`/eventos/${evento.id}`)}
+                onAsignar={() => navigate(`/eventos/${evento.id}`)}
+              />
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Footer stats */}
+      {eventosFiltrados.length > 0 && (
+        <div className="mt-6 grid grid-cols-4 gap-6 border-t border-border pt-5">
+          <FooterStat label="Total" value={stats.total} />
+          <FooterStat label="Sin personal" value={stats.sinPersonal} tone={stats.sinPersonal > 0 ? "destructive" : "neutral"} />
+          <FooterStat label="Sin horarios" value={stats.sinHorarios} />
+          <FooterStat label="Listos" value={stats.completos} tone="primary" />
+        </div>
+      )}
+
+      {/* Modal cronograma empleado */}
+      <Dialog open={isModalEmpleadoOpen} onOpenChange={setIsModalEmpleadoOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <span className="kicker">Cronograma</span>
+            <DialogTitle className="font-serif text-[26px] font-normal tracking-tight">
+              {empleadoSeleccionado?.nombre_completo}
+            </DialogTitle>
+            <DialogDescription>
+              {empleadoSeleccionado?.rol} · Próximos 30 días
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            {eventosEmpleado.length === 0 ? (
+              <div className="py-10 text-center">
+                <CalendarOff className="mx-auto mb-3 h-8 w-8 text-muted-foreground/60" strokeWidth={1.5} />
+                <p className="font-serif text-[17px] text-foreground">Sin eventos asignados</p>
+                <p className="mt-1 text-[12.5px] text-muted-foreground">
+                  No hay servicios programados en los próximos 30 días.
+                </p>
+              </div>
+            ) : (
+              <>
+                <ul className="max-h-80 divide-y divide-border overflow-y-auto rounded-md border border-border">
+                  {eventosEmpleado.map((evento) => {
+                    const personalData = evento.personal?.find(
+                      (p) => p.id === empleadoSeleccionado?.id
+                    );
+                    const horario =
+                      personalData?.hora_inicio && personalData?.hora_fin
+                        ? `${personalData.hora_inicio}–${personalData.hora_fin}`
+                        : "Por confirmar";
+
                     return (
-                      <TableRow key={evento.id} className="border-slate-200/40 hover:bg-slate-50/30 transition-colors">
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="font-semibold text-slate-800">
-                              {formatLocalDate(evento.fecha_evento, 'es-CO', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: '2-digit'
-                              })}
+                      <li key={evento.id} className="flex items-start justify-between gap-3 px-4 py-3">
+                        <div className="min-w-0">
+                          <div className="font-serif text-[15px] tracking-tight text-foreground">
+                            {evento.nombre_evento}
+                          </div>
+                          <div className="mt-1 flex items-center gap-1 text-[11.5px] text-muted-foreground">
+                            <MapPin className="h-3 w-3" strokeWidth={1.75} />
+                            <span className="truncate">{evento.ubicacion}</span>
+                          </div>
+                          <div className="mt-0.5 text-[11.5px] capitalize text-muted-foreground">
+                            {formatLocalDate(evento.fecha_evento, "es-CO", {
+                              weekday: "long",
+                              day: "numeric",
+                              month: "long",
+                            })}
+                          </div>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <div className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] tabular-nums text-foreground">
+                            <Clock className="h-3 w-3" strokeWidth={1.75} />
+                            {horario}
+                          </div>
+                          {personalData?.horas_trabajadas ? (
+                            <div className="mt-1 text-[10.5px] tabular-nums text-muted-foreground">
+                              {personalData.horas_trabajadas}h trabajadas
                             </div>
-                            <div className="text-sm text-slate-500 capitalize">
-                              {formatLocalDate(evento.fecha_evento, 'es-CO', {
-                                weekday: 'long'
-                              })}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="font-semibold text-slate-800 max-w-48 truncate">
-                              {evento.nombre_evento}
-                            </div>
-                            {evento.descripcion && (
-                              <div className="text-sm text-slate-500 max-w-48 truncate">
-                                {evento.descripcion}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-                            <span className="text-sm text-slate-700 max-w-32 truncate">{evento.ubicacion}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-2">
-                            {personalAsignado > 0 ? (
-                              <>
-                                <div className="text-sm font-semibold text-slate-800">
-                                  {personalAsignado} asignado{personalAsignado > 1 ? 's' : ''}
-                                </div>
-                                <div className="flex flex-wrap gap-1">
-                                  {evento.personal?.slice(0, 2).map((p) => (
-                                    <Badge key={p.id} variant="outline" className="text-xs bg-blue-50/80 border-blue-200/60 text-blue-700">
-                                      👤 {p.nombre_completo?.split(' ')[0]}
-                                    </Badge>
-                                  ))}
-                                  {personalAsignado > 2 && (
-                                    <Badge variant="outline" className="text-xs bg-slate-50/80 border-slate-200/60 text-slate-600">
-                                      +{personalAsignado - 2} más
-                                    </Badge>
-                                  )}
-                                </div>
-                              </>
-                            ) : (
-                              <div className="text-sm text-red-600 font-medium">
-                                ❌ Sin personal asignado
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={`${estado.color} border font-medium`}>
-                            {estado.icono} {estado.texto}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            {estado.tipo === 'sin-personal' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => navigate(`/eventos`)}
-                                className="bg-red-50/80 hover:bg-red-100/80 border-red-200/60 text-red-700"
-                              >
-                                <UserPlus className="h-4 w-4 mr-1" />
-                                Asignar
-                              </Button>
-                            )}
-                            {estado.tipo === 'sin-horarios' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => navigate(`/eventos`)}
-                                className="bg-orange-50/80 hover:bg-orange-100/80 border-orange-200/60 text-orange-700"
-                              >
-                                <Clock className="h-4 w-4 mr-1" />
-                                Horarios
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => navigate(`/eventos`)}
-                              className="hover:bg-slate-100/80"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                          ) : null}
+                        </div>
+                      </li>
                     );
                   })}
-                </TableBody>
-              </Table>
+                </ul>
+
+                <div className="grid grid-cols-2 gap-6 border-t border-border pt-4">
+                  <FooterStat label="Eventos asignados" value={eventosEmpleado.length} tone="primary" />
+                  <FooterStat
+                    label="Total horas"
+                    value={eventosEmpleado.reduce((sum, ev) => {
+                      const pd = ev.personal?.find((p) => p.id === empleadoSeleccionado?.id);
+                      return sum + (pd?.horas_trabajadas || 0);
+                    }, 0)}
+                    tone="primary"
+                    suffix="h"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() =>
+                      toast({
+                        title: "Función en desarrollo",
+                        description: "El envío por email estará disponible pronto",
+                      })
+                    }
+                  >
+                    <Mail className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    Enviar por email
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => empleadoSeleccionado && generarMensajeWhatsApp(empleadoSeleccionado)}
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    Copiar para WhatsApp
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() =>
+                      toast({
+                        title: "Función en desarrollo",
+                        description: "La exportación PDF estará disponible pronto",
+                      })
+                    }
+                  >
+                    <FileText className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    Exportar PDF
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function EventoRow({
+  evento,
+  estado,
+  onVer,
+  onAsignar,
+}: {
+  evento: EventoConPersonal;
+  estado: EstadoEvento;
+  onVer: () => void;
+  onAsignar: () => void;
+}) {
+  const personalAsignado = evento.personal?.length || 0;
+  const dia = formatLocalDate(evento.fecha_evento, "es-CO", {
+    day: "2-digit",
+    month: "2-digit",
+  });
+  const weekday = formatLocalDate(evento.fecha_evento, "es-CO", { weekday: "short" });
+
+  const estadoStyles =
+    estado === "completo"
+      ? "border-primary/30 bg-primary/10 text-primary"
+      : estado === "sin-personal"
+      ? "border-destructive/30 bg-destructive/10 text-destructive"
+      : "border-[hsl(30_55%_42%/0.3)] bg-[hsl(30_55%_42%/0.1)] text-[hsl(30_55%_30%)]";
+
+  return (
+    <li className="group flex items-start gap-5 px-4 py-4 transition-colors hover:bg-muted/40">
+      {/* Date cell */}
+      <div className="w-14 shrink-0 border-r border-border pr-4 text-right">
+        <div className="font-serif text-[22px] leading-none tracking-tight tabular-nums text-foreground">
+          {dia}
+        </div>
+        <div className="mt-1 text-[10px] font-medium uppercase tracking-[0.15em] text-muted-foreground">
+          {weekday.replace(".", "")}
+        </div>
+      </div>
+
+      {/* Event info */}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="truncate font-serif text-[17px] tracking-tight text-foreground">
+              {evento.nombre_evento}
+            </div>
+            <div className="mt-0.5 flex items-center gap-1.5 text-[12px] text-muted-foreground">
+              <MapPin className="h-3 w-3 shrink-0" strokeWidth={1.75} />
+              <span className="truncate">{evento.ubicacion}</span>
             </div>
           </div>
-        )}
+          <span
+            className={cn(
+              "shrink-0 rounded-full border px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.14em]",
+              estadoStyles
+            )}
+          >
+            {ESTADO_LABEL[estado]}
+          </span>
+        </div>
 
-        {/* Estadísticas del filtro mejoradas */}
-        {eventosFiltrados.length > 0 && (
-          <div className="bg-gradient-to-r from-slate-50/80 to-blue-50/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-200/60">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-selecta-green">{eventosFiltrados.length}</div>
-                <div className="text-sm font-medium text-slate-600">Total eventos</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">
-                  {eventosFiltrados.filter(e => getEstadoEvento(e).tipo === 'sin-personal').length}
-                </div>
-                <div className="text-sm font-medium text-slate-600">Sin personal</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">
-                  {eventosFiltrados.filter(e => getEstadoEvento(e).tipo === 'sin-horarios').length}
-                </div>
-                <div className="text-sm font-medium text-slate-600">Sin horarios</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {eventosFiltrados.filter(e => getEstadoEvento(e).tipo === 'completo').length}
-                </div>
-                <div className="text-sm font-medium text-slate-600">Completos</div>
-              </div>
-            </div>
+        <div className="mt-2.5 flex items-center justify-between gap-3">
+          <div className="text-[12px] text-muted-foreground">
+            {personalAsignado === 0 ? (
+              <span className="text-destructive">Sin personal asignado</span>
+            ) : (
+              <span>
+                <span className="tabular-nums font-medium text-foreground">{personalAsignado}</span>{" "}
+                {personalAsignado === 1 ? "empleado" : "empleados"}
+                {evento.personal?.slice(0, 2).map((p, i) => (
+                  <span key={p.id} className="text-muted-foreground">
+                    {i === 0 ? " · " : ", "}
+                    {p.nombre_completo?.split(" ")[0]}
+                  </span>
+                ))}
+                {personalAsignado > 2 && (
+                  <span className="text-muted-foreground"> +{personalAsignado - 2}</span>
+                )}
+              </span>
+            )}
           </div>
+
+          <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+            {estado === "sin-personal" && (
+              <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-[11.5px]" onClick={onAsignar}>
+                <UserPlus className="h-3 w-3" strokeWidth={1.75} />
+                Asignar
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-[11.5px]" onClick={onVer}>
+              <Eye className="h-3 w-3" strokeWidth={1.75} />
+              Ver
+            </Button>
+          </div>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function FooterStat({
+  label,
+  value,
+  tone = "neutral",
+  suffix,
+}: {
+  label: string;
+  value: number;
+  tone?: "neutral" | "primary" | "destructive";
+  suffix?: string;
+}) {
+  return (
+    <div>
+      <div
+        className={cn(
+          "font-serif text-2xl tracking-tight tabular-nums",
+          tone === "primary" && "text-primary",
+          tone === "destructive" && value > 0 && "text-destructive",
+          tone === "neutral" && "text-foreground"
         )}
-
-        {/* Modal de cronograma del empleado mejorado */}
-        <Dialog open={isModalEmpleadoOpen} onOpenChange={setIsModalEmpleadoOpen}>
-          <DialogContent className="sm:max-w-2xl bg-white/95 backdrop-blur-xl border-slate-200/60">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-bold bg-gradient-to-r from-selecta-green to-primary bg-clip-text text-transparent">
-                Cronograma de {empleadoSeleccionado?.nombre_completo}
-              </DialogTitle>
-              <DialogDescription className="text-slate-600">
-                {empleadoSeleccionado?.rol} • Próximos 30 días
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-6">
-              {eventosEmpleado.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Calendar className="h-8 w-8 text-slate-400" />
-                  </div>
-                  <h3 className="font-semibold text-slate-800 mb-2">Sin eventos asignados</h3>
-                  <p className="text-slate-600">No hay eventos programados en los próximos 30 días</p>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
-                    {eventosEmpleado.map((evento) => {
-                      const personalData = evento.personal?.find(p => p.id === empleadoSeleccionado?.id);
-                      const horario = personalData?.hora_inicio && personalData?.hora_fin 
-                        ? `${personalData.hora_inicio}-${personalData.hora_fin}` 
-                        : 'Horario por confirmar';
-                      
-                      return (
-                        <div key={evento.id} className="bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-xl p-4 hover:shadow-md transition-all duration-200">
-                          <div className="flex justify-between items-start">
-                            <div className="space-y-1">
-                              <div className="font-semibold text-slate-800">{evento.nombre_evento}</div>
-                              <div className="text-sm text-slate-600 flex items-center space-x-1">
-                                <MapPin className="h-3 w-3" />
-                                <span>{evento.ubicacion}</span>
-                              </div>
-                              <div className="text-sm font-medium text-slate-700 capitalize">
-                                {formatLocalDate(evento.fecha_evento, 'es-CO', {
-                                  weekday: 'long',
-                                  day: 'numeric',
-                                  month: 'long'
-                                })}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <Badge variant="outline" className="bg-blue-50/80 border-blue-200/60 text-blue-700">
-                                {horario}
-                              </Badge>
-                              {personalData?.horas_trabajadas && (
-                                <div className="text-xs text-slate-500 mt-1">
-                                  {personalData.horas_trabajadas}h trabajadas
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="bg-gradient-to-r from-selecta-green/10 to-primary/10 rounded-xl p-4 border border-selecta-green/20">
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                      <div>
-                        <div className="text-xl font-bold text-selecta-green">{eventosEmpleado.length}</div>
-                        <div className="text-sm font-medium text-slate-600">Eventos asignados</div>
-                      </div>
-                      <div>
-                        <div className="text-xl font-bold text-primary">
-                          {eventosEmpleado.reduce((sum, evento) => {
-                            const personalData = evento.personal?.find(p => p.id === empleadoSeleccionado?.id);
-                            return sum + (personalData?.horas_trabajadas || 0);
-                          }, 0)}h
-                        </div>
-                        <div className="text-sm font-medium text-slate-600">Total horas</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-3">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        toast({
-                          title: "Función en desarrollo",
-                          description: "El envío por email estará disponible pronto"
-                        });
-                      }}
-                      className="bg-blue-50/80 hover:bg-blue-100/80 border-blue-200/60 text-blue-700"
-                    >
-                      <Mail className="h-4 w-4 mr-2" />
-                      Enviar por email
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        if (empleadoSeleccionado) {
-                          generarMensajeWhatsApp(empleadoSeleccionado);
-                       }
-                     }}
-                     className="bg-green-50/80 hover:bg-green-100/80 border-green-200/60 text-green-700"
-                   >
-                     <MessageSquare className="h-4 w-4 mr-2" />
-                     Copiar para WhatsApp
-                   </Button>
-                   <Button
-                     variant="outline"
-                     onClick={() => {
-                       toast({
-                         title: "Función en desarrollo", 
-                         description: "La exportación PDF estará disponible pronto"
-                       });
-                     }}
-                     className="bg-orange-50/80 hover:bg-orange-100/80 border-orange-200/60 text-orange-700"
-                   >
-                     <FileText className="h-4 w-4 mr-2" />
-                     Exportar PDF
-                   </Button>
-                 </div>
-               </>
-             )}
-           </div>
-         </DialogContent>
-       </Dialog>
-     </CardContent>
-   </Card>
- );
+      >
+        {value}
+        {suffix && <span className="text-lg text-muted-foreground">{suffix}</span>}
+      </div>
+      <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        {label}
+      </div>
+    </div>
+  );
 }

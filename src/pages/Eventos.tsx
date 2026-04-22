@@ -18,6 +18,7 @@ import type { ChecklistResult } from "@/lib/eventoChecklist";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from "react-router-dom";
 import { parseLocalDate } from "@/lib/dateLocal";
+import { PageHeader } from "@/components/Layout/PageHeader";
 import { requiereRegistroHoras } from "@/lib/calcularPagoPersonal";
 
 const localizer = dateFnsLocalizer({
@@ -267,15 +268,11 @@ export default function EventosPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Eventos</h1>
-          <p className="text-slate-500 mt-1">
-            {eventos.length} eventos registrados
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        kicker="Operación"
+        title="Eventos"
+        description={`${eventos.length} ${eventos.length === 1 ? "evento registrado" : "eventos registrados"} · agenda operativa del catering`}
+      />
 
       {/* Filters & View Toggle */}
       <Card>

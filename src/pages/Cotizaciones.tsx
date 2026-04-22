@@ -31,6 +31,7 @@ import {
   User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/Layout/PageHeader";
 
 export default function CotizacionesListPage() {
   const nav = useNavigate();
@@ -231,18 +232,18 @@ export default function CotizacionesListPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Cotizaciones</h1>
-          <p className="text-slate-500 mt-1">Gestión de cotizaciones y presupuestos</p>
-        </div>
-        <Button onClick={() => nav("/cotizaciones/nueva")}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Cotización
-        </Button>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        kicker="Operación"
+        title="Cotizaciones"
+        description="Propuestas y presupuestos — del brief inicial a la aprobación del cliente."
+        actions={
+          <Button onClick={() => nav("/cotizaciones/nueva")} className="gap-2">
+            <Plus className="h-4 w-4" strokeWidth={1.75} />
+            Nueva cotización
+          </Button>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
