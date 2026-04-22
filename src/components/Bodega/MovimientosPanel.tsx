@@ -168,7 +168,7 @@ export default function MovimientosPanel() {
       setEditing(null);
       qc.invalidateQueries({ queryKey: ["movimientos"] });
       qc.invalidateQueries({ queryKey: ["salidas-confirmadas"] });
-    } catch (e: any) {
+    } catch (e) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
   };

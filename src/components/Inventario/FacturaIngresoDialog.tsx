@@ -250,7 +250,7 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
         try {
           const path = await uploadFactura(file, mov.id);
           await inventarioMovimientoUpdateFacturaUrl(mov.id, path);
-        } catch (err: any) {
+        } catch (err) {
           toast({
             title: "Movimiento creado, pero la factura no se subió",
             description: err?.message ?? "Podés reintentar la subida desde el detalle del movimiento.",

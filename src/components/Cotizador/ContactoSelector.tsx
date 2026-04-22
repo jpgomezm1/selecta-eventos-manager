@@ -86,7 +86,7 @@ export function ContactoSelector({ clienteId, value, onChange }: Props) {
       setDialogOpen(false);
       setNewContacto({ nombre: "", cargo: "", telefono: "", correo: "" });
       toast({ title: "Contacto creado", description: `"${created.nombre}" fue agregado` });
-    } catch (err: any) {
+    } catch (err) {
       toast({
         title: "Error al crear contacto",
         description: err?.message || "Intenta de nuevo.",

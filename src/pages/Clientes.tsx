@@ -62,7 +62,7 @@ export default function ClientesPage() {
     try {
       const data = await listClientes();
       setClientes(data);
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
         description: error?.message || "Error al cargar clientes",
@@ -122,7 +122,7 @@ export default function ClientesPage() {
       try {
         const data = await listContactos(cliente.id);
         setContactos(data);
-      } catch (err: any) {
+      } catch (err) {
         setContactos([]);
         toast({
           title: "No se pudieron cargar los contactos",
@@ -175,7 +175,7 @@ export default function ClientesPage() {
       setShowContactoForm(false);
       setEditingContacto(null);
       fetchClientes();
-    } catch (error: any) {
+    } catch (error) {
       toast({ title: "Error", description: error?.message || "Error al guardar cliente", variant: "destructive" });
     } finally {
       setSaving(false);
@@ -187,7 +187,7 @@ export default function ClientesPage() {
       await deleteCliente(id);
       toast({ title: "Cliente eliminado", description: "El cliente fue eliminado exitosamente" });
       fetchClientes();
-    } catch (error: any) {
+    } catch (error) {
       const msg = error?.message?.includes("violates foreign key")
         ? "No se puede eliminar: este cliente tiene cotizaciones o eventos asociados."
         : error?.message || "Error al eliminar cliente";
@@ -222,7 +222,7 @@ export default function ClientesPage() {
       setContactoForm({ nombre: "", cargo: "", telefono: "", correo: "" });
       setEditingContacto(null);
       setShowContactoForm(false);
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err?.message || "Error al guardar contacto", variant: "destructive" });
     }
   };
@@ -233,7 +233,7 @@ export default function ClientesPage() {
       await deleteContacto(contacto.id);
       setContactos((prev) => prev.filter((c) => c.id !== contacto.id));
       toast({ title: "Contacto eliminado" });
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err?.message || "Error al eliminar", variant: "destructive" });
     }
   };
@@ -249,7 +249,7 @@ export default function ClientesPage() {
           c.id === updated.id ? updated : { ...c, es_principal: false }
         )
       );
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err?.message, variant: "destructive" });
     }
   };

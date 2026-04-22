@@ -65,7 +65,7 @@ export default function CierreEventoPanel({ eventoId, totalRequerimiento, estado
           menajeDevuelto: reserva?.estado === "devuelto",
           personalLiquidado: estadoLiquidacion === "liquidado",
         });
-      } catch (err: any) {
+      } catch (err) {
         toast({
           title: "Error al cargar cierre",
           description: err?.message ?? "No se pudieron obtener los costos del evento.",

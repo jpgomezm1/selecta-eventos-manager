@@ -82,7 +82,7 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
         .limit(1)
         .maybeSingle();
       setDespachado(!!salidaMov);
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
@@ -139,7 +139,7 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
       setShowDespacho(false);
       toast({ title: "Menaje despachado", description: "Se registró la salida de menaje." });
       onUpdated();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setDispatching(false);
@@ -167,7 +167,7 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
         }))
       );
       setShowDevolucion(true);
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
@@ -209,7 +209,7 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
       setShowDevolucion(false);
       toast({ title: "Devolución registrada", description: "Menaje devuelto y ajustes de stock aplicados." });
       onUpdated();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setReturning(false);

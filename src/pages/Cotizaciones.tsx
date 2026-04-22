@@ -133,7 +133,7 @@ export default function CotizacionesListPage() {
       const detalle = await getCotizacionDetalle(cotizacionId);
       setSelectedCotizacion(detalle);
       setPdfModalOpen(true);
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
         description: error?.message ?? "No se pudo cargar la información de la cotización.",
@@ -163,7 +163,7 @@ export default function CotizacionesListPage() {
 
       setPdfModalOpen(false);
       setSelectedCotizacion(null);
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error al generar PDF",
         description: error?.message ?? "No se pudo generar la propuesta. Inténtalo de nuevo.",

@@ -131,7 +131,7 @@ export default function EventosPage() {
             }
           }
           setChecklistMap(map);
-        } catch (err: any) {
+        } catch (err) {
           toast({
             title: "Progreso no disponible",
             description: err?.message ?? "No se pudo cargar el checklist de los eventos.",
@@ -139,7 +139,7 @@ export default function EventosPage() {
           });
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
         description: error?.message ?? "Error al cargar los eventos",

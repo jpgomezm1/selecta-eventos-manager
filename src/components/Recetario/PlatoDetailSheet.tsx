@@ -238,7 +238,7 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
         );
       }
       toast({ title: "Receta generada", description: "Revisa los datos y ajusta lo que necesites." });
-    } catch (e: any) {
+    } catch (e) {
       toast({ title: "Error al generar receta", description: e.message, variant: "destructive" });
     } finally {
       setAiLoading(false);

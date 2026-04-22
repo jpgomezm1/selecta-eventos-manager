@@ -169,7 +169,7 @@ export default function PersonalDetalle() {
       fetchTrabajos();
       setIsDialogOpen(false);
       resetFormulario();
-    } catch (error: any) {
+    } catch (error) {
       console.error("handleMarcarPagado falló:", error);
       toast({
         title: "Error al registrar el pago",

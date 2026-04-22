@@ -25,7 +25,7 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
       try {
         const o = await getOrCreateTransporteOrden(eventoId);
         setOrden(o);
-      } catch (err: any) {
+      } catch (err) {
         toast({ title: "Error", description: err.message, variant: "destructive" });
       } finally {
         setLoading(false);
@@ -70,7 +70,7 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
       toast({ title: "Orden de transporte guardada" });
       onChanged?.();
       return saved;
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
       return null;
     } finally {
@@ -86,7 +86,7 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
         setOrden(updated);
         onChanged?.();
         toast({ title: "Orden cancelada" });
-      } catch (err: any) {
+      } catch (err) {
         toast({ title: "Error", description: err.message, variant: "destructive" });
       }
       return;
@@ -109,7 +109,7 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
       setOrden(updated);
       onChanged?.();
       toast({ title: "Estado actualizado", description: `Orden ${estado}` });
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };

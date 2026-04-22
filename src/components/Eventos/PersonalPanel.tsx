@@ -52,7 +52,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
       ]);
       setCatalogo(catalog);
       setAsignados(assigned);
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message ?? "No se pudo cargar personal.", variant: "destructive" });
     } finally {
       setLoading(false);
@@ -102,7 +102,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
       await fetchData();
       onChanged?.();
       toast({ title: "Personal asignado", description: `${persona.nombre_completo} agregado al evento.` });
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message ?? "No se pudo asignar.", variant: "destructive" });
     }
   };
@@ -112,7 +112,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
       await removeEventoPersonal(evento_personal_id);
       await fetchData();
       onChanged?.();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message ?? "No se pudo eliminar.", variant: "destructive" });
     }
   };
@@ -143,7 +143,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
         notas_pago: row.notas_pago || null,
       });
       toast({ title: "Guardado", description: `${row.nombre_completo}: cambios aplicados.` });
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message ?? "No se pudo guardar.", variant: "destructive" });
       await fetchData();
     }

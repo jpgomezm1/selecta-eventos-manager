@@ -338,7 +338,7 @@ function NuevoIngredienteDialog({ open, onOpenChange }: { open: boolean; onOpenC
       toast({ title: "Ingrediente creado" });
       resetForm();
       onOpenChange(false);
-    } catch (e: any) {
+    } catch (e) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
       setSaving(false);

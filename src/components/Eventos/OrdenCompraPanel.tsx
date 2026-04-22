@@ -51,7 +51,7 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
         setOrden(null);
         setItems([]);
       }
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
@@ -66,7 +66,7 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
       setItems(result.items);
       toast({ title: "Orden generada", description: "La orden de compra fue creada desde el requerimiento." });
       onChanged?.();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setGenerating(false);
@@ -81,7 +81,7 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
       setItems(result.items);
       toast({ title: "Orden regenerada" });
       onChanged?.();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setGenerating(false);
@@ -98,7 +98,7 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
         : `Orden ${estado}`;
       toast({ title: "Estado actualizado", description: desc });
       onChanged?.();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
@@ -109,7 +109,7 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
     try {
       await generateOrdenCompraPDF({ orden, items, evento: eventoInfo });
       toast({ title: "PDF generado" });
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error al generar PDF", description: err.message, variant: "destructive" });
     } finally {
       setDownloadingPdf(false);
@@ -144,7 +144,7 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
         const result = await getOrdenCompra(eventoId);
         if (result) setOrden(result.orden);
       }
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
       loadOrden();
     }

@@ -53,7 +53,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
         setReserva(null);
         setItems([]);
       }
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
@@ -68,7 +68,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
       setItems(result.items);
       toast({ title: "Orden generada", description: "La orden de menaje fue creada desde el requerimiento." });
       onChanged?.();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setGenerating(false);
@@ -83,7 +83,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
       setItems(result.items);
       toast({ title: "Orden regenerada" });
       onChanged?.();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setGenerating(false);
@@ -119,7 +119,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
         items.filter((i) => i.cantidad_reservar > 0).map((i) => ({ menaje_id: i.menaje_id, cantidad: i.cantidad_reservar }))
       );
       toast({ title: "Reserva guardada" });
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);
@@ -148,7 +148,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
       setReserva({ ...reserva, estado: "confirmado" });
       toast({ title: "Orden confirmada", description: "El menaje quedó reservado y visible en el calendario de Bodega." });
       onChanged?.();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);
@@ -163,7 +163,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
       setItems([]);
       toast({ title: "Orden cancelada" });
       onChanged?.();
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
@@ -174,7 +174,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
     try {
       await generateOrdenMenajePDF({ items, evento: eventoInfo });
       toast({ title: "PDF generado" });
-    } catch (err: any) {
+    } catch (err) {
       toast({ title: "Error al generar PDF", description: err.message, variant: "destructive" });
     } finally {
       setDownloadingPdf(false);
