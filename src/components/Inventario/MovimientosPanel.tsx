@@ -158,13 +158,13 @@ export default function MovimientosPanel() {
                           <TableCell>
                             <span className="inline-flex items-center gap-1.5">
                               {mov.proveedor || (mov.evento_id ? "Evento vinculado" : "—")}
-                              {(mov as any).factura_url && (
+                              {(mov as { factura_url?: string }).factura_url && (
                                 <button
                                   className="text-emerald-600 hover:text-emerald-800"
                                   title="Ver factura"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    openFactura((mov as any).factura_url);
+                                    openFactura((mov as { factura_url?: string }).factura_url);
                                   }}
                                 >
                                   <Receipt className="h-4 w-4" />

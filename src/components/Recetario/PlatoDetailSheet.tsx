@@ -179,9 +179,9 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
         rendimiento: form.rendimiento ?? null,
         notas: form.notas ?? null,
         margen_ganancia: form.margen_ganancia ?? null,
-      } as any);
+      });
     } else {
-      const { ingredientes: _, ...updates } = form as any;
+      const { ingredientes: _ingredientes, ...updates } = form as Partial<PlatoCatalogo> & { ingredientes?: unknown };
       updateMut.mutate({ ...updates, precio: precioFinal }, {
         onSuccess: () => {
           // Also save ingredients when updating plato
@@ -327,7 +327,7 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-slate-500">Tipo menú</label>
-                  <Select value={form.tipo_menu ?? "Menu General"} onValueChange={(v) => setForm({ ...form, tipo_menu: v as any })}>
+                  <Select value={form.tipo_menu ?? "Menu General"} onValueChange={(v) => setForm({ ...form, tipo_menu: v as PlatoCatalogo["tipo_menu"] })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Menu General">Menu General</SelectItem>

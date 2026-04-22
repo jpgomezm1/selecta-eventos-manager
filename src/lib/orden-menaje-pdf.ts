@@ -251,7 +251,7 @@ export async function generateOrdenMenajePDF(data: OrdenMenajePDFData): Promise<
     pdf.setFontSize(7);
     pdf.setTextColor(...colors.lightText);
     const totalPages = pdf.internal.getNumberOfPages();
-    const currentPage = (pdf as any).internal.getCurrentPageInfo().pageNumber;
+    const currentPage = (pdf as unknown as { internal: { getCurrentPageInfo(): { pageNumber: number } } }).internal.getCurrentPageInfo().pageNumber;
     const pageTxt = `${currentPage} / ${totalPages}`;
     pdf.text(pageTxt, pageWidth - 15 - pdf.getTextWidth(pageTxt), footerY);
   };

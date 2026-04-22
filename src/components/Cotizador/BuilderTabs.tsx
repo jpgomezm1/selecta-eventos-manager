@@ -122,6 +122,7 @@ export default function BuilderTabs({
   const getFilteredData = useMemo(() => {
     const qnorm = q.trim().toLowerCase();
     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filterAndSort = <T extends { [k: string]: any }>(
       arr: T[], 
       searchFields: (x: T) => string[],
@@ -153,7 +154,8 @@ export default function BuilderTabs({
 
       // Ordenamiento
       filtered.sort((a, b) => {
-        let aVal, bVal: any;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let aVal: any, bVal: any;
         
         switch (sortBy) {
           case "nombre":

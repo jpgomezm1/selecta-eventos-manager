@@ -87,7 +87,7 @@ export async function getCotizacionByShareToken(token: string): Promise<{
 
   // 2. Fetch cotizacion. Try with joins first (best-effort — RLS/schema cache
   //    can reject the joined select even when the base table works).
-  let cot: any = null;
+  let cot: Record<string, unknown> | null = null;
   {
     const { data, error } = await supabase
       .from("cotizaciones")
@@ -182,12 +182,13 @@ export async function getCotizacionByShareToken(token: string): Promise<{
     })
   );
 
+  const cotRow = cot as Record<string, unknown>;
   return {
     cotizacion: {
-      ...(cot as any),
-      total_cotizado: Number(cot.total_cotizado),
-      cliente: cot.clientes ?? null,
-      contacto: cot.cliente_contactos ?? null,
+      ...cotRow,
+      total_cotizado: Number(cotRow.total_cotizado as number | string),
+      cliente: (cotRow.clientes ?? null) as Cotizacion["cliente"],
+      contacto: (cotRow.cliente_contactos ?? null) as Cotizacion["contacto"],
     } as Cotizacion,
     versiones,
     lugares: (lugares ?? []).map((l) => ({

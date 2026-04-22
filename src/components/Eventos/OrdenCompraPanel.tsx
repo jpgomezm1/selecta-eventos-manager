@@ -117,12 +117,11 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
   };
 
   const handleItemUpdate = async (item: OrdenCompraItem, field: "cantidad_comprar" | "costo_unitario", value: number) => {
-    const patch = { [field]: value } as any;
-    if (field === "cantidad_comprar") {
-      patch.costo_unitario = item.costo_unitario;
-    } else {
-      patch.cantidad_comprar = item.cantidad_comprar;
-    }
+    const patch = {
+      cantidad_comprar: field === "cantidad_comprar" ? value : item.cantidad_comprar,
+      costo_unitario: field === "costo_unitario" ? value : item.costo_unitario,
+      subtotal: 0,
+    };
     patch.subtotal = patch.cantidad_comprar * patch.costo_unitario;
 
     // Optimistic update

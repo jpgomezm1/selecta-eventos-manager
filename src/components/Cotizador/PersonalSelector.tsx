@@ -42,7 +42,7 @@ type Props = {
 };
 
 const ROLES_CONFIG: Record<string, { 
-  icon: any; 
+  icon: React.ComponentType<{ className?: string }>;
   color: string; 
   description: string;
   suggestedRatio?: number; // personas por invitado

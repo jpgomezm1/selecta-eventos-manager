@@ -129,7 +129,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
   const handleSelectSalida = (salidaId: string) => {
     if (salidaId === "__none__") {
       setSelectedSalidaId(null);
-      setMov({ ...mov, evento_id: null, reserva_id: null } as any);
+      setMov({ ...mov, evento_id: null, reserva_id: null });
       setItems([]);
       setAutoPopulated(false);
       return;
@@ -138,7 +138,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
     if (!salida) return;
 
     setSelectedSalidaId(salidaId);
-    setMov({ ...mov, evento_id: salida.evento_id, reserva_id: salida.reserva_id } as any);
+    setMov({ ...mov, evento_id: salida.evento_id, reserva_id: salida.reserva_id });
 
     const newItems: DialogItem[] = salida.items.map((si) => ({
       menaje_id: si.menaje_id,
@@ -260,7 +260,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Estado</label>
-                  <Select value={mov.estado} onValueChange={(v) => setMov({ ...mov, estado: v as any })}>
+                  <Select value={mov.estado} onValueChange={(v) => setMov({ ...mov, estado: v as MenajeMovimiento["estado"] })}>
                     <SelectTrigger className="bg-white border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
                       <SelectValue />
                     </SelectTrigger>
@@ -354,12 +354,12 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
                       value={mov.evento_id ?? "__none__"}
                       onValueChange={(v) => {
                         if (v === "__none__") {
-                          setMov({ ...mov, evento_id: null, reserva_id: null } as any);
+                          setMov({ ...mov, evento_id: null, reserva_id: null });
                           setItems([]);
                           setAutoPopulated(false);
                         } else {
                           const match = eventosConReserva?.find((e) => e.evento_id === v);
-                          setMov({ ...mov, evento_id: v, reserva_id: match?.reserva_id ?? null } as any);
+                          setMov({ ...mov, evento_id: v, reserva_id: match?.reserva_id ?? null });
                           // Auto-populate will happen via useEffect when reservaData loads
                           setAutoPopulated(false);
                         }

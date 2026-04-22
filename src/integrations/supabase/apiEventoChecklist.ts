@@ -66,8 +66,8 @@ export async function fetchChecklistData(eventoId: string): Promise<ChecklistDat
     ordenCompra: ordenCompra as { estado: string } | null,
     menajeReserva: menajeReserva as { estado: string } | null,
     transporteOrden: transporteOrden as { estado: string } | null,
-    fechaEvento: (evento as any)?.fecha_evento ?? "",
-    estadoLiquidacion: (evento as any)?.estado_liquidacion ?? "pendiente",
+    fechaEvento: (evento as { fecha_evento?: string } | null)?.fecha_evento ?? "",
+    estadoLiquidacion: (evento as { estado_liquidacion?: string } | null)?.estado_liquidacion ?? "pendiente",
     menajeDespachado: !!movSalida,
   };
 }

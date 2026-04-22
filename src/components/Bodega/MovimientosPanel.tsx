@@ -123,11 +123,11 @@ export default function MovimientosPanel() {
       reserva_id: null,
       notas: "",
       items: [],
-    } as any);
+    });
     setOpen(true);
   };
 
-  const handleEdit = (movimiento) => {
+  const handleEdit = (movimiento: MenajeMovimiento & { items: MenajeMovimientoItem[] }) => {
     setEditing(movimiento);
     setOpen(true);
   };
@@ -431,8 +431,8 @@ export default function MovimientosPanel() {
                       </TableCell>
 
                       <TableCell>
-                        {(m as any).nombre_evento ? (
-                          <span className="text-sm font-medium text-slate-700">{(m as any).nombre_evento}</span>
+                        {(m as { nombre_evento?: string }).nombre_evento ? (
+                          <span className="text-sm font-medium text-slate-700">{(m as { nombre_evento?: string }).nombre_evento}</span>
                         ) : (
                           <span className="text-slate-400 text-sm">&mdash;</span>
                         )}
@@ -565,7 +565,7 @@ export default function MovimientosPanel() {
         <MovimientoDialog
           open={open}
           onOpenChange={setOpen}
-          movimiento={editing as any}
+          movimiento={editing}
           onSave={handleSave}
         />
       )}

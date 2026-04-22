@@ -49,8 +49,9 @@ export async function generateOrdenCompra(
     { nombre: string; unidad: string; costo: number; stock: number; totalNecesario: number }
   >();
 
-  for (const pi of platoIngredientes ?? []) {
-    const ing = (pi as any).ingredientes_catalogo;
+  type PIWithIng = typeof platoIngredientes extends (infer U)[] | null ? U & { ingredientes_catalogo?: { nombre: string; unidad: string; costo_por_unidad: number | string; stock_actual?: number | string } | null } : never;
+  for (const pi of (platoIngredientes ?? []) as PIWithIng[]) {
+    const ing = pi.ingredientes_catalogo;
     if (!ing) continue;
 
     const porcionesReceta = porcionesMap.get(pi.plato_id) || 1;
@@ -206,7 +207,7 @@ export async function updateOrdenCompraItem(
   itemId: string,
   patch: Partial<Pick<OrdenCompraItem, "cantidad_comprar" | "costo_unitario">>
 ): Promise<OrdenCompraItem> {
-  const updates: any = { ...patch };
+  const updates: Record<string, unknown> = { ...patch };
   if (patch.cantidad_comprar != null && patch.costo_unitario != null) {
     updates.subtotal = patch.cantidad_comprar * patch.costo_unitario;
   }

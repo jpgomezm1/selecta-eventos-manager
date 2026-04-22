@@ -200,12 +200,15 @@ export async function generateSelectaPremiumPDF(
 
     yPos += 60;
 
-    // Categorías de servicios
+    // Categorías de servicios. Cada entry tiene un `items` con shape distinto
+    // (Plato, Personal, Transporte, Menaje), con `getValue` específico por
+    // categoría — los any son intencionales acá.
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     const categories: Array<{
       title: string;
       items: any[];
       color: readonly [number, number, number];
-      getValue: (item) => { name: string; price: number; qty: number };
+      getValue: (item: any) => { name: string; price: number; qty: number };
     }> = [
       {
         title: 'EXPERIENCIA GASTRONÓMICA',
@@ -226,6 +229,7 @@ export async function generateSelectaPremiumPDF(
         getValue: (item) => ({ name: `Transporte a ${item.lugar}`, price: item.tarifa_unitaria, qty: item.cantidad })
       }
     ];
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     categories.forEach((category) => {
       if (category.items.length > 0) {

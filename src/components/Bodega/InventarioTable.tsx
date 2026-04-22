@@ -59,7 +59,7 @@ export default function InventarioTable() {
   const totalValue = (data ?? []).reduce((sum, item) => sum + item.stock_total, 0);
 
   const createMut = useMutation({
-    mutationFn: () => menajeCatalogoCreate(newItem as any),
+    mutationFn: () => menajeCatalogoCreate(newItem as Omit<MenajeCatalogo, "id" | "created_at">),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["menaje-catalogo"] });
       setNewItem({ nombre: "", categoria: "", unidad: "unidad", stock_total: 0, precio_alquiler: 0, activo: true });

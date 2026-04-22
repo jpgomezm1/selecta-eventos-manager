@@ -1194,7 +1194,7 @@ async function main() {
     if (links.length > 0) {
       const { error: linkErr } = await supabase
         .from("plato_ingredientes")
-        .insert(links as any[]);
+        .insert(links as unknown as { plato_id: string; ingrediente_id: string; cantidad: number }[]);
       if (linkErr) {
         console.error(`  ❌ Error linking ingredients for "${dish.nombre}":`, linkErr.message);
       } else {

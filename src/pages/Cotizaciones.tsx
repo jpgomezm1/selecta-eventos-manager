@@ -42,7 +42,7 @@ export default function CotizacionesListPage() {
   const [sortBy, setSortBy] = useState<string>("fecha_desc");
   const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
-  const [selectedCotizacion, setSelectedCotizacion] = useState<any>(null);
+  const [selectedCotizacion, setSelectedCotizacion] = useState<Awaited<ReturnType<typeof getCotizacionDetalle>> | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 

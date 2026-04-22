@@ -181,7 +181,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
       estado_liquidacion: estadoLiquidacion,
       personal: asignados,
       costo_total: totalCalculado,
-    } as any;
+    } as EventoConPersonal;
     setLiquidacionEvento(evento);
     setIsLiquidacionOpen(true);
   };
@@ -352,7 +352,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
                       <Select
                         value={p.estado_pago ?? "pendiente"}
                         disabled={p.estado_pago === 'pagado'}
-                        onValueChange={(v) => handleUpdateRow(p.evento_personal_id!, { estado_pago: v as any })}
+                        onValueChange={(v) => handleUpdateRow(p.evento_personal_id!, { estado_pago: v as PersonalAsignado["estado_pago"] })}
                       >
                         <SelectTrigger className="w-28 mx-auto h-8">
                           <SelectValue />
