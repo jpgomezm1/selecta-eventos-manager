@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, DollarSign, Clock, CheckCircle, AlertCircle, Eye, Download, BarChart3, User, CreditCard, TrendingUp, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,17 +61,10 @@ export default function PersonalDetalle() {
   });
 
   useEffect(() => {
-    if (id) {
-      fetchPersonalData();
-      fetchTrabajos();
-    }
-  }, [id]);
-
-  useEffect(() => {
     setCurrentPage(1);
   }, [filtroEstado]);
 
-  const fetchPersonalData = async () => {
+  const fetchPersonalData = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("personal")
@@ -84,14 +77,14 @@ export default function PersonalDetalle() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Error al cargar datos del personal",
+        description: (error as Error)?.message ?? "Error al cargar datos del personal",
         variant: "destructive",
       });
       navigate("/personal");
     }
-  };
+  }, [id, toast, navigate]);
 
-  const fetchTrabajos = async () => {
+  const fetchTrabajos = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("evento_personal")
@@ -107,13 +100,20 @@ export default function PersonalDetalle() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Error al cargar historial de trabajos",
+        description: (error as Error)?.message ?? "Error al cargar historial de trabajos",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, toast]);
+
+  useEffect(() => {
+    if (id) {
+      fetchPersonalData();
+      fetchTrabajos();
+    }
+  }, [id, fetchPersonalData, fetchTrabajos]);
 
   const handleMarcarPagado = async () => {
     if (!trabajoSeleccionado) return;

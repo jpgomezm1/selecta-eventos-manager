@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Calendar, 
@@ -45,17 +45,7 @@ export function ProximosEventos() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    cargarDatos();
-  }, []);
-
-  useEffect(() => {
-    if (empleadoSeleccionado) {
-      cargarEventosEmpleado();
-    }
-  }, [empleadoSeleccionado]);
-
-  const cargarDatos = async () => {
+  const cargarDatos = useCallback(async () => {
     try {
       // Cargar personal
       const { data: personalData } = await supabase
@@ -111,15 +101,15 @@ export function ProximosEventos() {
       console.error("Error cargando datos:", error);
       toast({
         title: "Error",
-        description: "Error al cargar los datos",
+        description: (error as Error)?.message ?? "Error al cargar los datos",
         variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [filtroTiempo, toast]);
 
-  const cargarEventosEmpleado = async () => {
+  const cargarEventosEmpleado = useCallback(async () => {
     if (!empleadoSeleccionado) return;
 
     try {
@@ -153,7 +143,17 @@ export function ProximosEventos() {
     } catch (error) {
       console.error("Error cargando eventos del empleado:", error);
     }
-  };
+  }, [empleadoSeleccionado]);
+
+  useEffect(() => {
+    cargarDatos();
+  }, [cargarDatos]);
+
+  useEffect(() => {
+    if (empleadoSeleccionado) {
+      cargarEventosEmpleado();
+    }
+  }, [empleadoSeleccionado, cargarEventosEmpleado]);
 
   const getEstadoEvento = (evento: EventoConPersonal) => {
     const personalAsignado = evento.personal?.length || 0;

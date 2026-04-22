@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -53,6 +53,25 @@ export function ShareDialog({
     ? baseUrl
     : `${baseUrl}?v=${selectedVersion}`;
 
+  const loadToken = useCallback(async () => {
+    setLoading(true);
+    try {
+      const existing = await getShareToken(cotizacionId);
+      setToken(existing);
+      if (existing) {
+        setBaseUrl(`${window.location.origin}/compartido/${existing.token}`);
+      }
+    } catch {
+      toast({
+        title: "Error",
+        description: "No se pudo verificar el enlace compartido",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [cotizacionId, toast]);
+
   useEffect(() => {
     if (open) {
       loadToken();
@@ -64,26 +83,7 @@ export function ShareDialog({
       setCopied(false);
       setLoading(true);
     }
-  }, [open, cotizacionId]);
-
-  async function loadToken() {
-    setLoading(true);
-    try {
-      const existing = await getShareToken(cotizacionId);
-      setToken(existing);
-      if (existing) {
-        setBaseUrl(`${window.location.origin}/compartido/${existing.token}`);
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "No se pudo verificar el enlace compartido",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
+  }, [open, loadToken]);
 
   async function handleGenerate() {
     setGenerating(true);

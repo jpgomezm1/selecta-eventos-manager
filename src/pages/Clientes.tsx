@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Search, Edit, Trash2, UserCircle, UserPlus, ChevronLeft, ChevronRight, Phone, Mail, Building2, User, Plus, IdCard, Briefcase, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,6 @@ const emptyForm: ClienteInsert & { tipo: 'persona_natural' | 'empresa' } = {
 
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [filteredClientes, setFilteredClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTipo, setFilterTipo] = useState<string>("all");
@@ -49,33 +48,8 @@ export default function ClientesPage() {
   const [editingContacto, setEditingContacto] = useState<ContactoCliente | null>(null);
   const [showContactoForm, setShowContactoForm] = useState(false);
 
-  useEffect(() => {
-    fetchClientes();
-  }, []);
-
-  useEffect(() => {
-    filterData();
-    setCurrentPage(1);
-  }, [clientes, searchTerm, filterTipo]);
-
-  const fetchClientes = async () => {
-    try {
-      const data = await listClientes();
-      setClientes(data);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error?.message || "Error al cargar clientes",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterData = () => {
+  const filteredClientes = useMemo(() => {
     let filtered = clientes;
-
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -87,13 +61,34 @@ export default function ClientesPage() {
           c.nit?.toLowerCase().includes(term)
       );
     }
-
     if (filterTipo !== "all") {
       filtered = filtered.filter((c) => c.tipo === filterTipo);
     }
+    return filtered;
+  }, [clientes, searchTerm, filterTipo]);
 
-    setFilteredClientes(filtered);
-  };
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterTipo]);
+
+  const fetchClientes = useCallback(async () => {
+    try {
+      const data = await listClientes();
+      setClientes(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: (error as Error)?.message || "Error al cargar clientes",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchClientes();
+  }, [fetchClientes]);
 
   const openCreate = () => {
     setSelectedCliente(null);

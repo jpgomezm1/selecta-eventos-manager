@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -124,9 +124,15 @@ export function PersonalSelector({
   const [selectedCategory, setSelectedCategory] = useState<string>("todos");
   const [showSuggestions, setShowSuggestions] = useState(true);
 
-  const getQty = (id: string) => itemsSeleccionados.find((x) => x.personal_costo_id === id)?.cantidad ?? 0;
-  const getAsignados = (id: string) => itemsSeleccionados.find((x) => x.personal_costo_id === id)?.asignados ?? [];
-  const isSelected = (id: string) => getQty(id) > 0;
+  const getQty = useCallback(
+    (id: string) => itemsSeleccionados.find((x) => x.personal_costo_id === id)?.cantidad ?? 0,
+    [itemsSeleccionados]
+  );
+  const getAsignados = useCallback(
+    (id: string) => itemsSeleccionados.find((x) => x.personal_costo_id === id)?.asignados ?? [],
+    [itemsSeleccionados]
+  );
+  const isSelected = useCallback((id: string) => getQty(id) > 0, [getQty]);
 
   // Calcular sugerencias inteligentes
   const suggestions = useMemo(() => {
@@ -161,7 +167,7 @@ export function PersonalSelector({
         if (!aSelected && bSelected) return 1;
         return a.rol.localeCompare(b.rol);
       });
-  }, [data, q, selectedCategory]);
+  }, [data, q, selectedCategory, isSelected]);
 
   // Estadísticas
   const stats = useMemo(() => {

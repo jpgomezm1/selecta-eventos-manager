@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -72,8 +72,11 @@ export function TransporteSelector({
   const [selectedLugar, setSelectedLugar] = useState<string>("todos");
   const [sortBy, setSortBy] = useState<string>("lugar");
 
-  const getQty = (id: string) => itemsSeleccionados.find((x) => x.transporte_id === id)?.cantidad ?? 0;
-  const isSelected = (id: string) => getQty(id) > 0;
+  const getQty = useCallback(
+    (id: string) => itemsSeleccionados.find((x) => x.transporte_id === id)?.cantidad ?? 0,
+    [itemsSeleccionados]
+  );
+  const isSelected = useCallback((id: string) => getQty(id) > 0, [getQty]);
 
   // Extraer opciones únicas
   const options = useMemo(() => {

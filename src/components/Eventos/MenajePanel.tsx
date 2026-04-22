@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -38,11 +38,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
   const [saving, setSaving] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
-  useEffect(() => {
-    loadOrden();
-  }, [eventoId, fechaEvento]);
-
-  const loadOrden = async () => {
+  const loadOrden = useCallback(async () => {
     setLoading(true);
     try {
       const result = await getOrdenMenaje(eventoId, fechaEvento);
@@ -54,11 +50,15 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
         setItems([]);
       }
     } catch (err) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Error", description: (err as Error)?.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventoId, fechaEvento, toast]);
+
+  useEffect(() => {
+    loadOrden();
+  }, [loadOrden]);
 
   const handleGenerate = async () => {
     setGenerating(true);

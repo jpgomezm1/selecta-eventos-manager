@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Edit, Users, Eye, UserPlus, Upload, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +20,6 @@ const ITEMS_PER_PAGE = 10;
 export default function PersonalPage() {
   const navigate = useNavigate();
   const [personal, setPersonal] = useState<Personal[]>([]);
-  const [filteredPersonal, setFilteredPersonal] = useState<Personal[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState<string>("all");
@@ -30,16 +29,26 @@ export default function PersonalPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchPersonal();
-  }, []);
-
-  useEffect(() => {
-    filterPersonal();
-    setCurrentPage(1);
+  const filteredPersonal = useMemo(() => {
+    let filtered = personal;
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (p) =>
+          p.nombre_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          p.numero_cedula.includes(searchTerm)
+      );
+    }
+    if (filterRole !== "all") {
+      filtered = filtered.filter((p) => p.rol === filterRole);
+    }
+    return filtered;
   }, [personal, searchTerm, filterRole]);
 
-  const fetchPersonal = async () => {
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterRole]);
+
+  const fetchPersonal = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("personal")
@@ -51,31 +60,17 @@ export default function PersonalPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Error al cargar el personal",
+        description: (error as Error)?.message ?? "Error al cargar el personal",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const filterPersonal = () => {
-    let filtered = personal;
-
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (p) =>
-          p.nombre_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.numero_cedula.includes(searchTerm)
-      );
-    }
-
-    if (filterRole !== "all") {
-      filtered = filtered.filter((p) => p.rol === filterRole);
-    }
-
-    setFilteredPersonal(filtered);
-  };
+  useEffect(() => {
+    fetchPersonal();
+  }, [fetchPersonal]);
 
   const handlePersonalSubmit = () => {
     fetchPersonal();

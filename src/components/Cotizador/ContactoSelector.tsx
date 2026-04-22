@@ -57,6 +57,11 @@ export function ContactoSelector({ clienteId, value, onChange }: Props) {
       })
       .catch(() => setContactos([]))
       .finally(() => setLoading(false));
+    // Deps omitidas a propósito: el effect corre al cambiar de cliente
+    // (reset de contactos + auto-select del principal). Incluir value/onChange
+    // haría que el auto-select se dispare en cada cambio de value, pisando
+    // la selección del usuario.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clienteId]);
 
   const selectedContacto = contactos.find((c) => c.id === value) ?? null;

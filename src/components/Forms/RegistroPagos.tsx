@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -28,11 +28,7 @@ export function RegistroPagos({ empleadoId, empleadoNombre }: RegistroPagosProps
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchRegistrosPagos();
-  }, [empleadoId]);
-
-  const fetchRegistrosPagos = async () => {
+  const fetchRegistrosPagos = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("registro_pagos")
@@ -51,13 +47,17 @@ export function RegistroPagos({ empleadoId, empleadoNombre }: RegistroPagosProps
     } catch (error) {
       toast({
         title: "Error",
-        description: "Error al cargar el registro de pagos",
+        description: (error as Error)?.message ?? "Error al cargar el registro de pagos",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [empleadoId, toast]);
+
+  useEffect(() => {
+    fetchRegistrosPagos();
+  }, [fetchRegistrosPagos]);
 
   const registrosFiltrados = registros.filter(registro => {
     const matchMetodo = filtroMetodo === "todos" || registro.metodo_pago === filtroMetodo;

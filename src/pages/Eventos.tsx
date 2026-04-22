@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Calendar, MapPin, Users, DollarSign, Grid3X3, CalendarDays, Search, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { es } from "date-fns/locale";
@@ -53,11 +53,7 @@ export default function EventosPage() {
   const [checklistMap, setChecklistMap] = useState<Record<string, ChecklistResult>>({});
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchEventos();
-  }, []);
-
-  const fetchEventos = async () => {
+  const fetchEventos = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("eventos")
@@ -142,13 +138,17 @@ export default function EventosPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: error?.message ?? "Error al cargar los eventos",
+        description: (error as Error)?.message ?? "Error al cargar los eventos",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchEventos();
+  }, [fetchEventos]);
 
   const handleLiquidarEvento = async (evento: EventoConPersonal) => {
     const personalSinHoras = evento.personal.filter(p =>

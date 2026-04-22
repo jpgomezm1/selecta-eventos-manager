@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,11 +36,7 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
   const [generating, setGenerating] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
-  useEffect(() => {
-    loadOrden();
-  }, [eventoId]);
-
-  const loadOrden = async () => {
+  const loadOrden = useCallback(async () => {
     setLoading(true);
     try {
       const result = await getOrdenCompra(eventoId);
@@ -52,11 +48,15 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
         setItems([]);
       }
     } catch (err) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Error", description: (err as Error)?.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventoId, toast]);
+
+  useEffect(() => {
+    loadOrden();
+  }, [loadOrden]);
 
   const handleGenerate = async () => {
     setGenerating(true);
