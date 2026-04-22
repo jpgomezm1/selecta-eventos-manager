@@ -80,6 +80,17 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
 
   const onEstado = async (estado: TransporteOrden["estado"]) => {
     if (!orden?.id) return;
+    if (estado === "cancelado") {
+      try {
+        const updated = await setTransporteOrdenEstado(orden.id, estado);
+        setOrden(updated);
+        onChanged?.();
+        toast({ title: "Orden cancelada" });
+      } catch (err: any) {
+        toast({ title: "Error", description: err.message, variant: "destructive" });
+      }
+      return;
+    }
     if (estado === "programado" || estado === "finalizado") {
       const errorCompletos = validarCompletos(orden);
       if (errorCompletos) {
@@ -100,6 +111,13 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
       toast({ title: "Estado actualizado", description: `Orden ${estado}` });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleCancelarClick = () => {
+    if (!orden) return;
+    if (window.confirm("¿Cancelar esta orden de transporte? Se puede revertir cambiando el estado a borrador.")) {
+      onEstado("cancelado");
     }
   };
 
@@ -314,6 +332,16 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
                   </>
                 )}
               </Button>
+              {(orden.estado === "borrador" || orden.estado === "programado") && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelarClick}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  Cancelar
+                </Button>
+              )}
             </div>
           </div>
 
