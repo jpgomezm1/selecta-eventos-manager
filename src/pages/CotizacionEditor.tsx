@@ -208,9 +208,9 @@ export default function CotizacionEditorPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-8 h-8 border-2 border-slate-200 border-t-selecta-green rounded-full animate-spin" />
-          <p className="text-slate-500">Cargando cotización...</p>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-muted/70 animate-pulse" />
+          <p className="text-sm text-muted-foreground">Cargando cotización...</p>
         </div>
       </div>
     );
@@ -220,11 +220,9 @@ export default function CotizacionEditorPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center space-y-4 text-center">
-          <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center">
-            <FileText className="h-6 w-6 text-red-500" />
-          </div>
-          <h3 className="text-lg font-semibold text-slate-800">Error al cargar</h3>
-          <p className="text-slate-500">No se pudo obtener la información de la cotización</p>
+          <FileText className="h-8 w-8 text-destructive" strokeWidth={1.5} />
+          <h3 className="font-serif text-lg text-foreground">Error al cargar</h3>
+          <p className="text-sm text-muted-foreground">No se pudo obtener la información de la cotización</p>
           <Button onClick={() => nav("/cotizaciones")} variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver a cotizaciones
@@ -240,26 +238,20 @@ export default function CotizacionEditorPage() {
   const isAprobada = cotizacion.estado === "Cotización Aprobada";
   const versionDefinitiva = versiones.find((v) => v.is_definitiva);
 
-  // Get estado badge color for header
+  // Get estado badge config
   const getStatusConfig = (estado: string) => {
-    const configs: Record<string, { bg: string; text: string; label: string; border: string }> = {
+    const configs: Record<string, { cls: string; label: string }> = {
       "Pendiente por Aprobación": {
-        bg: "bg-yellow-50",
-        text: "text-yellow-700",
+        cls: "text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]",
         label: "Pendiente",
-        border: "border-yellow-200",
       },
       "Cotización Aprobada": {
-        bg: "bg-green-50",
-        text: "text-green-700",
+        cls: "text-primary border-primary/40",
         label: "Aprobada",
-        border: "border-green-200",
       },
       Rechazada: {
-        bg: "bg-red-50",
-        text: "text-red-700",
+        cls: "text-destructive border-destructive/40",
         label: "Rechazada",
-        border: "border-red-200",
       },
     };
     return configs[estado] || configs["Pendiente por Aprobación"];
@@ -271,12 +263,12 @@ export default function CotizacionEditorPage() {
     <div className="container mx-auto px-4 py-8">
       {/* Approved banner */}
       {isAprobada && versionDefinitiva && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center justify-between">
+        <div className="mb-6 p-4 bg-primary/5 border border-primary/30 rounded-md flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <ShieldCheck className="h-5 w-5 text-green-600" />
+            <ShieldCheck className="h-5 w-5 text-primary" strokeWidth={1.75} />
             <div>
-              <span className="font-semibold text-green-800">Cotización aprobada</span>
-              <span className="text-green-600 text-sm ml-2">
+              <span className="font-semibold text-foreground">Cotización aprobada</span>
+              <span className="text-muted-foreground text-sm ml-2">
                 ({versionDefinitiva.nombre_opcion})
               </span>
             </div>
@@ -284,7 +276,6 @@ export default function CotizacionEditorPage() {
           <Button
             size="sm"
             variant="outline"
-            className="border-green-300 text-green-700 hover:bg-green-100"
             onClick={async () => {
               const { data: ev } = await supabase
                 .from("eventos")
@@ -311,26 +302,25 @@ export default function CotizacionEditorPage() {
             variant="outline"
             size="sm"
             onClick={() => setShareDialogOpen(true)}
-            className="border-blue-200 text-blue-600 hover:bg-blue-50"
           >
-            <Share2 className="h-4 w-4 mr-1.5" />
+            <Share2 className="h-4 w-4 mr-1.5" strokeWidth={1.75} />
             Compartir
           </Button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-semibold text-slate-900">
+              <h1 className="font-serif text-2xl text-foreground">
                 {cotizacion.nombre_cotizacion}
               </h1>
-              <Badge className={cn("font-semibold border", statusConfig.bg, statusConfig.text, statusConfig.border)}>
+              <Badge variant="outline" className={cn("font-normal", statusConfig.cls)}>
                 {statusConfig.label}
               </Badge>
             </div>
-            <div className="flex items-center space-x-4 mt-1 text-sm text-slate-500">
+            <div className="flex items-center space-x-4 mt-1 text-sm text-muted-foreground">
               {cotizacion.cliente?.nombre && <span>{cotizacion.cliente.nombre}</span>}
               {!cotizacion.cliente?.nombre && cotizacion.cliente_nombre && (
                 <span>{cotizacion.cliente_nombre}</span>
               )}
-              <span>{cotizacion.numero_invitados} invitados</span>
+              <span className="tabular-nums">{cotizacion.numero_invitados} invitados</span>
               {cotizacion.fecha_evento_estimada && (
                 <span>
                   {formatLocalDate(cotizacion.fecha_evento_estimada, "es-ES")}
@@ -346,8 +336,8 @@ export default function CotizacionEditorPage() {
         <div className="xl:col-span-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg font-semibold text-slate-900">
-                Opciones de Cotización
+              <CardTitle className="font-serif text-lg text-foreground">
+                Opciones de cotización
               </CardTitle>
               {!isAprobada && (
                 <Button
@@ -357,12 +347,12 @@ export default function CotizacionEditorPage() {
                 >
                   {creandoVersion ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                      <div className="w-4 h-4 rounded-full bg-primary-foreground/30 animate-pulse mr-2" />
                       Creando...
                     </>
                   ) : (
                     <>
-                      <Plus className="h-4 w-4 mr-1" />
+                      <Plus className="h-4 w-4 mr-1" strokeWidth={1.75} />
                       Añadir opción
                     </>
                   )}
@@ -377,7 +367,7 @@ export default function CotizacionEditorPage() {
                 className="w-full"
               >
                 {/* Version tabs */}
-                <TabsList className="flex overflow-x-auto gap-1 bg-slate-100 rounded-xl p-1.5 mb-6">
+                <TabsList className="flex overflow-x-auto gap-1 mb-6">
                   {versiones.map((v) => {
                     const vTotal = Number(v.total) || 0;
 
@@ -385,21 +375,19 @@ export default function CotizacionEditorPage() {
                       <TabsTrigger
                         key={v.id}
                         value={v.id}
-                        className="flex items-center gap-2 whitespace-nowrap data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg font-semibold transition-all px-4 py-2.5"
+                        className="flex items-center gap-2 whitespace-nowrap px-4 py-2 font-medium"
                       >
                         {v.is_definitiva ? (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <CheckCircle className="h-4 w-4 text-primary" strokeWidth={1.75} />
                         ) : (
-                          <Clock className="h-4 w-4 text-orange-500" />
+                          <Clock className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
                         )}
                         <span>{v.nombre_opcion}</span>
                         <Badge
                           variant="outline"
                           className={cn(
-                            "text-xs ml-1",
-                            v.is_definitiva
-                              ? "bg-green-50 text-green-700 border-green-200"
-                              : "bg-slate-50 text-slate-600 border-slate-200"
+                            "text-xs font-normal tabular-nums ml-1",
+                            v.is_definitiva && "text-primary border-primary/40"
                           )}
                         >
                           ${vTotal.toLocaleString()}
@@ -412,17 +400,13 @@ export default function CotizacionEditorPage() {
                 {versiones.map((v) => (
                   <TabsContent key={v.id} value={v.id} className="mt-0 space-y-6">
                     {/* Version header with actions */}
-                    <div className="p-5 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="p-5 bg-muted/40 rounded-md border border-border">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                           {v.is_definitiva ? (
-                            <div className="p-2 bg-green-100 rounded-lg">
-                              <CheckCircle className="h-5 w-5 text-green-600" />
-                            </div>
+                            <CheckCircle className="h-5 w-5 text-primary" strokeWidth={1.75} />
                           ) : (
-                            <div className="p-2 bg-orange-100 rounded-lg">
-                              <Clock className="h-5 w-5 text-orange-600" />
-                            </div>
+                            <Clock className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} />
                           )}
                           <div>
                             {renamingVersionId === v.id ? (
@@ -438,20 +422,20 @@ export default function CotizacionEditorPage() {
                                   if (e.key === "Enter" && renamingValue.trim()) saveRename();
                                   if (e.key === "Escape") cancelRenaming();
                                 }}
-                                className="text-lg font-bold h-9 w-64 border-selecta-green"
+                                className="font-serif text-lg h-9 w-64 border-primary"
                               />
                             ) : (
                               <h3
-                                className="text-lg font-bold text-slate-800 cursor-pointer hover:text-selecta-green transition-colors group/name flex items-center gap-1.5"
+                                className="font-serif text-lg text-foreground cursor-pointer hover:text-primary transition-colors group/name flex items-center gap-1.5"
                                 onClick={() => !v.is_definitiva && startRenaming(v.id, v.nombre_opcion)}
                               >
                                 {v.nombre_opcion}
                                 {!v.is_definitiva && (
-                                  <Pencil className="h-3.5 w-3.5 text-slate-400 opacity-0 group-hover/name:opacity-100 transition-opacity" />
+                                  <Pencil className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover/name:opacity-100 transition-opacity" strokeWidth={1.75} />
                                 )}
                               </h3>
                             )}
-                            <p className="text-sm text-slate-500">
+                            <p className="kicker text-muted-foreground mt-0.5">
                               {v.is_definitiva
                                 ? "Versión aprobada"
                                 : "En proceso de revisión"}
@@ -475,13 +459,12 @@ export default function CotizacionEditorPage() {
                               variant="outline"
                               size="sm"
                               disabled={duplicandoVersion}
-                              className="border-blue-200 text-blue-600 hover:bg-blue-50"
                               title="Duplicar esta opción"
                             >
                               {duplicandoVersion ? (
-                                <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
+                                <div className="w-4 h-4 rounded-full bg-muted/70 animate-pulse" />
                               ) : (
-                                <Copy className="h-4 w-4" />
+                                <Copy className="h-4 w-4" strokeWidth={1.75} />
                               )}
                             </Button>
 
@@ -493,7 +476,7 @@ export default function CotizacionEditorPage() {
                                 variant="outline"
                                 size="sm"
                                 disabled={eliminandoVersion}
-                                className="border-red-200 text-red-600 hover:bg-red-50"
+                                className="text-muted-foreground hover:text-destructive"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -505,9 +488,8 @@ export default function CotizacionEditorPage() {
                                 setApprovalDialogOpen(true);
                               }}
                               size="sm"
-                              className="bg-green-600 hover:bg-green-700 text-white"
                             >
-                              <ShieldCheck className="h-4 w-4 mr-1.5" />
+                              <ShieldCheck className="h-4 w-4 mr-1.5" strokeWidth={1.75} />
                               Aprobar
                             </Button>
                           </div>
@@ -515,31 +497,23 @@ export default function CotizacionEditorPage() {
                       </div>
 
                       {/* Stats row */}
-                      <div className="flex items-center gap-3 mt-4 text-sm flex-wrap">
-                        <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg">
-                          <div className="w-2 h-2 bg-orange-400 rounded-full" />
-                          <span className="text-slate-600 font-medium">
-                            {v.items.platos.length} platos
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg">
-                          <div className="w-2 h-2 bg-blue-400 rounded-full" />
-                          <span className="text-slate-600 font-medium">
-                            {v.items.personal.length} personal
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg">
-                          <div className="w-2 h-2 bg-green-400 rounded-full" />
-                          <span className="text-slate-600 font-medium">
-                            {v.items.transportes.length} transportes
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg">
-                          <div className="w-2 h-2 bg-purple-400 rounded-full" />
-                          <span className="text-slate-600 font-medium">
-                            {(v.items.menaje ?? []).length} menaje
-                          </span>
-                        </div>
+                      <div className="flex items-center gap-2 mt-4 flex-wrap">
+                        <Badge variant="outline" className="font-normal tabular-nums bg-card">
+                          <div className="w-1 h-1 bg-muted-foreground rounded-full mr-1.5" />
+                          {v.items.platos.length} platos
+                        </Badge>
+                        <Badge variant="outline" className="font-normal tabular-nums bg-card">
+                          <div className="w-1 h-1 bg-muted-foreground rounded-full mr-1.5" />
+                          {v.items.personal.length} personal
+                        </Badge>
+                        <Badge variant="outline" className="font-normal tabular-nums bg-card">
+                          <div className="w-1 h-1 bg-muted-foreground rounded-full mr-1.5" />
+                          {v.items.transportes.length} transportes
+                        </Badge>
+                        <Badge variant="outline" className="font-normal tabular-nums bg-card">
+                          <div className="w-1 h-1 bg-muted-foreground rounded-full mr-1.5" />
+                          {(v.items.menaje ?? []).length} menaje
+                        </Badge>
                       </div>
                     </div>
 
@@ -583,29 +557,29 @@ export default function CotizacionEditorPage() {
             {/* Estado general */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
+                <CardTitle className="kicker text-muted-foreground">
                   Estado
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                  <span className="text-slate-600 text-sm">Estado:</span>
-                  <Badge className={cn("font-semibold border", statusConfig.bg, statusConfig.text, statusConfig.border)}>
+                <div className="flex items-center justify-between p-3 bg-muted/40 rounded-md">
+                  <span className="text-muted-foreground text-sm">Estado</span>
+                  <Badge variant="outline" className={cn("font-normal", statusConfig.cls)}>
                     {statusConfig.label}
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                  <span className="text-slate-600 text-sm">Opciones:</span>
-                  <span className="font-bold text-slate-800">{versiones.length}</span>
+                <div className="flex items-center justify-between p-3 bg-muted/40 rounded-md">
+                  <span className="text-muted-foreground text-sm">Opciones</span>
+                  <span className="font-semibold text-foreground tabular-nums">{versiones.length}</span>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                  <span className="text-slate-600 text-sm">Rango:</span>
-                  <div className="text-right text-sm">
-                    <span className="font-bold text-slate-800">
+                <div className="flex items-center justify-between p-3 bg-muted/40 rounded-md">
+                  <span className="text-muted-foreground text-sm">Rango</span>
+                  <div className="text-right text-sm tabular-nums">
+                    <span className="font-semibold text-foreground">
                       ${Math.min(...versiones.map((v) => Number(v.total))).toLocaleString()}
                     </span>
-                    <span className="text-slate-400 mx-1">-</span>
-                    <span className="font-bold text-slate-800">
+                    <span className="text-muted-foreground/60 mx-1">–</span>
+                    <span className="font-semibold text-foreground">
                       ${Math.max(...versiones.map((v) => Number(v.total))).toLocaleString()}
                     </span>
                   </div>
@@ -617,55 +591,50 @@ export default function CotizacionEditorPage() {
             {(cotizacion.cliente || cotizacion.cliente_nombre) && (
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
+                  <CardTitle className="kicker text-muted-foreground">
                     Cliente
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     {cotizacion.cliente?.tipo === 'empresa' ? (
-                      <Building2 className="h-4 w-4 text-blue-500" />
+                      <Building2 className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
                     ) : (
-                      <User className="h-4 w-4 text-slate-400" />
+                      <User className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
                     )}
-                    <span className="font-medium text-slate-800">
+                    <span className="font-medium text-foreground">
                       {cotizacion.cliente?.nombre || cotizacion.cliente_nombre}
                     </span>
                     {cotizacion.cliente?.tipo && (
-                      <Badge variant="outline" className={cn(
-                        "text-xs",
-                        cotizacion.cliente.tipo === 'empresa'
-                          ? "bg-blue-50 text-blue-700 border-blue-200"
-                          : "bg-slate-50 text-slate-600 border-slate-200"
-                      )}>
+                      <Badge variant="outline" className="text-xs font-normal">
                         {cotizacion.cliente.tipo === 'empresa' ? 'Empresa' : 'Persona'}
                       </Badge>
                     )}
                   </div>
                   {cotizacion.cliente?.tipo === 'persona_natural' && cotizacion.cliente?.cedula && (
                     <div className="flex items-center gap-2 text-sm">
-                      <IdCard className="h-4 w-4 text-slate-400" />
-                      <span className="text-slate-600">CC: {cotizacion.cliente.cedula}</span>
+                      <IdCard className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                      <span className="text-muted-foreground">CC: {cotizacion.cliente.cedula}</span>
                     </div>
                   )}
                   {cotizacion.cliente?.tipo === 'empresa' && cotizacion.cliente?.empresa && (
                     <div className="flex items-center gap-2 text-sm">
-                      <Building2 className="h-4 w-4 text-slate-400" />
-                      <span className="text-slate-600">{cotizacion.cliente.empresa}</span>
+                      <Building2 className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                      <span className="text-muted-foreground">{cotizacion.cliente.empresa}</span>
                     </div>
                   )}
                   {(cotizacion.cliente?.telefono || cotizacion.contacto_telefono) && (
                     <div className="flex items-center gap-2 text-sm">
-                      <Phone className="h-4 w-4 text-slate-400" />
-                      <span className="text-slate-600">
+                      <Phone className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                      <span className="text-muted-foreground">
                         {cotizacion.cliente?.telefono || cotizacion.contacto_telefono}
                       </span>
                     </div>
                   )}
                   {(cotizacion.cliente?.correo || cotizacion.contacto_correo) && (
                     <div className="flex items-center gap-2 text-sm">
-                      <Mail className="h-4 w-4 text-slate-400" />
-                      <span className="text-slate-600">
+                      <Mail className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                      <span className="text-muted-foreground">
                         {cotizacion.cliente?.correo || cotizacion.contacto_correo}
                       </span>
                     </div>
@@ -673,29 +642,29 @@ export default function CotizacionEditorPage() {
 
                   {/* Contacto info */}
                   {cotizacion.contacto && (
-                    <div className="mt-3 pt-3 border-t border-slate-200">
-                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Contacto</p>
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <p className="kicker text-muted-foreground mb-2">Contacto</p>
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2 text-sm">
-                          <User className="h-3.5 w-3.5 text-blue-500" />
-                          <span className="font-medium text-slate-800">{cotizacion.contacto.nombre}</span>
+                          <User className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+                          <span className="font-medium text-foreground">{cotizacion.contacto.nombre}</span>
                         </div>
                         {cotizacion.contacto.cargo && (
                           <div className="flex items-center gap-2 text-sm">
-                            <Briefcase className="h-3.5 w-3.5 text-slate-400" />
-                            <span className="text-slate-600">{cotizacion.contacto.cargo}</span>
+                            <Briefcase className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+                            <span className="text-muted-foreground">{cotizacion.contacto.cargo}</span>
                           </div>
                         )}
                         {cotizacion.contacto.telefono && (
                           <div className="flex items-center gap-2 text-sm">
-                            <Phone className="h-3.5 w-3.5 text-slate-400" />
-                            <span className="text-slate-600">{cotizacion.contacto.telefono}</span>
+                            <Phone className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+                            <span className="text-muted-foreground">{cotizacion.contacto.telefono}</span>
                           </div>
                         )}
                         {cotizacion.contacto.correo && (
                           <div className="flex items-center gap-2 text-sm">
-                            <Mail className="h-3.5 w-3.5 text-slate-400" />
-                            <span className="text-slate-600">{cotizacion.contacto.correo}</span>
+                            <Mail className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+                            <span className="text-muted-foreground">{cotizacion.contacto.correo}</span>
                           </div>
                         )}
                       </div>
@@ -709,8 +678,8 @@ export default function CotizacionEditorPage() {
             {lugares && lugares.length > 0 && (
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                    <MapPin className="h-3.5 w-3.5" />
+                  <CardTitle className="kicker text-muted-foreground flex items-center gap-1.5">
+                    <MapPin className="h-3 w-3" strokeWidth={1.75} />
                     Ubicaciones
                   </CardTitle>
                 </CardHeader>

@@ -4,7 +4,6 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import {
   Users,
-  DollarSign,
   Sparkles,
   Calculator,
   TrendingUp,
@@ -20,38 +19,10 @@ import { cn } from "@/lib/utils";
 import type { CotizacionItemsState } from "@/types/cotizador";
 
 const SECTION_CONFIG = {
-  platos: {
-    icon: Utensils,
-    color: "orange",
-    label: "Platos y Menú",
-    bgColor: "bg-orange-50",
-    textColor: "text-orange-700",
-    borderColor: "border-orange-200",
-  },
-  personal: {
-    icon: ChefHat,
-    color: "blue",
-    label: "Personal de Servicio",
-    bgColor: "bg-blue-50",
-    textColor: "text-blue-700",
-    borderColor: "border-blue-200",
-  },
-  transportes: {
-    icon: Truck,
-    color: "green",
-    label: "Logística y Transporte",
-    bgColor: "bg-green-50",
-    textColor: "text-green-700",
-    borderColor: "border-green-200",
-  },
-  menaje: {
-    icon: Package,
-    color: "purple",
-    label: "Menaje y Alquiler",
-    bgColor: "bg-purple-50",
-    textColor: "text-purple-700",
-    borderColor: "border-purple-200",
-  },
+  platos: { icon: Utensils, label: "Platos y menú" },
+  personal: { icon: ChefHat, label: "Personal de servicio" },
+  transportes: { icon: Truck, label: "Logística y transporte" },
+  menaje: { icon: Package, label: "Menaje y alquiler" },
 };
 
 type Props = {
@@ -84,9 +55,6 @@ export function ResumenCotizacionReadOnly({
   const costPerGuest = invitados > 0 ? total / invitados : 0;
   const hasItems = totalItems > 0;
 
-  // Los % representan distribución dentro de los items (platos/personal/transportes/menaje).
-  // Usar `total` como denominador los deja sub-100% porque `total` incluye el costo del lugar,
-  // que no es una categoría de item. Denominador: suma de items solamente.
   const itemsTotal =
     subtotales.platos + subtotales.personal + subtotales.transportes + (subtotales.menaje ?? 0);
   const platosPercentage = itemsTotal > 0 ? (subtotales.platos / itemsTotal) * 100 : 0;
@@ -150,54 +118,50 @@ export function ResumenCotizacionReadOnly({
   ].filter((section) => section.items.length > 0);
 
   return (
-    <Card className="shadow-xl border-slate-200 overflow-hidden">
-      <CardHeader className="bg-emerald-50 border-b border-emerald-200 pb-4">
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-emerald-500 rounded-xl">
-              <Calculator className="h-5 w-5 text-white" />
-            </div>
+            <Calculator className="h-5 w-5 text-primary" strokeWidth={1.75} />
             <div>
-              <CardTitle className="text-emerald-800 text-lg">{versionName}</CardTitle>
-              <p className="text-emerald-600 text-sm">Resumen de cotización</p>
+              <CardTitle className="font-serif text-lg text-foreground">{versionName}</CardTitle>
+              <p className="text-muted-foreground text-sm">Resumen de cotización</p>
             </div>
           </div>
           {hasItems && (
-            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+            <Badge variant="outline" className="font-normal tabular-nums">
               {totalItems} elementos
             </Badge>
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          <div className="text-center p-3 bg-white/60 rounded-xl">
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          <div className="text-center p-3 bg-muted/40 rounded-md border border-border">
             <div className="flex items-center justify-center mb-1">
-              <Users className="h-4 w-4 text-emerald-600" />
+              <Users className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
             </div>
-            <div className="font-semibold text-emerald-800">{invitados}</div>
-            <div className="text-xs text-emerald-600">Invitados</div>
+            <div className="font-semibold text-foreground tabular-nums">{invitados}</div>
+            <div className="kicker text-muted-foreground">Invitados</div>
           </div>
-          <div className="text-center p-3 bg-white/60 rounded-xl">
+          <div className="text-center p-3 bg-muted/40 rounded-md border border-border">
             <div className="flex items-center justify-center mb-1">
-              <TrendingUp className="h-4 w-4 text-emerald-600" />
+              <TrendingUp className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
             </div>
-            <div className="font-semibold text-emerald-800">
+            <div className="font-semibold text-foreground tabular-nums">
               ${costPerGuest.toLocaleString()}
             </div>
-            <div className="text-xs text-emerald-600">Por invitado</div>
+            <div className="kicker text-muted-foreground">Por invitado</div>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="p-6 space-y-6">
         {!hasItems ? (
-          <div className="text-center py-12 space-y-4">
-            <div className="w-16 h-16 mx-auto bg-slate-100 rounded-full flex items-center justify-center">
-              <Sparkles className="h-6 w-6 text-slate-400" />
-            </div>
+          <div className="text-center py-12 space-y-3">
+            <Sparkles className="h-8 w-8 mx-auto text-muted-foreground" strokeWidth={1.5} />
             <div>
-              <h3 className="font-medium text-slate-700 mb-2">Versión sin elementos</h3>
-              <p className="text-slate-500 text-sm">
+              <h3 className="font-serif text-lg text-foreground mb-1">Versión sin elementos</h3>
+              <p className="text-sm text-muted-foreground">
                 Esta versión aún no tiene elementos asignados
               </p>
             </div>
@@ -206,24 +170,24 @@ export function ResumenCotizacionReadOnly({
           <>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-slate-800 flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  Distribución de Costos
+                <h4 className="font-semibold text-foreground flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                  Distribución de costos
                 </h4>
-                <span className="text-sm text-slate-600">{totalQuantity} items</span>
+                <span className="text-sm text-muted-foreground tabular-nums">{totalQuantity} items</span>
               </div>
               <div className="space-y-2">
                 {sections.map((section) => (
                   <div key={section.key} className="flex items-center gap-3">
-                    <section.icon className={cn("h-4 w-4", section.textColor)} />
+                    <section.icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
                     <div className="flex-1">
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium text-slate-700">{section.label}</span>
-                        <span className="text-slate-600">{section.percentage.toFixed(1)}%</span>
+                        <span className="font-medium text-foreground">{section.label}</span>
+                        <span className="text-muted-foreground tabular-nums">{section.percentage.toFixed(1)}%</span>
                       </div>
-                      <Progress value={section.percentage} className="h-2" />
+                      <Progress value={section.percentage} className="h-1.5" />
                     </div>
-                    <span className={cn("text-sm font-semibold", section.textColor)}>
+                    <span className="text-sm font-semibold text-primary tabular-nums">
                       ${section.subtotal.toLocaleString()}
                     </span>
                   </div>
@@ -236,28 +200,15 @@ export function ResumenCotizacionReadOnly({
             <div className="space-y-6">
               {sections.map((section) => (
                 <div key={section.key} className="space-y-3">
-                  <div
-                    className={cn(
-                      "flex items-center justify-between p-3 rounded-xl border",
-                      section.bgColor,
-                      section.borderColor
-                    )}
-                  >
+                  <div className="flex items-center justify-between p-3 rounded-md border border-border bg-muted/40">
                     <div className="flex items-center space-x-2">
-                      <section.icon className={cn("h-5 w-5", section.textColor)} />
-                      <h4 className={cn("font-semibold", section.textColor)}>
-                        {section.label}
-                      </h4>
-                      <Badge
-                        className={cn(
-                          "text-xs",
-                          `bg-${section.color}-100 text-${section.color}-700 border-${section.color}-200`
-                        )}
-                      >
+                      <section.icon className="h-4 w-4 text-primary" strokeWidth={1.75} />
+                      <h4 className="font-semibold text-foreground">{section.label}</h4>
+                      <Badge variant="outline" className="text-xs font-normal tabular-nums">
                         {section.items.length}
                       </Badge>
                     </div>
-                    <div className={cn("font-bold", section.textColor)}>
+                    <div className="font-semibold text-primary tabular-nums">
                       ${section.subtotal.toLocaleString()}
                     </div>
                   </div>
@@ -265,22 +216,21 @@ export function ResumenCotizacionReadOnly({
                     {section.items.map((item) => (
                       <div
                         key={item.id}
-                        className="bg-white rounded-xl p-4 border border-slate-200"
+                        className="bg-card rounded-md p-4 border border-border"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-slate-800 truncate mb-1">
+                            <h4 className="font-medium text-foreground truncate mb-1">
                               {item.nombre}
                             </h4>
-                            <div className="flex items-center space-x-2 text-sm text-slate-600">
-                              <DollarSign className="h-3 w-3" />
-                              <span>{item.precio.toLocaleString()}</span>
-                              <span>&times;</span>
+                            <div className="flex items-baseline gap-1 text-sm text-muted-foreground tabular-nums">
+                              <span>${item.precio.toLocaleString()}</span>
+                              <span>×</span>
                               <span>{item.cantidad}</span>
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className={cn("font-semibold", section.textColor)}>
+                            <div className="font-semibold text-primary tabular-nums">
                               ${item.subtotal.toLocaleString()}
                             </div>
                           </div>
@@ -295,21 +245,16 @@ export function ResumenCotizacionReadOnly({
             <Separator />
 
             <div className="space-y-4">
-              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-2">
-                    <DollarSign className="h-5 w-5 text-emerald-600" />
-                    <span className="text-slate-600 font-medium">
-                      Total de la Cotización
-                    </span>
-                  </div>
-                </div>
-                <div className="text-3xl font-bold text-emerald-600 mb-2">
+              <div className="rounded-md p-6 border border-border">
+                <div className="kicker text-muted-foreground mb-2">Total de la cotización</div>
+                <div className={cn(
+                  "font-serif text-3xl font-semibold text-primary tabular-nums mb-2"
+                )}>
                   ${total.toLocaleString()}
                 </div>
-                <div className="flex items-center justify-between text-sm text-slate-600">
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span>Cotización aprobada</span>
-                  <span>
+                  <span className="tabular-nums">
                     {invitados > 0 && `$${costPerGuest.toLocaleString()} por invitado`}
                   </span>
                 </div>
@@ -318,21 +263,21 @@ export function ResumenCotizacionReadOnly({
               {total > 0 && (
                 <div className="space-y-2">
                   {total < 50000 && (
-                    <div className="flex items-center space-x-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                      <AlertCircle className="h-4 w-4 text-amber-600" />
-                      <span className="text-amber-700 text-sm">Cotización básica</span>
+                    <div className="flex items-center space-x-2 p-3 bg-muted/40 rounded-md border border-border">
+                      <AlertCircle className="h-4 w-4 text-[hsl(30_55%_42%)]" strokeWidth={1.75} />
+                      <span className="text-sm text-muted-foreground">Cotización básica</span>
                     </div>
                   )}
                   {total >= 50000 && total < 150000 && (
-                    <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <CheckCircle2 className="h-4 w-4 text-blue-600" />
-                      <span className="text-blue-700 text-sm">Cotización completa</span>
+                    <div className="flex items-center space-x-2 p-3 bg-primary/5 rounded-md border border-primary/20">
+                      <CheckCircle2 className="h-4 w-4 text-primary" strokeWidth={1.75} />
+                      <span className="text-sm text-foreground">Cotización completa</span>
                     </div>
                   )}
                   {total >= 150000 && (
-                    <div className="flex items-center space-x-2 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                      <Sparkles className="h-4 w-4 text-purple-600" />
-                      <span className="text-purple-700 text-sm">Cotización premium</span>
+                    <div className="flex items-center space-x-2 p-3 bg-primary/10 rounded-md border border-primary/30">
+                      <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.75} />
+                      <span className="text-sm text-foreground">Cotización premium</span>
                     </div>
                   )}
                 </div>
