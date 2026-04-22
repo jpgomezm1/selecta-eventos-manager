@@ -281,7 +281,7 @@ No tienes eventos programados del ${fechaDesdeFormateada} al ${fechaHastaFormate
     let nuevaFechaHasta = new Date(hoy);
 
     switch (preset) {
-      case 'esta-semana':
+      case 'esta-semana': {
         const inicioSemana = new Date(hoy);
         inicioSemana.setDate(hoy.getDate() - hoy.getDay() + 1); // Lunes
         const finSemana = new Date(inicioSemana);
@@ -289,6 +289,7 @@ No tienes eventos programados del ${fechaDesdeFormateada} al ${fechaHastaFormate
         nuevaFechaDesde = inicioSemana;
         nuevaFechaHasta = finSemana;
         break;
+      }
       case 'proximos-7':
         nuevaFechaHasta.setDate(hoy.getDate() + 7);
         break;

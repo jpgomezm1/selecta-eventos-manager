@@ -168,12 +168,13 @@ export default function BuilderTabs({
             aVal = a.categoria || a.rol || a.lugar || "";
             bVal = b.categoria || b.rol || b.lugar || "";
             break;
-          case "seleccionados":
+          case "seleccionados": {
             const aSelected = selectedItems?.find(item => item.id === String(a.id))?.cantidad || 0;
             const bSelected = selectedItems?.find(item => item.id === String(b.id))?.cantidad || 0;
             aVal = aSelected;
             bVal = bSelected;
             break;
+          }
           default:
             aVal = a.nombre || "";
             bVal = b.nombre || "";

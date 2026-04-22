@@ -76,7 +76,7 @@ export default function CotizacionesListPage() {
   const filteredAndSortedData = useMemo(() => {
     if (!data) return [];
 
-    let filtered = data.filter(c => {
+    const filtered = data.filter(c => {
       const clienteName = c.cliente?.nombre || c.cliente_nombre || '';
       const clienteEmpresa = c.cliente?.empresa || '';
       const term = searchTerm.toLowerCase();

@@ -65,7 +65,7 @@ export function ProximosEventos() {
 
       // Obtener rango de fechas según filtro
       const hoy = new Date();
-      let fechaFin = new Date();
+      const fechaFin = new Date();
       
       switch (filtroTiempo) {
         case "proximos-3":

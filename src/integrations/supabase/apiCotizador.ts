@@ -89,7 +89,7 @@ async function checkMigration() {
 export async function listCotizaciones(): Promise<Cotizacion[]> {
   await checkMigration();
 
-  let selectParts = ["*"];
+  const selectParts = ["*"];
   if (_hasClientesTable) selectParts.push("clientes(nombre, empresa, telefono, correo, tipo, cedula)");
   if (_hasContactosTable && _hasContactoIdCol) selectParts.push("cliente_contactos(nombre, cargo, telefono, correo)");
   const selectQuery = selectParts.join(", ");
@@ -115,7 +115,7 @@ export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
 }> {
   await checkMigration();
 
-  let selectParts = ["*"];
+  const selectParts = ["*"];
   if (_hasClientesTable) selectParts.push("clientes(nombre, empresa, telefono, correo, tipo, cedula)");
   if (_hasContactosTable && _hasContactoIdCol) selectParts.push("cliente_contactos(nombre, cargo, telefono, correo)");
   const selectQuery = selectParts.join(", ");
