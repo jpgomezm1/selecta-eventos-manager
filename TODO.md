@@ -24,11 +24,10 @@ Pendientes priorizados fuera del scope del walk del sidebar.
    - [ ] Authentication → Providers → Email signup está **cerrado** (solo staff puede crear cuentas, o si está abierto, es decisión consciente).
    - [ ] Anthropic Console → Settings → Usage limits → hay un **límite mensual de gasto** configurado con alerta.
 
-2. **Rate-limit por usuario en la edge function:**
-   - [x] Migration `supabase/migrations/20260422000000_edge_function_calls_rate_limit.sql` crea la tabla con RLS on + sin policies (solo service role).
-   - [x] `generate-recipe/index.ts` reescrito: valida JWT, detecta si el body tiene adjunto (factura), aplica umbrales 20/min texto vs 5/min adjunto, rechaza con 429 + Retry-After si excede. Fail-open si la tabla falla (no bloquear usuarios reales por error operativo).
-   - [ ] **Pendiente aplicar a prod** (apply_migration + deploy_edge_function). Requiere confirmación explícita del usuario.
-   - [ ] Limpieza periódica de filas antiguas (cron o scheduled trigger). Sugerido: `delete from edge_function_calls where called_at < now() - interval '1 hour'` cada hora, via pg_cron o función scheduled.
+2. **Rate-limit por usuario en la edge function:** ✅ APLICADO EN PROD 2026-04-22
+   - [x] Migration `supabase/migrations/20260422000000_edge_function_calls_rate_limit.sql` crea la tabla con RLS on + sin policies (solo service role). Aplicada a `xvvbxyjcieckbbdcuoge`.
+   - [x] `generate-recipe/index.ts` reescrito: valida JWT, detecta si el body tiene adjunto (factura), aplica umbrales 20/min texto vs 5/min adjunto, rechaza con 429 + Retry-After si excede. Fail-open si la tabla falla. Deploy version 2, status ACTIVE, verify_jwt: true.
+   - [ ] Limpieza periódica de filas antiguas (cron o scheduled trigger). Sugerido: `delete from edge_function_calls where called_at < now() - interval '1 hour'` cada hora, via pg_cron o función scheduled. Low priority — la tabla crece lento (max 20 filas/min por usuario activo).
 
 3. **Opcional — restringir por rol:**
    - [ ] Si solo determinados empleados deben poder usar la función, leer el `role` / claim del JWT o consultar una tabla de permisos, rechazar si no autorizado.
