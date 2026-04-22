@@ -22,6 +22,7 @@ import {
   X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { KPI } from "@/components/Layout/PageHeader";
 
 export default function InventarioTable() {
   const qc = useQueryClient();
@@ -128,49 +129,15 @@ export default function InventarioTable() {
 
   return (
     <div className="space-y-6">
-      {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Package className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-blue-800">{totalItems}</div>
-                <div className="text-sm text-blue-600">Total de elementos</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-amber-50 border-amber-200">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-amber-800">{lowStockItems}</div>
-                <div className="text-sm text-amber-600">Stock bajo</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-emerald-50 border-emerald-200">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-emerald-100 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-emerald-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-emerald-800">{totalValue}</div>
-                <div className="text-sm text-emerald-600">Unidades totales</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* KPIs */}
+      <div className="grid grid-cols-1 gap-x-8 gap-y-6 border-y border-border py-6 md:grid-cols-3">
+        <KPI kicker="Total de elementos" value={totalItems} />
+        <KPI
+          kicker="Stock bajo"
+          value={lowStockItems}
+          tone={lowStockItems > 0 ? "warning" : "neutral"}
+        />
+        <KPI kicker="Unidades totales" value={totalValue} tone="primary" />
       </div>
 
       {/* Formulario de creación */}
@@ -238,9 +205,9 @@ export default function InventarioTable() {
             </div>
 
             <Button 
-              onClick={() => createMut.mutate()} 
+              onClick={() => createMut.mutate()}
               disabled={createMut.isPending || !newItem.nombre || !newItem.categoria}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="gap-2"
             >
               {createMut.isPending ? (
                 <div className="flex items-center space-x-2">
@@ -286,8 +253,8 @@ export default function InventarioTable() {
               </select>
             </div>
 
-            <Badge className="bg-blue-100 text-blue-700 border-blue-200">
-              {filteredData.length} elementos
+            <Badge variant="outline" className="border-border bg-card text-muted-foreground">
+              <span className="tabular-nums">{filteredData.length}</span>&nbsp;elementos
             </Badge>
           </div>
         </CardContent>
