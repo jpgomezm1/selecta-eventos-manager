@@ -25,9 +25,10 @@ Pendientes priorizados fuera del scope del walk del sidebar.
    - [ ] Anthropic Console → Settings → Usage limits → hay un **límite mensual de gasto** configurado con alerta.
 
 2. **Rate-limit por usuario en la edge function:**
-   - [ ] Crear tabla `edge_function_calls` con `(user_id, function_name, called_at)`.
-   - [ ] En `generate-recipe`, leer el JWT (`Authorization: Bearer`), extraer `user_id`, consultar cuántas llamadas hizo en el último minuto, rechazar con 429 si excede el umbral (sugerido: 20/min para recetas de texto, 5/min para facturas — pueden diferenciarse por tamaño del body).
-   - [ ] Limpieza periódica de filas antiguas (cron o scheduled trigger).
+   - [x] Migration `supabase/migrations/20260422000000_edge_function_calls_rate_limit.sql` crea la tabla con RLS on + sin policies (solo service role).
+   - [x] `generate-recipe/index.ts` reescrito: valida JWT, detecta si el body tiene adjunto (factura), aplica umbrales 20/min texto vs 5/min adjunto, rechaza con 429 + Retry-After si excede. Fail-open si la tabla falla (no bloquear usuarios reales por error operativo).
+   - [ ] **Pendiente aplicar a prod** (apply_migration + deploy_edge_function). Requiere confirmación explícita del usuario.
+   - [ ] Limpieza periódica de filas antiguas (cron o scheduled trigger). Sugerido: `delete from edge_function_calls where called_at < now() - interval '1 hour'` cada hora, via pg_cron o función scheduled.
 
 3. **Opcional — restringir por rol:**
    - [ ] Si solo determinados empleados deben poder usar la función, leer el `role` / claim del JWT o consultar una tabla de permisos, rechazar si no autorizado.
