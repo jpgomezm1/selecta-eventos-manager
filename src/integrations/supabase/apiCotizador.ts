@@ -136,14 +136,14 @@ export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
     .eq("cotizacion_id", cotizacion_id)
     .order("version_index", { ascending: true });
 
-  let lugares: any[] = [];
+  let lugares: LugarOption[] = [];
   if (_hasLugaresTable) {
     const { data } = await supabase
       .from("cotizacion_lugares")
       .select("*")
       .eq("cotizacion_id", cotizacion_id)
       .order("orden", { ascending: true });
-    lugares = data ?? [];
+    lugares = (data ?? []) as unknown as LugarOption[];
   }
 
   if (e1) throw e1;
@@ -225,12 +225,14 @@ export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
     })
   );
 
+  type CotRow = Cotizacion & { clientes?: unknown; cliente_contactos?: unknown };
+  const cotRow = cot as unknown as CotRow;
   return {
     cotizacion: {
-      ...(cot as any),
-      total_cotizado: Number((cot as any).total_cotizado),
-      cliente: (cot as any).clientes ?? null,
-      contacto: (cot as any).cliente_contactos ?? null,
+      ...cotRow,
+      total_cotizado: Number(cotRow.total_cotizado),
+      cliente: (cotRow.clientes ?? null) as Cotizacion["cliente"],
+      contacto: (cotRow.cliente_contactos ?? null) as Cotizacion["contacto"],
     } as Cotizacion,
     versiones,
     lugares: (lugares ?? []).map((l) => ({
@@ -365,7 +367,7 @@ export async function updateVersionCotizacion(
     .order("orden", { ascending: true });
   const lugarSel =
     (lugares ?? []).find((l) => l.es_seleccionado) ?? (lugares ?? [])[0];
-  const lugarPrecio = Number((lugarSel as any)?.precio_referencia ?? 0);
+  const lugarPrecio = Number((lugarSel as { precio_referencia?: number } | undefined)?.precio_referencia ?? 0);
 
   // Calcular nuevo total (items + lugar)
   const total =
@@ -376,7 +378,7 @@ export async function updateVersionCotizacion(
     lugarPrecio;
 
   // Actualizar total (y nombre si se proporcionó) de la versión
-  const updateData: Record<string, any> = { total };
+  const updateData: Record<string, unknown> = { total };
   if (nombre_opcion !== undefined) updateData.nombre_opcion = nombre_opcion;
 
   const { error: updateError } = await supabase
@@ -457,9 +459,25 @@ export async function getEventoRequerimiento(evento_id: string): Promise<EventoR
   if (pe.error) throw pe.error;
   if (m.error) throw m.error;
 
-  const cot = (ev.data as any)?.cotizacion_versiones?.cotizaciones;
+  type LugarRow = {
+    nombre: string;
+    direccion?: string | null;
+    ciudad?: string | null;
+    precio_referencia?: number | null;
+    es_seleccionado?: boolean;
+    orden?: number;
+  };
+  type EvWithCot = {
+    cotizacion_versiones?: {
+      cotizaciones?: {
+        total_cotizado?: number;
+        cotizacion_lugares?: LugarRow[];
+      };
+    };
+  };
+  const cot = (ev.data as EvWithCot | null)?.cotizacion_versiones?.cotizaciones;
   const totalCotizacion = Number(cot?.total_cotizado ?? 0);
-  const lugaresList: any[] = cot?.cotizacion_lugares ?? [];
+  const lugaresList: LugarRow[] = cot?.cotizacion_lugares ?? [];
   const lugarSel =
     lugaresList.find((l) => l.es_seleccionado) ??
     [...lugaresList].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))[0] ??
@@ -473,7 +491,14 @@ export async function getEventoRequerimiento(evento_id: string): Promise<EventoR
       }
     : null;
 
-  const mapMenaje = (data: any[]) => (data ?? []).map((x) => ({
+  type MenajeRowLike = {
+    menaje_id: string;
+    nombre?: string;
+    precio_alquiler?: number | string;
+    cantidad: number;
+    subtotal: number | string;
+  };
+  const mapMenaje = (data: MenajeRowLike[]) => (data ?? []).map((x) => ({
     menaje_id: x.menaje_id,
     nombre: x.nombre ?? "",
     precio_alquiler: Number(x.precio_alquiler) || 0,
@@ -797,9 +822,10 @@ export async function getPlatoConIngredientes(platoId: string): Promise<PlatoCat
       : undefined,
   }));
 
+  const platoRow = plato as PlatoCatalogo;
   return {
-    ...(plato as any),
-    precio: Number((plato as any).precio),
+    ...platoRow,
+    precio: Number(platoRow.precio),
     ingredientes,
   };
 }
@@ -1131,7 +1157,7 @@ export async function loadPersonalAsignaciones(
     if (!result[costoId]) result[costoId] = [];
     result[costoId].push({
       personal_id: row.personal_id,
-      nombre_completo: (row as any).personal?.nombre_completo ?? "",
+      nombre_completo: (row as { personal?: { nombre_completo?: string } }).personal?.nombre_completo ?? "",
     });
   }
   return result;
