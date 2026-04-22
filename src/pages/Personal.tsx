@@ -79,18 +79,14 @@ export default function PersonalPage() {
     setSelectedPersonal(null);
   };
 
+  // Los roles que llevan acento primary (operación directa con comensales) vs neutros (back).
+  const PRIMARY_ROLES = new Set(["Coordinador", "Chef", "Mesero", "Bartender"]);
+
   const getRoleBadgeVariant = (rol: string) => {
-    const variants: Record<string, string> = {
-      "Coordinador": "bg-purple-50 text-purple-700",
-      "Chef": "bg-orange-50 text-orange-700",
-      "Mesero": "bg-blue-50 text-blue-700",
-      "Bartender": "bg-emerald-50 text-emerald-700",
-      "Decorador": "bg-pink-50 text-pink-700",
-      "Técnico de Sonido": "bg-indigo-50 text-indigo-700",
-      "Fotógrafo": "bg-amber-50 text-amber-700",
-      "Otro": "bg-slate-100 text-slate-700"
-    };
-    return variants[rol] || variants["Otro"];
+    const base = "border font-medium";
+    return PRIMARY_ROLES.has(rol)
+      ? `${base} border-primary/30 bg-primary/8 text-primary`
+      : `${base} border-border bg-muted/60 text-muted-foreground`;
   };
 
   const totalPersonal = personal.length;
