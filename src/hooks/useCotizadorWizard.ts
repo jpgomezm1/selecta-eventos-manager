@@ -123,7 +123,18 @@ export function useCotizadorWizard() {
       return;
     }
 
-    const optionName = opciones.find((o) => o.key === key)?.nombre_opcion;
+    const target = opciones.find((o) => o.key === key);
+    const optionName = target?.nombre_opcion;
+    const items = target?.items;
+    const totalItems = items
+      ? items.platos.length + items.personal.length + items.transportes.length + (items.menaje?.length ?? 0)
+      : 0;
+    if (totalItems > 0 && !window.confirm(
+      `"${optionName}" tiene ${totalItems} item(s) cargado(s). Eliminar esta opción borra todo su contenido. ¿Continuar?`
+    )) {
+      return;
+    }
+
     const idx = opciones.findIndex((o) => o.key === key);
     const newArr = opciones.filter((o) => o.key !== key);
     setOpciones(newArr);

@@ -133,11 +133,10 @@ export default function CotizacionesListPage() {
       const detalle = await getCotizacionDetalle(cotizacionId);
       setSelectedCotizacion(detalle);
       setPdfModalOpen(true);
-    } catch (error) {
-      console.error('Error loading cotización:', error);
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "No se pudo cargar la información de la cotización.",
+        description: error?.message ?? "No se pudo cargar la información de la cotización.",
         variant: "destructive"
       });
     }
@@ -164,11 +163,10 @@ export default function CotizacionesListPage() {
 
       setPdfModalOpen(false);
       setSelectedCotizacion(null);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
+    } catch (error: any) {
       toast({
         title: "Error al generar PDF",
-        description: "No se pudo generar la propuesta. Inténtalo de nuevo.",
+        description: error?.message ?? "No se pudo generar la propuesta. Inténtalo de nuevo.",
         variant: "destructive"
       });
     } finally {
