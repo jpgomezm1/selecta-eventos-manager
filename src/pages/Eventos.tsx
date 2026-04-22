@@ -18,6 +18,7 @@ import type { ChecklistResult } from "@/lib/eventoChecklist";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from "react-router-dom";
 import { parseLocalDate } from "@/lib/dateLocal";
+import { requiereRegistroHoras } from "@/lib/calcularPagoPersonal";
 
 const localizer = dateFnsLocalizer({
   format,
@@ -130,14 +131,18 @@ export default function EventosPage() {
             }
           }
           setChecklistMap(map);
-        } catch {
-          // fail silently for checklist
+        } catch (err: any) {
+          toast({
+            title: "Progreso no disponible",
+            description: err?.message ?? "No se pudo cargar el checklist de los eventos.",
+            variant: "destructive",
+          });
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Error al cargar los eventos",
+        description: error?.message ?? "Error al cargar los eventos",
         variant: "destructive",
       });
     } finally {
@@ -146,11 +151,13 @@ export default function EventosPage() {
   };
 
   const handleLiquidarEvento = async (evento: EventoConPersonal) => {
-    const personalSinHoras = evento.personal.filter(p => !p.horas_trabajadas || p.horas_trabajadas <= 0);
+    const personalSinHoras = evento.personal.filter(p =>
+      requiereRegistroHoras(p.modalidad_cobro) && (!p.horas_trabajadas || p.horas_trabajadas <= 0)
+    );
     if (personalSinHoras.length > 0) {
       toast({
         title: "Información faltante",
-        description: `${personalSinHoras.length} empleado(s) no tienen horas definidas.`,
+        description: `${personalSinHoras.length} empleado(s) con cobro por hora no tienen horas definidas.`,
         variant: "destructive",
       });
       return;
@@ -160,7 +167,8 @@ export default function EventosPage() {
   };
 
   const getEventStatus = (fechaEvento: string) => {
-    const eventDate = parseLocalDate(fechaEvento) ?? new Date();
+    const eventDate = parseLocalDate(fechaEvento);
+    if (!eventDate) return { status: "Sin fecha", variant: "bg-slate-100 text-slate-500" };
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     eventDate.setHours(0, 0, 0, 0);
@@ -206,16 +214,19 @@ export default function EventosPage() {
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedEventos = filteredEventos.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  const calendarEvents: CalendarEvent[] = filteredEventos.map(evento => {
-    const date = parseLocalDate(evento.fecha_evento) ?? new Date();
-    return {
-      id: evento.id,
-      title: evento.nombre_evento,
-      start: date,
-      end: date,
-      resource: evento,
-    };
-  });
+  const calendarEvents: CalendarEvent[] = filteredEventos
+    .map(evento => {
+      const date = parseLocalDate(evento.fecha_evento);
+      if (!date) return null;
+      return {
+        id: evento.id,
+        title: evento.nombre_evento,
+        start: date,
+        end: date,
+        resource: evento,
+      };
+    })
+    .filter((e): e is CalendarEvent => e !== null);
 
   const eventStyleGetter = (event: CalendarEvent) => {
     const { status } = getEventStatus(event.resource.fecha_evento);
@@ -393,7 +404,10 @@ export default function EventosPage() {
                               {evento.nombre_evento}
                             </h3>
                             <p className="text-sm text-slate-500 mt-0.5">
-                              {format(parseLocalDate(evento.fecha_evento) ?? new Date(), "EEE, d MMM yyyy", { locale: es })}
+                              {(() => {
+                                const d = parseLocalDate(evento.fecha_evento);
+                                return d ? format(d, "EEE, d MMM yyyy", { locale: es }) : "Sin fecha";
+                              })()}
                             </p>
                           </div>
                           <div className="flex gap-1.5 ml-2">
