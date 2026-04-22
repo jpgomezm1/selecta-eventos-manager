@@ -94,16 +94,16 @@ export default function CierreEventoPanel({ eventoId, totalRequerimiento, estado
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="p-4">
-          <p className="text-xs text-slate-500 mb-1">Presupuesto Cotizado</p>
-          <p className="text-xl font-semibold text-slate-900">${totalRequerimiento.toLocaleString()}</p>
+          <p className="kicker text-muted-foreground mb-1">Presupuesto cotizado</p>
+          <p className="text-xl font-semibold text-foreground tabular-nums">${totalRequerimiento.toLocaleString()}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs text-slate-500 mb-1">Costo Real</p>
-          <p className="text-xl font-semibold text-slate-900">${costoReal.toLocaleString()}</p>
+          <p className="kicker text-muted-foreground mb-1">Costo real</p>
+          <p className="text-xl font-semibold text-foreground tabular-nums">${costoReal.toLocaleString()}</p>
         </Card>
-        <Card className={`p-4 ${diferencia >= 0 ? "bg-emerald-50" : "bg-red-50"}`}>
-          <p className="text-xs text-slate-500 mb-1">Diferencia</p>
-          <p className={`text-xl font-semibold ${diferencia >= 0 ? "text-emerald-700" : "text-red-700"}`}>
+        <Card className="p-4">
+          <p className="kicker text-muted-foreground mb-1">Diferencia</p>
+          <p className={`text-xl font-semibold tabular-nums ${diferencia >= 0 ? "text-primary" : "text-destructive"}`}>
             {diferencia >= 0 ? "+" : ""}${diferencia.toLocaleString()}
           </p>
         </Card>
@@ -111,66 +111,66 @@ export default function CierreEventoPanel({ eventoId, totalRequerimiento, estado
 
       {/* Breakdown */}
       <Card className="p-4">
-        <h4 className="text-sm font-medium text-slate-900 mb-3">Desglose de Costos</h4>
+        <h4 className="kicker text-muted-foreground mb-3">Desglose de costos</h4>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <Users className="h-4 w-4 text-blue-500" />
+            <div className="flex items-center gap-2 text-sm text-foreground">
+              <Users className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
               <span>Personal (pagos)</span>
             </div>
-            <span className="text-sm font-medium text-slate-900">${data.costoPersonal.toLocaleString()}</span>
+            <span className="text-sm font-medium tabular-nums">${data.costoPersonal.toLocaleString()}</span>
           </div>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <ShoppingCart className="h-4 w-4 text-orange-500" />
+            <div className="flex items-center gap-2 text-sm text-foreground">
+              <ShoppingCart className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
               <span>Compras (orden)</span>
             </div>
-            <span className="text-sm font-medium text-slate-900">${data.costoCompras.toLocaleString()}</span>
+            <span className="text-sm font-medium tabular-nums">${data.costoCompras.toLocaleString()}</span>
           </div>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <UtensilsCrossed className="h-4 w-4 text-purple-500" />
+            <div className="flex items-center gap-2 text-sm text-foreground">
+              <UtensilsCrossed className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
               <span>Menaje (alquiler)</span>
             </div>
-            <span className="text-sm font-medium text-slate-900">${data.costoMenaje.toLocaleString()}</span>
+            <span className="text-sm font-medium tabular-nums">${data.costoMenaje.toLocaleString()}</span>
           </div>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <Building2 className="h-4 w-4 text-emerald-500" />
+            <div className="flex items-center gap-2 text-sm text-foreground">
+              <Building2 className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
               <span>Salón / Lugar</span>
             </div>
-            <span className="text-sm font-medium text-slate-900">${costoLugar.toLocaleString()}</span>
+            <span className="text-sm font-medium tabular-nums">${costoLugar.toLocaleString()}</span>
           </div>
         </div>
       </Card>
 
       {/* Closure status */}
       <Card className="p-4">
-        <h4 className="text-sm font-medium text-slate-900 mb-3">Estado de Cierre</h4>
+        <h4 className="kicker text-muted-foreground mb-3">Estado de cierre</h4>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-600">Menaje devuelto</span>
+            <span className="text-sm text-foreground">Menaje devuelto</span>
             {data.menajeDevuelto ? (
-              <Badge variant="secondary" className="bg-emerald-50 text-emerald-700">
+              <Badge variant="default" className="font-normal">
                 <CheckCircle className="h-3 w-3 mr-1" />
                 Devuelto
               </Badge>
             ) : (
-              <Badge variant="secondary" className="bg-orange-50 text-orange-700">
+              <Badge variant="outline" className="font-normal text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]">
                 <Clock className="h-3 w-3 mr-1" />
                 Pendiente
               </Badge>
             )}
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-600">Personal liquidado</span>
+            <span className="text-sm text-foreground">Personal liquidado</span>
             {data.personalLiquidado ? (
-              <Badge variant="secondary" className="bg-emerald-50 text-emerald-700">
+              <Badge variant="default" className="font-normal">
                 <CheckCircle className="h-3 w-3 mr-1" />
                 Liquidado
               </Badge>
             ) : (
-              <Badge variant="secondary" className="bg-orange-50 text-orange-700">
+              <Badge variant="outline" className="font-normal text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]">
                 <Clock className="h-3 w-3 mr-1" />
                 Pendiente
               </Badge>

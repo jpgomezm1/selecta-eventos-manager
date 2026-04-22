@@ -330,8 +330,8 @@ export default function VersionEditorWizard() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center space-y-4">
-          <div className="w-8 h-8 border-2 border-slate-200 border-t-selecta-green rounded-full animate-spin" />
-          <p className="text-slate-500">Cargando version...</p>
+          <div className="w-8 h-8 rounded-full bg-muted/70 animate-pulse" />
+          <p className="text-sm text-muted-foreground">Cargando versión...</p>
         </div>
       </div>
     );
@@ -341,14 +341,12 @@ export default function VersionEditorWizard() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center space-y-4 text-center">
-          <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center">
-            <FileText className="h-6 w-6 text-red-500" />
-          </div>
-          <h3 className="text-lg font-semibold text-slate-800">Error al cargar</h3>
-          <p className="text-slate-500">No se pudo obtener la version de la cotizacion</p>
+          <FileText className="h-8 w-8 text-destructive" strokeWidth={1.5} />
+          <h3 className="text-lg font-semibold text-foreground">Error al cargar</h3>
+          <p className="text-sm text-muted-foreground">No se pudo obtener la versión de la cotización</p>
           <Button onClick={() => nav(`/cotizaciones/${id}`)} variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver a la cotizacion
+            Volver a la cotización
           </Button>
         </div>
       </div>
@@ -375,15 +373,15 @@ export default function VersionEditorWizard() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === "Escape") setEditingName(false);
                   }}
-                  className="text-2xl font-semibold h-10 w-72 border-selecta-green"
+                  className="font-serif text-2xl font-semibold h-10 w-72 border-primary"
                 />
               ) : (
                 <h1
-                  className="text-2xl font-semibold text-slate-900 cursor-pointer hover:text-selecta-green transition-colors group flex items-center gap-2"
+                  className="font-serif text-2xl font-semibold text-foreground cursor-pointer hover:text-primary transition-colors group flex items-center gap-2"
                   onClick={() => setEditingName(true)}
                 >
                   {versionName || version.nombre_opcion}
-                  <Pencil className="h-4 w-4 text-slate-400 group-hover:text-selecta-green" />
+                  <Pencil className="h-4 w-4 text-muted-foreground group-hover:text-primary" strokeWidth={1.75} />
                 </h1>
               )}
             </div>
@@ -476,7 +474,7 @@ export default function VersionEditorWizard() {
 
       {/* Floating bottom bar (steps 1-4) */}
       {currentStep < 5 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-lg">
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-[var(--shadow-elegant)]">
           <div className="container mx-auto px-4 py-3 flex items-center justify-between">
             {/* Left: Back button */}
             <Button
@@ -494,31 +492,31 @@ export default function VersionEditorWizard() {
             <div className="flex items-center space-x-3 overflow-x-auto mx-4">
               <div className="hidden sm:flex items-center space-x-2">
                 {editingItems.platos.length > 0 && (
-                  <Badge variant="outline" className="text-xs whitespace-nowrap">
-                    <div className="w-1.5 h-1.5 bg-orange-400 rounded-full mr-1" />
+                  <Badge variant="outline" className="text-xs font-normal whitespace-nowrap">
+                    <div className="w-1 h-1 bg-muted-foreground rounded-full mr-1.5" />
                     {editingItems.platos.length} platos
                   </Badge>
                 )}
                 {editingItems.personal.length > 0 && (
-                  <Badge variant="outline" className="text-xs whitespace-nowrap">
-                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mr-1" />
+                  <Badge variant="outline" className="text-xs font-normal whitespace-nowrap">
+                    <div className="w-1 h-1 bg-muted-foreground rounded-full mr-1.5" />
                     {editingItems.personal.length} personal
                   </Badge>
                 )}
                 {editingItems.transportes.length > 0 && (
-                  <Badge variant="outline" className="text-xs whitespace-nowrap">
-                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full mr-1" />
+                  <Badge variant="outline" className="text-xs font-normal whitespace-nowrap">
+                    <div className="w-1 h-1 bg-muted-foreground rounded-full mr-1.5" />
                     {editingItems.transportes.length} transportes
                   </Badge>
                 )}
                 {(editingItems.menaje ?? []).length > 0 && (
-                  <Badge variant="outline" className="text-xs whitespace-nowrap">
-                    <div className="w-1.5 h-1.5 bg-purple-400 rounded-full mr-1" />
+                  <Badge variant="outline" className="text-xs font-normal whitespace-nowrap">
+                    <div className="w-1 h-1 bg-muted-foreground rounded-full mr-1.5" />
                     {(editingItems.menaje ?? []).length} menaje
                   </Badge>
                 )}
               </div>
-              <span className="text-lg font-bold text-emerald-600 whitespace-nowrap">
+              <span className="text-lg font-semibold text-primary tabular-nums whitespace-nowrap">
                 $ {subt.total.toLocaleString()}
               </span>
             </div>
@@ -529,15 +527,11 @@ export default function VersionEditorWizard() {
                 variant="ghost"
                 onClick={goNext}
                 size="sm"
-                className="h-9 text-slate-500 hover:text-slate-700 hidden sm:flex"
+                className="h-9 text-muted-foreground hover:text-foreground hidden sm:flex"
               >
                 Saltar
               </Button>
-              <Button
-                onClick={goNext}
-                size="sm"
-                className="h-9 bg-selecta-green hover:bg-selecta-green/90"
-              >
+              <Button onClick={goNext} size="sm" className="h-9">
                 Siguiente
                 <ArrowRight className="h-4 w-4 ml-1.5" />
               </Button>

@@ -122,13 +122,14 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
   };
 
   const estadoBadge = (estado: string) => {
-    const map: Record<string, string> = {
-      borrador: "bg-slate-100 text-slate-700",
-      programado: "bg-blue-50 text-blue-700",
-      finalizado: "bg-emerald-50 text-emerald-700",
+    const variantMap: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+      borrador: "outline",
+      programado: "secondary",
+      finalizado: "default",
+      cancelado: "destructive",
     };
     return (
-      <Badge variant="secondary" className={map[estado] ?? map.borrador}>
+      <Badge variant={variantMap[estado] ?? "outline"} className="font-normal">
         {estado.charAt(0).toUpperCase() + estado.slice(1)}
       </Badge>
     );
@@ -148,11 +149,11 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
 
   return (
     <Card>
-      <div className="p-4 border-b border-slate-200">
+      <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Truck className="h-5 w-5 text-slate-600" />
-            <h2 className="font-semibold text-slate-900">Logística y Transporte</h2>
+            <Truck className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+            <h2 className="font-semibold text-foreground">Logística y transporte</h2>
           </div>
           {estadoBadge(orden.estado)}
         </div>
@@ -162,8 +163,8 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
         {/* Pickup */}
         <div className="space-y-3">
           <div className="flex items-center gap-1.5">
-            <MapPin className="h-4 w-4 text-blue-600" />
-            <h3 className="font-medium text-slate-900">Punto de Recogida</h3>
+            <MapPin className="h-4 w-4 text-primary" strokeWidth={1.75} />
+            <h3 className="font-medium text-foreground">Punto de recogida</h3>
           </div>
           <div className="grid grid-cols-1 gap-3">
             <div>
@@ -197,8 +198,8 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
         {/* Destination + Time ranges */}
         <div className="space-y-3">
           <div className="flex items-center gap-1.5">
-            <MapPin className="h-4 w-4 text-emerald-600" />
-            <h3 className="font-medium text-slate-900">Destino y Horarios</h3>
+            <MapPin className="h-4 w-4 text-primary" strokeWidth={1.75} />
+            <h3 className="font-medium text-foreground">Destino y horarios</h3>
           </div>
           <div className="grid grid-cols-1 gap-3">
             <div>
@@ -267,8 +268,8 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
         {/* Contact */}
         <div className="space-y-3">
           <div className="flex items-center gap-1.5">
-            <User className="h-4 w-4 text-purple-600" />
-            <h3 className="font-medium text-slate-900">Contacto y Vehículo</h3>
+            <User className="h-4 w-4 text-primary" strokeWidth={1.75} />
+            <h3 className="font-medium text-foreground">Contacto y vehículo</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -337,7 +338,7 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
                   variant="ghost"
                   size="sm"
                   onClick={handleCancelarClick}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="text-muted-foreground hover:text-destructive"
                 >
                   Cancelar
                 </Button>
@@ -346,11 +347,11 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
           </div>
 
           {(!orden.pickup_nombre || !orden.destino_direccion || !orden.contacto_nombre) && (
-            <div className="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200 flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" />
+            <div className="mt-3 p-3 bg-muted/40 rounded-md border border-border flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-[hsl(30_55%_42%)] flex-shrink-0 mt-0.5" strokeWidth={1.75} />
               <div>
-                <p className="text-sm font-medium text-orange-800">Información incompleta</p>
-                <p className="text-xs text-orange-700">Complete los campos para una mejor coordinación.</p>
+                <p className="text-sm font-medium text-foreground">Información incompleta</p>
+                <p className="text-xs text-muted-foreground">Complete los campos para una mejor coordinación.</p>
               </div>
             </div>
           )}

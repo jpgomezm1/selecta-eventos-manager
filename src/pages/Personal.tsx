@@ -105,8 +105,8 @@ export default function PersonalPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-slate-200 border-t-selecta-green rounded-full animate-spin"></div>
-          <p className="text-sm text-slate-500">Cargando personal...</p>
+          <div className="w-8 h-8 rounded-full bg-muted/70 animate-pulse" />
+          <p className="text-sm text-muted-foreground">Cargando personal...</p>
         </div>
       </div>
     );
@@ -220,12 +220,12 @@ export default function PersonalPage() {
                   <TableRow key={person.id} className="group">
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-selecta-green/10 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-medium text-selecta-green">
+                        <div className="w-8 h-8 bg-primary/10 text-primary rounded-full flex items-center justify-center">
+                          <span className="text-[11px] font-medium">
                             {person.nombre_completo.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                           </span>
                         </div>
-                        <span className="font-medium text-slate-900">{person.nombre_completo}</span>
+                        <span className="font-medium text-foreground">{person.nombre_completo}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-slate-600">{person.numero_cedula}</TableCell>
@@ -314,9 +314,7 @@ export default function PersonalPage() {
                           variant={currentPage === page ? "default" : "ghost"}
                           size="sm"
                           onClick={() => goToPage(page)}
-                          className={`h-8 w-8 p-0 ${
-                            currentPage === page ? "bg-selecta-green hover:bg-selecta-green/90" : ""
-                          }`}
+                          className="h-8 w-8 p-0 font-mono tabular-nums text-[12px]"
                         >
                           {page}
                         </Button>

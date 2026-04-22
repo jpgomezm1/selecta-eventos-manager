@@ -48,10 +48,10 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 
 const confianzaConfig: Record<string, { label: string; color: string }> = {
-  alta: { label: "Alta", color: "bg-green-100 text-green-800 border-green-200" },
-  media: { label: "Media", color: "bg-yellow-100 text-yellow-800 border-yellow-200" },
-  baja: { label: "Baja", color: "bg-orange-100 text-orange-800 border-orange-200" },
-  sin_match: { label: "Sin match", color: "bg-red-100 text-red-800 border-red-200" },
+  alta: { label: "Alta", color: "bg-primary/10 text-primary border-primary/30" },
+  media: { label: "Media", color: "bg-[hsl(30_55%_42%)]/10 text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]" },
+  baja: { label: "Baja", color: "bg-[hsl(30_55%_42%)]/15 text-[hsl(30_55%_35%)] border-[hsl(30_40%_65%)]" },
+  sin_match: { label: "Sin match", color: "bg-destructive/10 text-destructive border-destructive/30" },
 };
 
 interface ReviewItem extends InvoiceExtractedItem {
@@ -323,7 +323,7 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
         {step === "upload" && (
           <div className="space-y-4">
             <div
-              className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/30 transition-colors"
+              className="border border-dashed border-border rounded-md p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
@@ -333,10 +333,10 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
                   {previewUrl ? (
                     <img src={previewUrl} alt="Preview" className="mx-auto max-h-48 rounded-md object-contain" />
                   ) : (
-                    <FileText className="mx-auto h-16 w-16 text-emerald-500" />
+                    <FileText className="mx-auto h-14 w-14 text-primary" strokeWidth={1.5} />
                   )}
-                  <p className="text-sm font-medium text-slate-700">{file.name}</p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-sm font-medium text-foreground">{file.name}</p>
+                  <p className="text-xs text-muted-foreground">
                     {(file.size / 1024 / 1024).toFixed(1)} MB
                   </p>
                   <Button
@@ -353,12 +353,12 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <Upload className="mx-auto h-12 w-12 text-slate-400" />
+                  <Upload className="mx-auto h-11 w-11 text-muted-foreground" strokeWidth={1.5} />
                   <div>
-                    <p className="text-sm font-medium text-slate-600">
+                    <p className="text-sm font-medium text-foreground">
                       Arrastra la foto o PDF de la factura aquí
                     </p>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       JPG, PNG, WebP o PDF — Máximo 10MB
                     </p>
                   </div>
@@ -375,12 +375,8 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
 
             <DialogFooter>
               <Button variant="outline" onClick={resetAndClose}>Cancelar</Button>
-              <Button
-                disabled={!file}
-                onClick={startScan}
-                className="bg-emerald-600 hover:bg-emerald-700"
-              >
-                <Upload className="h-4 w-4 mr-2" /> Escanear Factura
+              <Button disabled={!file} onClick={startScan}>
+                <Upload className="h-4 w-4 mr-2" strokeWidth={1.75} /> Escanear factura
               </Button>
             </DialogFooter>
           </div>
@@ -389,9 +385,9 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
         {/* STEP 2: Processing */}
         {step === "processing" && (
           <div className="flex flex-col items-center py-12 space-y-4">
-            <Loader2 className="h-12 w-12 animate-spin text-emerald-600" />
-            <p className="text-lg font-medium text-slate-700">Analizando factura con IA...</p>
-            <p className="text-sm text-slate-400">Esto puede tomar unos segundos</p>
+            <Loader2 className="h-10 w-10 animate-spin text-primary" strokeWidth={1.5} />
+            <p className="text-base font-medium text-foreground">Analizando factura con IA...</p>
+            <p className="text-sm text-muted-foreground">Esto puede tomar unos segundos</p>
             {previewUrl && (
               <img src={previewUrl} alt="Preview" className="mt-4 max-h-32 rounded-md object-contain opacity-60" />
             )}
@@ -431,8 +427,8 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
 
             {/* Warnings */}
             {sinMatchCount > 0 && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-md text-sm text-amber-700">
-                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+              <div className="flex items-center gap-2 px-3 py-2 bg-muted/40 border border-border rounded-md text-sm text-[hsl(30_55%_42%)]">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0" strokeWidth={1.75} />
                 {sinMatchCount} item(s) sin asignar — no se guardarán hasta asignarles un ingrediente
               </div>
             )}
@@ -496,7 +492,7 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
                               className="h-8 text-xs"
                             />
                             {matchedIng && item.unidad && item.unidad.toLowerCase() !== matchedIng.unidad.toLowerCase() && (
-                              <p className="text-[10px] text-emerald-600 mt-0.5">
+                              <p className="text-[10px] text-primary mt-0.5">
                                 {item.cantidad} {item.unidad} &rarr;{" "}
                                 {convertirAUnidadBase(item.cantidad, item.unidad.toLowerCase(), matchedIng.unidad.toLowerCase()).toLocaleString("es-CO")}{" "}
                                 {matchedIng.unidad}
@@ -523,7 +519,7 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 text-red-500"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
                               onClick={() => removeItem(item._key)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -578,10 +574,9 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
               <Button
                 disabled={validCount === 0 || saveMut.isPending}
                 onClick={() => saveMut.mutate(true)}
-                className="bg-emerald-600 hover:bg-emerald-700"
               >
                 {saveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Confirmar y Actualizar Stock
+                Confirmar y actualizar stock
               </Button>
             </DialogFooter>
           </div>

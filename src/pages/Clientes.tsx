@@ -264,8 +264,8 @@ export default function ClientesPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-slate-200 border-t-selecta-green rounded-full animate-spin"></div>
-          <p className="text-sm text-slate-500">Cargando clientes...</p>
+          <div className="w-8 h-8 rounded-full bg-muted/70 animate-pulse" />
+          <p className="text-sm text-muted-foreground">Cargando clientes...</p>
         </div>
       </div>
     );
@@ -344,23 +344,20 @@ export default function ClientesPage() {
                   <TableRow key={cliente.id} className="group">
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "w-8 h-8 rounded-full flex items-center justify-center",
-                          cliente.tipo === 'empresa' ? "bg-blue-100" : "bg-selecta-green/10"
-                        )}>
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary/10 text-primary">
                           {cliente.tipo === 'empresa' ? (
-                            <Building2 className="h-4 w-4 text-blue-600" />
+                            <Building2 className="h-4 w-4" strokeWidth={1.75} />
                           ) : (
-                            <span className="text-xs font-medium text-selecta-green">
+                            <span className="text-[11px] font-medium">
                               {cliente.nombre.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                             </span>
                           )}
                         </div>
-                        <span className="font-medium text-slate-900">{cliente.nombre}</span>
+                        <span className="font-medium text-foreground">{cliente.nombre}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={cliente.tipo === 'empresa' ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-slate-50 text-slate-600 border-slate-200"}>
+                      <Badge variant="outline" className="font-normal">
                         {cliente.tipo === 'empresa' ? 'Empresa' : 'Persona'}
                       </Badge>
                     </TableCell>
@@ -400,7 +397,7 @@ export default function ClientesPage() {
                               <AlertDialogCancel>Cancelar</AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => handleDelete(cliente.id)}
-                                className="bg-red-600 hover:bg-red-700"
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
                                 Eliminar
                               </AlertDialogAction>
@@ -446,9 +443,7 @@ export default function ClientesPage() {
                           variant={currentPage === page ? "default" : "ghost"}
                           size="sm"
                           onClick={() => goToPage(page)}
-                          className={`h-8 w-8 p-0 ${
-                            currentPage === page ? "bg-selecta-green hover:bg-selecta-green/90" : ""
-                          }`}
+                          className="h-8 w-8 p-0 font-mono tabular-nums text-[12px]"
                         >
                           {page}
                         </Button>
@@ -492,18 +487,18 @@ export default function ClientesPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             {/* Toggle tipo */}
-            <div className="flex rounded-lg border border-slate-200 overflow-hidden">
+            <div className="flex rounded-md border border-border overflow-hidden">
               <button
                 type="button"
                 className={cn(
                   "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
                   form.tipo === 'persona_natural'
-                    ? "bg-selecta-green text-white"
-                    : "bg-white text-slate-600 hover:bg-slate-50"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card text-muted-foreground hover:bg-muted/40"
                 )}
                 onClick={() => setForm((p) => ({ ...p, tipo: 'persona_natural' }))}
               >
-                <User className="h-4 w-4" />
+                <User className="h-4 w-4" strokeWidth={1.75} />
                 Persona Natural
               </button>
               <button
@@ -511,12 +506,12 @@ export default function ClientesPage() {
                 className={cn(
                   "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
                   form.tipo === 'empresa'
-                    ? "bg-selecta-green text-white"
-                    : "bg-white text-slate-600 hover:bg-slate-50"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card text-muted-foreground hover:bg-muted/40"
                 )}
                 onClick={() => setForm((p) => ({ ...p, tipo: 'empresa' }))}
               >
-                <Building2 className="h-4 w-4" />
+                <Building2 className="h-4 w-4" strokeWidth={1.75} />
                 Empresa
               </button>
             </div>
@@ -652,7 +647,7 @@ export default function ClientesPage() {
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-sm text-slate-800">{c.nombre}</span>
                             {c.es_principal && (
-                              <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-xs">
+                              <Badge variant="outline" className="text-[10px] font-normal uppercase tracking-wide text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]">
                                 Principal
                               </Badge>
                             )}
@@ -671,7 +666,7 @@ export default function ClientesPage() {
                             onClick={() => handleTogglePrincipal(c)}
                             title={c.es_principal ? "Quitar como principal" : "Marcar como principal"}
                           >
-                            <Star className={cn("h-3.5 w-3.5", c.es_principal ? "text-yellow-500 fill-yellow-500" : "text-slate-400")} />
+                            <Star className={cn("h-3.5 w-3.5", c.es_principal ? "text-[hsl(30_55%_42%)] fill-[hsl(30_55%_42%)]" : "text-muted-foreground/60")} />
                           </Button>
                           <Button
                             variant="ghost"
@@ -706,7 +701,7 @@ export default function ClientesPage() {
 
                 {/* Inline contacto form */}
                 {showContactoForm && (
-                  <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200 space-y-3">
+                  <div className="mt-3 p-3 bg-muted/40 rounded-md border border-border space-y-3">
                     <div className="space-y-2">
                       <Input
                         placeholder="Nombre del contacto *"

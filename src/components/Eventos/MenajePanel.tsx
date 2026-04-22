@@ -182,14 +182,14 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
   };
 
   const estadoBadge = (estado: string) => {
-    const map: Record<string, { cls: string; icon: React.ReactNode }> = {
-      borrador: { cls: "bg-slate-100 text-slate-700", icon: <Clock className="h-3 w-3 mr-1" /> },
-      confirmado: { cls: "bg-blue-50 text-blue-700", icon: <CheckCircle className="h-3 w-3 mr-1" /> },
-      devuelto: { cls: "bg-emerald-50 text-emerald-700", icon: <Package className="h-3 w-3 mr-1" /> },
+    const map: Record<string, { variant: "default" | "secondary" | "outline" | "destructive"; icon: React.ReactNode }> = {
+      borrador: { variant: "outline", icon: <Clock className="h-3 w-3 mr-1" /> },
+      confirmado: { variant: "secondary", icon: <CheckCircle className="h-3 w-3 mr-1" /> },
+      devuelto: { variant: "default", icon: <Package className="h-3 w-3 mr-1" /> },
     };
     const c = map[estado] ?? map.borrador;
     return (
-      <Badge variant="secondary" className={c.cls}>
+      <Badge variant={c.variant} className="font-normal">
         {c.icon}
         {estado.charAt(0).toUpperCase() + estado.slice(1)}
       </Badge>
@@ -256,7 +256,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
             </Button>
           )}
           {reserva.estado === "borrador" && (
-            <Button variant="ghost" size="sm" onClick={handleCancelar} className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50">
+            <Button variant="ghost" size="sm" onClick={handleCancelar} className="h-8 text-muted-foreground hover:text-destructive">
               Cancelar
             </Button>
           )}
@@ -295,7 +295,7 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
                       {item.cantidad_requerida.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className="text-right">
-                      <span className={insuficiente ? "text-red-600 font-medium" : "text-emerald-600 font-medium"}>
+                      <span className={insuficiente ? "text-destructive font-medium" : "text-primary font-medium"}>
                         {item.disponible.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                       </span>
                     </TableCell>
@@ -332,22 +332,22 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
       {/* Total */}
       {items.length > 0 && (
         <div className="flex justify-end">
-          <div className="bg-blue-50 rounded-lg p-4 text-right">
-            <p className="text-xs text-blue-600 mb-1">Total Estimado Alquiler</p>
-            <p className="text-xl font-semibold text-blue-700">${totalCalculado.toLocaleString()}</p>
+          <div className="rounded-md border border-border p-4 text-right">
+            <p className="kicker text-muted-foreground mb-1">Total estimado alquiler</p>
+            <p className="text-xl font-semibold text-primary tabular-nums">${totalCalculado.toLocaleString()}</p>
           </div>
         </div>
       )}
 
       {/* Read-only status indicators for non-borrador states */}
       {reserva.estado === "confirmado" && (
-        <div className="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 rounded-lg px-3 py-2">
-          <CheckCircle className="h-4 w-4" /> Orden confirmada — pendiente despacho desde Bodega
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/40 border border-border rounded-md px-3 py-2">
+          <CheckCircle className="h-4 w-4 text-primary" strokeWidth={1.75} /> Orden confirmada — pendiente despacho desde Bodega
         </div>
       )}
       {reserva.estado === "devuelto" && (
-        <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">
-          <Package className="h-4 w-4" /> Menaje devuelto
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/40 border border-border rounded-md px-3 py-2">
+          <Package className="h-4 w-4 text-primary" strokeWidth={1.75} /> Menaje devuelto
         </div>
       )}
     </div>

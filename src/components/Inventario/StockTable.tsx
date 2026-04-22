@@ -93,7 +93,7 @@ export default function StockTable() {
                     <TableCell className="font-medium">{i.nombre}</TableCell>
                     <TableCell>{i.unidad}</TableCell>
                     <TableCell className="text-right">
-                      <span className={stock <= 0 ? "text-red-600 font-semibold" : ""}>
+                      <span className={stock <= 0 ? "text-destructive font-semibold" : ""}>
                         {stock}
                       </span>
                     </TableCell>

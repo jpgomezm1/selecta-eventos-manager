@@ -4,12 +4,11 @@ import { movimientosList, movimientoCreate, movimientoUpdate, movimientoUpsertIt
 import { MenajeMovimiento, MenajeMovimientoItem } from "@/types/menaje";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import MovimientoDialog from "./MovimientoDialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Plus,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -22,10 +21,11 @@ import {
   Calendar,
   Package,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import moment from "moment";
+import { KPI } from "@/components/Layout/PageHeader";
 
 type DiscrepancyInfo = {
   totalMerma: number;
@@ -225,164 +225,93 @@ export default function MovimientosPanel() {
 
   return (
     <div className="space-y-6">
-      {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <ArrowUpDown className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-blue-800">{stats.total}</div>
-                <div className="text-sm text-blue-600">Total movimientos</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-green-50 border-green-200">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <ArrowUp className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-800">{stats.ingresos}</div>
-                <div className="text-sm text-green-600">Ingresos</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-red-50 border-red-200">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <ArrowDown className="h-5 w-5 text-red-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-red-800">{stats.salidas}</div>
-                <div className="text-sm text-red-600">Salidas</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-amber-50 border-amber-200">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <Clock className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-amber-800">{stats.pendientes}</div>
-                <div className="text-sm text-amber-600">Pendientes</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* KPIs editoriales */}
+      <div className="grid grid-cols-2 gap-x-8 gap-y-6 border-y border-border py-6 md:grid-cols-4">
+        <KPI kicker="Total movimientos" value={stats.total} />
+        <KPI kicker="Ingresos" value={stats.ingresos} tone="primary" />
+        <KPI kicker="Salidas" value={stats.salidas} />
+        <KPI
+          kicker="Pendientes"
+          value={stats.pendientes}
+          tone={stats.pendientes > 0 ? "warning" : "neutral"}
+        />
       </div>
 
-      {/* Controles */}
-      <Card className="bg-slate-50 border-slate-200">
-        <CardContent className="p-6">
-          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-            {/* Botones de acción */}
-            <div className="flex gap-3">
-              <Button
-                onClick={() => handleNew("salida")}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                <ArrowDown className="h-4 w-4 mr-2" />
-                Nueva Salida
-              </Button>
+      {/* Toolbar */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex gap-2">
+          <Button onClick={() => handleNew("salida")} className="gap-2">
+            <ArrowDown className="h-4 w-4" />
+            Nueva salida
+          </Button>
+          <Button variant="outline" onClick={() => handleNew("ingreso")} className="gap-2">
+            <ArrowUp className="h-4 w-4" />
+            Nuevo ingreso
+          </Button>
+        </div>
 
-              <Button
-                variant="outline"
-                onClick={() => handleNew("ingreso")}
-                className="border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400"
-              >
-                <ArrowUp className="h-4 w-4 mr-2" />
-                Nuevo Ingreso
-              </Button>
-            </div>
-
-            {/* Filtros */}
-            <div className="flex items-center space-x-3">
-              <Filter className="h-4 w-4 text-slate-500" />
-
-              <select
-                value={filterTipo}
-                onChange={(e) => setFilterTipo(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:border-blue-500 focus:ring-blue-500/20"
-              >
-                <option value="">Todos los tipos</option>
-                <option value="ingreso">Ingresos</option>
-                <option value="salida">Salidas</option>
-              </select>
-
-              <select
-                value={filterEstado}
-                onChange={(e) => setFilterEstado(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:border-blue-500 focus:ring-blue-500/20"
-              >
-                <option value="">Todos los estados</option>
-                <option value="borrador">Borrador</option>
-                <option value="confirmado">Confirmado</option>
-                <option value="cancelado">Cancelado</option>
-              </select>
-
-              <Badge className="bg-blue-100 text-blue-700 border-blue-200">
-                {filteredData.length} registros
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="flex items-center gap-3">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <select
+            value={filterTipo}
+            onChange={(e) => setFilterTipo(e.target.value)}
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="">Todos los tipos</option>
+            <option value="ingreso">Ingresos</option>
+            <option value="salida">Salidas</option>
+          </select>
+          <select
+            value={filterEstado}
+            onChange={(e) => setFilterEstado(e.target.value)}
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="">Todos los estados</option>
+            <option value="borrador">Borrador</option>
+            <option value="confirmado">Confirmado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+          <span className="font-mono text-xs tabular-nums text-muted-foreground">
+            {filteredData.length} registros
+          </span>
+        </div>
+      </div>
 
       {/* Tabla de movimientos */}
-      <Card className="bg-white border-slate-200 overflow-hidden">
-        <CardHeader className="bg-slate-50 border-b border-slate-200 pb-4">
-          <CardTitle className="flex items-center space-x-2 text-slate-800">
-            <ArrowUpDown className="h-5 w-5" />
-            <span>Historial de Movimientos</span>
-          </CardTitle>
-        </CardHeader>
-
+      <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50 border-slate-200">
-                <TableHead className="font-semibold text-slate-700">Fecha</TableHead>
-                <TableHead className="font-semibold text-slate-700">Tipo</TableHead>
-                <TableHead className="font-semibold text-slate-700">Estado</TableHead>
-                <TableHead className="font-semibold text-slate-700">Evento</TableHead>
-                <TableHead className="font-semibold text-slate-700">Elementos</TableHead>
-                <TableHead className="font-semibold text-slate-700">Resultado</TableHead>
-                <TableHead className="font-semibold text-slate-700">Notas</TableHead>
-                <TableHead className="font-semibold text-slate-700 text-right">Acciones</TableHead>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="kicker text-muted-foreground">Fecha</TableHead>
+                <TableHead className="kicker text-muted-foreground">Tipo</TableHead>
+                <TableHead className="kicker text-muted-foreground">Estado</TableHead>
+                <TableHead className="kicker text-muted-foreground">Evento</TableHead>
+                <TableHead className="kicker text-muted-foreground">Elementos</TableHead>
+                <TableHead className="kicker text-muted-foreground">Resultado</TableHead>
+                <TableHead className="kicker text-muted-foreground">Notas</TableHead>
+                <TableHead className="kicker text-right text-muted-foreground">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12">
-                    <div className="flex flex-col items-center space-y-3">
-                      <div className="animate-spin w-8 h-8 border-2 border-slate-200 border-t-selecta-green rounded-full" />
-                      <span className="text-slate-500">Cargando movimientos...</span>
+                  <TableCell colSpan={8} className="py-12 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
+                      <span className="text-sm text-muted-foreground">Cargando movimientos…</span>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12">
-                    <div className="flex flex-col items-center space-y-3">
-                      <Package className="h-12 w-12 text-slate-300" />
+                  <TableCell colSpan={8} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <Package className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.25} />
                       <div>
-                        <h3 className="font-medium text-slate-700">No hay movimientos</h3>
-                        <p className="text-sm text-slate-500 mt-1">
-                          Comienza registrando entradas y salidas de inventario
+                        <h3 className="font-serif text-lg text-foreground">No hay movimientos</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Comienza registrando entradas y salidas de inventario.
                         </p>
                       </div>
                     </div>
@@ -397,34 +326,43 @@ export default function MovimientosPanel() {
                   const disc = discrepancyMap.get(m.id);
 
                   return (
-                    <TableRow key={m.id} className="hover:bg-slate-50 transition-colors">
+                    <TableRow key={m.id} className="border-border transition-colors hover:bg-muted/30">
                       <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Calendar className="h-4 w-4 text-slate-400" />
-                          <span className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground/60" strokeWidth={1.5} />
+                          <span className="font-mono text-sm tabular-nums text-foreground/85">
                             {moment(m.fecha).format("DD/MM/YYYY")}
                           </span>
                         </div>
                       </TableCell>
 
                       <TableCell>
-                        <Badge className={cn(
-                          "flex items-center space-x-1 w-fit",
-                          tipoBadge.color === "green" && "bg-green-100 text-green-700 border-green-200",
-                          tipoBadge.color === "red" && "bg-red-100 text-red-700 border-red-200"
-                        )}>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "inline-flex w-fit items-center gap-1 font-normal",
+                            tipoBadge.color === "green" && "border-primary/25 bg-primary/10 text-primary",
+                            tipoBadge.color === "red" &&
+                              "border-border bg-muted/40 text-muted-foreground"
+                          )}
+                        >
                           <TipoIcon className="h-3 w-3" />
                           <span className="capitalize">{tipoBadge.label}</span>
                         </Badge>
                       </TableCell>
 
                       <TableCell>
-                        <Badge className={cn(
-                          "flex items-center space-x-1 w-fit",
-                          estadoBadge.color === "green" && "bg-green-100 text-green-700 border-green-200",
-                          estadoBadge.color === "amber" && "bg-amber-100 text-amber-700 border-amber-200",
-                          estadoBadge.color === "red" && "bg-red-100 text-red-700 border-red-200"
-                        )}>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "inline-flex w-fit items-center gap-1 font-normal",
+                            estadoBadge.color === "green" && "border-primary/25 bg-primary/10 text-primary",
+                            estadoBadge.color === "amber" &&
+                              "border-[hsl(30_55%_42%)]/30 bg-[hsl(30_55%_42%)]/10 text-[hsl(30_55%_42%)]",
+                            estadoBadge.color === "red" &&
+                              "border-destructive/30 bg-destructive/10 text-destructive"
+                          )}
+                        >
                           <EstadoIcon className="h-3 w-3" />
                           <span className="capitalize">{estadoBadge.label}</span>
                         </Badge>
@@ -432,85 +370,94 @@ export default function MovimientosPanel() {
 
                       <TableCell>
                         {(m as { nombre_evento?: string }).nombre_evento ? (
-                          <span className="text-sm font-medium text-slate-700">{(m as { nombre_evento?: string }).nombre_evento}</span>
+                          <span className="text-sm text-foreground/85">
+                            {(m as { nombre_evento?: string }).nombre_evento}
+                          </span>
                         ) : (
-                          <span className="text-slate-400 text-sm">&mdash;</span>
+                          <span className="text-sm text-muted-foreground/60">—</span>
                         )}
                       </TableCell>
 
                       <TableCell>
                         <div className="max-w-xs">
                           {m.items.length > 0 ? (
-                            <div className="space-y-1">
+                            <div className="space-y-0.5">
                               {m.items.slice(0, 2).map((item, idx) => (
-                                <div key={idx} className="text-sm text-slate-600">
-                                  <span className="font-medium">
-                                    {item.menaje?.nombre ?? 'Elemento desconocido'}
-                                  </span>
-                                  <span className="text-slate-400 ml-1">
-                                    x{item.cantidad}
+                                <div key={idx} className="text-sm text-foreground/80">
+                                  <span>{item.menaje?.nombre ?? "Elemento desconocido"}</span>
+                                  <span className="ml-1 font-mono text-muted-foreground tabular-nums">
+                                    ×{item.cantidad}
                                   </span>
                                 </div>
                               ))}
                               {m.items.length > 2 && (
-                                <div className="text-xs text-slate-500">
-                                  +{m.items.length - 2} más...
+                                <div className="text-xs text-muted-foreground">
+                                  +{m.items.length - 2} más…
                                 </div>
                               )}
                             </div>
                           ) : (
-                            <span className="text-slate-400 text-sm">Sin elementos</span>
+                            <span className="text-sm text-muted-foreground/60">Sin elementos</span>
                           )}
                         </div>
                       </TableCell>
 
-                      {/* Resultado / Discrepancy badges */}
                       <TableCell>
                         {m.tipo === "ingreso" && disc ? (
                           <div className="flex flex-col gap-1">
                             {disc.hasFaltante && (
-                              <Badge className="bg-red-100 text-red-700 border-red-200 text-xs flex items-center space-x-1 w-fit">
+                              <Badge
+                                variant="outline"
+                                className="inline-flex w-fit items-center gap-1 border-destructive/30 bg-destructive/10 text-xs font-normal text-destructive"
+                              >
                                 <AlertTriangle className="h-3 w-3" />
                                 <span>Faltante: {disc.totalFaltante}</span>
                               </Badge>
                             )}
                             {disc.totalMerma > 0 && (
-                              <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs flex items-center space-x-1 w-fit">
+                              <Badge
+                                variant="outline"
+                                className="inline-flex w-fit items-center gap-1 border-[hsl(30_55%_42%)]/30 bg-[hsl(30_55%_42%)]/10 text-xs font-normal text-[hsl(30_55%_42%)]"
+                              >
                                 <AlertTriangle className="h-3 w-3" />
                                 <span>Merma: {disc.totalMerma}</span>
                               </Badge>
                             )}
                             {!disc.hasFaltante && disc.totalMerma === 0 && (
-                              <Badge className="bg-green-100 text-green-700 border-green-200 text-xs flex items-center space-x-1 w-fit">
+                              <Badge
+                                variant="outline"
+                                className="inline-flex w-fit items-center gap-1 border-primary/25 bg-primary/10 text-xs font-normal text-primary"
+                              >
                                 <CheckCircle2 className="h-3 w-3" />
                                 <span>Completo</span>
                               </Badge>
                             )}
                           </div>
                         ) : (
-                          <span className="text-slate-400 text-sm">&mdash;</span>
+                          <span className="text-sm text-muted-foreground/60">—</span>
                         )}
                       </TableCell>
 
                       <TableCell>
                         <div className="max-w-xs">
                           {m.notas ? (
-                            <span className="text-sm text-slate-600 truncate block">
+                            <span className="block truncate text-sm text-muted-foreground">
                               {m.notas}
                             </span>
                           ) : (
-                            <span className="text-slate-400 text-sm">&mdash;</span>
+                            <span className="text-sm text-muted-foreground/60">—</span>
                           )}
                         </div>
                       </TableCell>
 
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end space-x-2">
+                        <div className="flex items-center justify-end gap-1">
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => handleEdit(m)}
-                            className="text-blue-600 hover:bg-blue-50"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
+                            aria-label="Editar"
                           >
                             <Edit3 className="h-4 w-4" />
                           </Button>
@@ -519,18 +466,24 @@ export default function MovimientosPanel() {
                             <Button
                               size="sm"
                               onClick={() => {
-                                if (window.confirm(`Confirmar este ${m.tipo} aplica el cambio de stock y no se puede revertir fácilmente. ¿Continuar?`)) {
+                                if (
+                                  window.confirm(
+                                    `Confirmar este ${m.tipo} aplica el cambio de stock y no se puede revertir fácilmente. ¿Continuar?`
+                                  )
+                                ) {
                                   confirmMut.mutate(m.id);
                                 }
                               }}
                               disabled={confirmMut.isPending}
-                              className="bg-green-500 hover:bg-green-600 text-white text-xs px-3"
+                              className="h-8 gap-1 px-2 text-xs"
+                              aria-label="Confirmar"
                             >
                               {confirmMut.isPending ? (
-                                <div className="animate-spin w-3 h-3 border border-white/30 border-t-white rounded-full" />
+                                <div className="h-3 w-3 animate-spin rounded-full border border-primary-foreground/30 border-t-primary-foreground" />
                               ) : (
                                 <Check className="h-3 w-3" />
                               )}
+                              <span>Confirmar</span>
                             </Button>
                           )}
 
@@ -545,7 +498,8 @@ export default function MovimientosPanel() {
                               }
                             }}
                             disabled={deleteMut.isPending}
-                            className="text-red-600 hover:bg-red-50"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                            aria-label="Eliminar"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

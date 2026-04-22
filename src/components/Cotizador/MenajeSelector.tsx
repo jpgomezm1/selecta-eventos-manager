@@ -10,7 +10,6 @@ import {
   Minus,
   Search,
   X,
-  DollarSign,
   CheckCircle2,
   Filter
 } from "lucide-react";
@@ -79,28 +78,28 @@ export function MenajeSelector({
         className={cn(
           "relative transition-all duration-200 group h-full flex flex-col",
           selected
-            ? "border-2 border-purple-500 bg-purple-50/50"
-            : "border border-slate-200 hover:border-purple-300"
+            ? "border-primary bg-primary/5"
+            : "border-border hover:border-border/80"
         )}
       >
         {selected && (
-          <div className="absolute top-3 right-3 z-10 bg-purple-600 text-white rounded-full p-1.5 shadow-lg">
-            <CheckCircle2 className="h-3 w-3" />
+          <div className="absolute top-3 right-3 z-10 bg-primary text-primary-foreground rounded-full p-1.5">
+            <CheckCircle2 className="h-3 w-3" strokeWidth={1.75} />
           </div>
         )}
 
         <CardContent className="p-4 flex flex-col h-full">
           <div className="mb-3">
             <div className="flex items-center space-x-2 mb-2">
-              <Package className="h-5 w-5 text-purple-600" />
-              <h4 className="font-semibold text-slate-800 leading-snug text-sm line-clamp-2 group-hover:text-purple-600 transition-colors">
+              <Package className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} />
+              <h4 className="font-semibold text-foreground leading-snug text-sm line-clamp-2 group-hover:text-primary transition-colors">
                 {item.nombre}
               </h4>
             </div>
           </div>
 
           <div className="mb-4 h-6 flex items-center">
-            <Badge className="text-xs font-medium bg-purple-100 text-purple-700 border-purple-200">
+            <Badge variant="outline" className="text-xs font-normal">
               {item.categoria}
             </Badge>
           </div>
@@ -108,10 +107,10 @@ export function MenajeSelector({
           <div className="flex-1" />
 
           <div className="mb-4">
-            <div className="flex items-center justify-center p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <div className="flex items-center space-x-1">
-                <DollarSign className="h-4 w-4 text-purple-600" />
-                <span className="font-bold text-lg text-purple-600">
+            <div className="flex items-center justify-center p-3 bg-muted/40 rounded-md border border-border">
+              <div className="flex items-baseline gap-1">
+                <span className="text-xs text-muted-foreground">$</span>
+                <span className="font-semibold text-lg text-primary tabular-nums">
                   {item.precio_alquiler.toLocaleString()}
                 </span>
               </div>
@@ -121,12 +120,12 @@ export function MenajeSelector({
           <div className="h-20 flex flex-col justify-end">
             {qty > 0 ? (
               <div className="space-y-2">
-                <div className="flex items-center justify-between bg-white rounded-lg p-2 border border-purple-200">
+                <div className="flex items-center justify-between">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => onQtyChange(item.id, Math.max(0, qty - 1))}
-                    className="h-8 w-8 p-0 border-purple-300 hover:bg-purple-600 hover:text-white"
+                    className="h-8 w-8 p-0"
                   >
                     <Minus className="h-3 w-3" />
                   </Button>
@@ -140,9 +139,9 @@ export function MenajeSelector({
                         const val = parseInt(e.target.value, 10);
                         onQtyChange(item.id, isNaN(val) ? 0 : Math.max(0, val));
                       }}
-                      className="w-16 text-center font-semibold text-purple-600 text-sm bg-transparent border-0 outline-none focus:ring-1 focus:ring-purple-300 rounded"
+                      className="w-16 text-center font-semibold text-foreground text-sm bg-transparent border border-border rounded-md outline-none focus:ring-1 focus:ring-primary h-8 tabular-nums"
                     />
-                    <div className="text-xs text-purple-500">
+                    <div className="kicker text-muted-foreground mt-0.5">
                       {qty === 1 ? "unidad" : "unidades"}
                     </div>
                   </div>
@@ -151,25 +150,21 @@ export function MenajeSelector({
                     variant="outline"
                     size="sm"
                     onClick={() => onQtyChange(item.id, qty + 1)}
-                    className="h-8 w-8 p-0 border-purple-300 hover:bg-purple-600 hover:text-white"
+                    className="h-8 w-8 p-0"
                   >
                     <Plus className="h-3 w-3" />
                   </Button>
                 </div>
 
-                <div className="text-center py-1 bg-purple-100 rounded-lg border border-purple-200">
-                  <span className="text-sm font-medium text-purple-600">
+                <div className="text-center py-1.5 rounded-md bg-primary/5 border border-primary/20">
+                  <span className="text-sm font-medium text-primary tabular-nums">
                     ${(item.precio_alquiler * qty).toLocaleString()}
                   </span>
                 </div>
               </div>
             ) : (
-              <Button
-                onClick={() => onAdd(item)}
-                className="w-full bg-slate-800 hover:bg-purple-600 transition-colors"
-                size="sm"
-              >
-                <Plus className="h-4 w-4 mr-2" />
+              <Button onClick={() => onAdd(item)} className="w-full" size="sm">
+                <Plus className="h-4 w-4 mr-2" strokeWidth={1.75} />
                 Añadir
               </Button>
             )}
@@ -187,33 +182,33 @@ export function MenajeSelector({
       <Card
         key={item.id}
         className={cn(
-          "transition-all duration-200 hover:shadow-md border-l-4",
+          "transition-all duration-200 hover:shadow-[var(--shadow-soft)] border-l-2",
           selected
-            ? "border-l-purple-500 bg-purple-50/50"
-            : "border-l-transparent hover:border-l-purple-300"
+            ? "border-l-primary bg-primary/5"
+            : "border-l-transparent hover:border-l-border"
         )}
       >
         <CardContent className="p-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-3 mb-2">
-                <div className="p-2 rounded-lg bg-purple-100">
-                  <Package className="h-5 w-5 text-purple-600" />
+                <div className="p-2 rounded-md bg-muted/60">
+                  <Package className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} />
                 </div>
-                <h4 className="font-semibold text-slate-800 line-clamp-1">{item.nombre}</h4>
+                <h4 className="font-semibold text-foreground line-clamp-1">{item.nombre}</h4>
                 {selected && (
-                  <Badge className="bg-purple-600 text-white text-xs shrink-0">{qty}</Badge>
+                  <Badge variant="default" className="text-xs font-normal shrink-0 tabular-nums">{qty}</Badge>
                 )}
               </div>
               <div className="flex items-center gap-3 mb-3">
-                <Badge className="text-xs font-medium bg-purple-100 text-purple-700">{item.categoria}</Badge>
+                <Badge variant="outline" className="text-xs font-normal">{item.categoria}</Badge>
               </div>
-              <div className="flex items-center space-x-1">
-                <DollarSign className="h-4 w-4 text-purple-600" />
-                <span className="font-bold text-lg text-purple-600">{item.precio_alquiler.toLocaleString()}</span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-xs text-muted-foreground">$</span>
+                <span className="font-semibold text-primary tabular-nums">{item.precio_alquiler.toLocaleString()}</span>
                 {qty > 0 && (
-                  <span className="text-sm text-slate-500 ml-3">
-                    Total: ${(item.precio_alquiler * qty).toLocaleString()}
+                  <span className="text-sm text-muted-foreground ml-3">
+                    · Total ${(item.precio_alquiler * qty).toLocaleString()}
                   </span>
                 )}
               </div>
@@ -233,15 +228,15 @@ export function MenajeSelector({
                       const val = parseInt(e.target.value, 10);
                       onQtyChange(item.id, isNaN(val) ? 0 : Math.max(0, val));
                     }}
-                    className="w-16 text-center font-semibold bg-transparent border border-slate-200 rounded outline-none focus:ring-1 focus:ring-purple-300 h-8"
+                    className="w-16 text-center font-semibold bg-transparent border border-border rounded-md outline-none focus:ring-1 focus:ring-primary h-8 tabular-nums"
                   />
                   <Button variant="outline" size="sm" onClick={() => onQtyChange(item.id, qty + 1)} className="h-8 w-8 p-0">
                     <Plus className="h-3 w-3" />
                   </Button>
                 </>
               ) : (
-                <Button onClick={() => onAdd(item)} className="bg-slate-800 hover:bg-purple-600 transition-colors" size="sm">
-                  <Plus className="h-4 w-4 mr-1" />
+                <Button onClick={() => onAdd(item)} size="sm">
+                  <Plus className="h-4 w-4 mr-1" strokeWidth={1.75} />
                   Añadir
                 </Button>
               )}
@@ -255,19 +250,17 @@ export function MenajeSelector({
   return (
     <div className="space-y-6">
       {totalSelected > 0 && (
-        <Card className="bg-purple-50 border-purple-200">
+        <Card>
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Package className="h-6 w-6 text-purple-600" />
-                </div>
+              <div className="flex items-center space-x-3">
+                <Package className="h-5 w-5 text-primary" strokeWidth={1.75} />
                 <div>
-                  <div className="font-bold text-xl text-purple-800">
+                  <div className="font-serif text-lg text-foreground">
                     {totalSelected} items de menaje
                   </div>
-                  <div className="text-purple-700 font-medium">
-                    Total alquiler: ${totalCost.toLocaleString()}
+                  <div className="text-sm text-muted-foreground tabular-nums">
+                    Total alquiler ${totalCost.toLocaleString()}
                   </div>
                 </div>
               </div>
@@ -276,18 +269,18 @@ export function MenajeSelector({
         </Card>
       )}
 
-      <Card className="shadow-md border-slate-200">
+      <Card>
         <CardContent className="p-6 space-y-4">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
             <Input
               placeholder="Buscar por nombre o categoría..."
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              className="pl-12 h-12 text-base bg-slate-50 border-slate-300 focus:bg-white focus:border-purple-500 focus:ring-purple-500/20 rounded-xl"
+              className="pl-11 h-10"
             />
             {q && (
-              <Button variant="ghost" size="sm" onClick={() => setQ("")} className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8 p-0">
+              <Button variant="ghost" size="sm" onClick={() => setQ("")} className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0">
                 <X className="h-4 w-4" />
               </Button>
             )}
@@ -298,7 +291,6 @@ export function MenajeSelector({
               variant={selectedCategoria === "todos" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedCategoria("todos")}
-              className={cn("rounded-lg", selectedCategoria === "todos" && "bg-purple-600 hover:bg-purple-700")}
             >
               Todos ({data.length})
             </Button>
@@ -310,14 +302,13 @@ export function MenajeSelector({
                   variant={selectedCategoria === cat ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedCategoria(cat)}
-                  className={cn("rounded-lg", selectedCategoria === cat && "bg-purple-600 hover:bg-purple-700")}
                 >
                   {cat} ({count})
                 </Button>
               );
             })}
             {hasActiveFilters && (
-              <Button variant="outline" size="sm" onClick={clearFilters} className="rounded-lg border-red-200 text-red-600 hover:bg-red-50">
+              <Button variant="outline" size="sm" onClick={clearFilters}>
                 <X className="h-4 w-4 mr-1" />
                 Limpiar
               </Button>
@@ -327,31 +318,29 @@ export function MenajeSelector({
       </Card>
 
       <div className="flex items-center justify-between">
-        <span className="text-slate-600 font-medium">
-          Mostrando {filteredData.length} de {data.length} items
+        <span className="text-sm text-muted-foreground tabular-nums">
+          {filteredData.length} de {data.length} items
         </span>
         {hasActiveFilters && (
-          <Badge variant="secondary" className="bg-purple-100 text-purple-700 border-purple-200">
-            <Filter className="h-3 w-3 mr-1" />
+          <Badge variant="outline" className="font-normal">
+            <Filter className="h-3 w-3 mr-1" strokeWidth={1.75} />
             Filtros activos
           </Badge>
         )}
       </div>
 
       {filteredData.length === 0 ? (
-        <Card className="py-16 shadow-md">
-          <CardContent className="text-center space-y-6">
-            <div className="w-20 h-20 mx-auto bg-slate-100 rounded-full flex items-center justify-center">
-              <Search className="h-8 w-8 text-slate-400" />
-            </div>
+        <Card className="py-12">
+          <CardContent className="text-center space-y-4">
+            <Search className="h-8 w-8 mx-auto text-muted-foreground" strokeWidth={1.5} />
             <div>
-              <h3 className="font-semibold text-slate-700 text-xl mb-3">No se encontraron items</h3>
-              <p className="text-slate-500 mb-6">
+              <h3 className="font-serif text-lg text-foreground mb-1">No se encontraron items</h3>
+              <p className="text-sm text-muted-foreground mb-4">
                 {q ? `No hay items que coincidan con "${q}"` : "Intenta ajustar los filtros"}
               </p>
               {hasActiveFilters && (
-                <Button variant="outline" onClick={clearFilters} className="rounded-xl">
-                  <X className="h-4 w-4 mr-2" />
+                <Button variant="outline" onClick={clearFilters}>
+                  <X className="h-4 w-4 mr-1" />
                   Limpiar filtros
                 </Button>
               )}

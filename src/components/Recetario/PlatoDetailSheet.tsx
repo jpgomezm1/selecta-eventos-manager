@@ -273,22 +273,21 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
           <div className="space-y-8 mt-6">
             {/* AI Recipe Generator — only in creation mode */}
             {isCreating && !effectiveId && (
-              <section className="p-4 bg-gradient-to-r from-violet-50 to-indigo-50 rounded-lg border border-violet-200 space-y-3">
-                <h3 className="text-sm font-semibold text-violet-700 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4" /> Generar receta con AI
+              <section className="p-4 bg-muted/40 rounded-md border border-border space-y-3">
+                <h3 className="kicker flex items-center gap-2">
+                  <Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} /> Generar receta con AI
                 </h3>
                 <Textarea
                   placeholder="Describe el plato que quieres crear... Ej: Un risotto de champiñones con queso parmesano para 10 personas"
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
                   rows={3}
-                  className="bg-white"
+                  className="bg-card"
                 />
                 <Button
                   onClick={handleGenerateAI}
                   disabled={aiLoading || !aiPrompt.trim()}
                   size="sm"
-                  className="bg-violet-600 hover:bg-violet-700"
                 >
                   {aiLoading ? (
                     <>
@@ -296,7 +295,7 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
                     </>
                   ) : (
                     <>
-                      <Sparkles className="h-4 w-4 mr-1" /> Generar receta
+                      <Sparkles className="h-4 w-4 mr-1" strokeWidth={1.75} /> Generar receta
                     </>
                   )}
                 </Button>
@@ -389,8 +388,8 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
                         <TableCell className="text-right">{fmt(pi.ingrediente?.costo_por_unidad ?? 0)}</TableCell>
                         <TableCell className="text-right font-medium">{fmt(pi.cantidad * (pi.ingrediente?.costo_por_unidad ?? 0))}</TableCell>
                         <TableCell>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => removeIngrediente(pi.ingrediente_id)}>
-                            <X className="h-4 w-4 text-red-500" />
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeIngrediente(pi.ingrediente_id)}>
+                            <X className="h-4 w-4" />
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -440,8 +439,8 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
                 </div>
               </div>
               <div className="flex justify-between border-t pt-3">
-                <span className="text-sm font-semibold text-slate-700">Precio de venta</span>
-                <span className="text-lg font-bold text-green-700">{fmt(precioCalculado)}</span>
+                <span className="text-sm font-semibold text-foreground">Precio de venta</span>
+                <span className="text-lg font-semibold text-primary tabular-nums">{fmt(precioCalculado)}</span>
               </div>
               {costoPorcion > 0 && precioCalculado > 0 && (
                 <div className="flex justify-between">

@@ -6,16 +6,10 @@ import { Calendar as BigCalendar, dateFnsLocalizer, Views } from "react-big-cale
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { es } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Calendar as CalendarIcon,
-  Clock,
-  Package,
-  Info,
-  AlertCircle
-} from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { AlertCircle } from "lucide-react";
 import ReservaDetalleDialog from "./ReservaDetalleDialog";
+import { KPI } from "@/components/Layout/PageHeader";
 
 const localizer = dateFnsLocalizer({
   format,
@@ -92,169 +86,146 @@ export default function ReservasCalendar() {
     setDialogOpen(true);
   };
 
-  // Color by estado
+  // Color by estado — paleta olive editorial
   const eventStyleGetter = (event: CalEvent) => {
     const estado = event.resource.estado;
     let backgroundColor: string;
 
     switch (estado) {
       case "confirmado":
-        backgroundColor = "#3b82f6"; // blue
+        backgroundColor = "hsl(82 28% 28%)"; // primary olive
         break;
       case "devuelto":
-        backgroundColor = "#10b981"; // green
+        backgroundColor = "hsl(82 18% 50%)"; // sage muted
         break;
       default:
-        backgroundColor = "#94a3b8"; // slate/gray for borrador
+        backgroundColor = "hsl(30 20% 55%)"; // warm neutral for borrador
     }
 
     return {
       style: {
         backgroundColor,
-        borderRadius: '8px',
-        opacity: 0.9,
-        color: 'white',
-        border: '0px',
-        display: 'block',
-        fontSize: '12px',
-        padding: '2px 8px'
-      }
+        borderRadius: "6px",
+        opacity: 0.95,
+        color: "white",
+        border: "0px",
+        display: "block",
+        fontSize: "12px",
+        padding: "2px 8px",
+      },
     };
   };
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <CalendarIcon className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-blue-800">{stats.totalReservas}</div>
-                <div className="text-sm text-blue-600">Reservas en el periodo</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-emerald-50 border-emerald-200">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-emerald-100 rounded-lg">
-                <Clock className="h-5 w-5 text-emerald-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-emerald-800">{stats.eventosActivos}</div>
-                <div className="text-sm text-emerald-600">Eventos activos hoy</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-purple-50 border-purple-200">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Package className="h-5 w-5 text-purple-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-purple-800">{stats.totalItems}</div>
-                <div className="text-sm text-purple-600">Elementos reservados</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* KPIs editoriales */}
+      <div className="grid grid-cols-1 gap-x-8 gap-y-6 border-y border-border py-6 md:grid-cols-3">
+        <KPI kicker="Reservas en el periodo" value={stats.totalReservas} />
+        <KPI
+          kicker="Eventos activos hoy"
+          value={stats.eventosActivos}
+          tone={stats.eventosActivos > 0 ? "primary" : "neutral"}
+        />
+        <KPI kicker="Elementos reservados" value={stats.totalItems} />
       </div>
 
-      {/* Legend by estado */}
-      <Card className="bg-slate-50 border-slate-200">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Info className="h-4 w-4 text-slate-500" />
-              <span className="text-sm font-medium text-slate-700">Leyenda de estados:</span>
-            </div>
+      {/* Leyenda inline */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[11.5px]">
+        <span className="kicker text-muted-foreground">Estados</span>
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-3 w-3 rounded-sm bg-[hsl(30_20%_55%)]" />
+          <span className="text-muted-foreground">Borrador</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-3 w-3 rounded-sm bg-primary" />
+          <span className="text-muted-foreground">Confirmado</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-3 w-3 rounded-sm bg-[hsl(82_18%_50%)]" />
+          <span className="text-muted-foreground">Devuelto</span>
+        </div>
+        <div className="ml-auto flex items-center gap-3 text-xs">
+          <span className="font-mono tabular-nums text-muted-foreground">
+            {format(range.from, "MMM yyyy", { locale: es })}
+          </span>
+          {isLoading && <span className="text-muted-foreground">Cargando…</span>}
+        </div>
+      </div>
 
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-slate-400 rounded" />
-                <span className="text-xs text-slate-600">Borrador</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-blue-500 rounded" />
-                <span className="text-xs text-slate-600">Confirmado</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-emerald-500 rounded" />
-                <span className="text-xs text-slate-600">Devuelto</span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Calendar */}
-      <Card className="bg-white border-slate-200 overflow-hidden">
-        <CardHeader className="bg-slate-50 border-b border-slate-200 pb-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center space-x-2 text-slate-800">
-              <CalendarIcon className="h-5 w-5" />
-              <span>Calendario de Reservas</span>
-            </CardTitle>
-
-            <div className="flex items-center space-x-2">
-              <Badge className="bg-blue-100 text-blue-700 border-blue-200">
-                {format(range.from, "MMM yyyy", { locale: es })}
-              </Badge>
-              {isLoading && (
-                <div className="flex items-center space-x-2 text-sm text-slate-500">
-                  <div className="animate-spin w-4 h-4 border-2 border-slate-200 border-t-selecta-green rounded-full" />
-                  <span>Cargando...</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardContent className="p-0">
-          <div className="h-[600px] bg-white overflow-hidden">
-            <style>{`
+      {/* Calendario */}
+      <Card className="overflow-hidden">
+        <div className="h-[620px] overflow-hidden bg-background">
+          <style>{`
               .rbc-calendar {
                 font-family: inherit;
               }
               .rbc-header {
-                background: #f8fafc;
-                border-bottom: 1px solid #e2e8f0;
-                color: #475569;
+                background: hsl(var(--muted) / 0.4);
+                border-bottom: 1px solid hsl(var(--border));
+                color: hsl(var(--muted-foreground));
                 font-weight: 600;
+                font-size: 11px;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
                 padding: 12px 8px;
               }
+              .rbc-month-view, .rbc-time-view {
+                border-color: hsl(var(--border));
+              }
+              .rbc-day-bg + .rbc-day-bg,
+              .rbc-month-row + .rbc-month-row,
+              .rbc-time-header-content,
+              .rbc-time-content > * + * > * {
+                border-color: hsl(var(--border));
+              }
               .rbc-today {
-                background-color: #f0f9ff;
+                background-color: hsl(var(--primary) / 0.06);
               }
               .rbc-off-range-bg {
-                background-color: #f8fafc;
+                background-color: hsl(var(--muted) / 0.3);
+              }
+              .rbc-off-range {
+                color: hsl(var(--muted-foreground) / 0.5);
               }
               .rbc-event {
                 font-size: 12px;
                 font-weight: 500;
               }
               .rbc-event:hover {
-                opacity: 0.8;
+                opacity: 0.85;
                 cursor: pointer;
               }
               .rbc-date-cell {
                 padding: 8px;
+                color: hsl(var(--foreground));
               }
               .rbc-button-link {
-                color: #475569;
+                color: hsl(var(--foreground));
               }
               .rbc-show-more {
-                color: #3b82f6;
+                color: hsl(var(--primary));
                 font-weight: 500;
+              }
+              .rbc-toolbar button {
+                color: hsl(var(--foreground));
+                border-color: hsl(var(--border));
+                border-radius: 6px;
+              }
+              .rbc-toolbar button:hover,
+              .rbc-toolbar button:focus {
+                background-color: hsl(var(--muted) / 0.5);
+                border-color: hsl(var(--border));
+              }
+              .rbc-toolbar button.rbc-active,
+              .rbc-toolbar button.rbc-active:hover {
+                background-color: hsl(var(--primary));
+                border-color: hsl(var(--primary));
+                color: hsl(var(--primary-foreground));
+              }
+              .rbc-toolbar-label {
+                font-family: var(--font-serif, serif);
+                font-size: 17px;
+                color: hsl(var(--foreground));
               }
             `}</style>
 
@@ -282,27 +253,29 @@ export default function ReservasCalendar() {
                 time: "Hora",
                 event: "Evento",
                 noEventsInRange: "No hay eventos en este rango de fechas",
-                showMore: (total) => `+${total} mas`
+                showMore: (total) => `+${total} mas`,
               }}
             />
-          </div>
-        </CardContent>
+        </div>
       </Card>
 
       {/* Empty state */}
       {!isLoading && reservas && reservas.length === 0 && (
-        <Card className="bg-amber-50 border-amber-200">
-          <CardContent className="p-6 text-center">
-            <div className="flex flex-col items-center space-y-3">
-              <AlertCircle className="h-12 w-12 text-amber-500" />
-              <div>
-                <h3 className="font-medium text-amber-800">No hay reservas en este periodo</h3>
-                <p className="text-sm text-amber-600 mt-1">
-                  Selecciona un rango diferente o verifica que existan eventos programados
-                </p>
-              </div>
+        <Card className="border-dashed">
+          <div className="flex flex-col items-center gap-3 p-8 text-center">
+            <AlertCircle
+              className="h-10 w-10 text-muted-foreground/50"
+              strokeWidth={1.25}
+            />
+            <div>
+              <h3 className="font-serif text-lg text-foreground">
+                No hay reservas en este periodo
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Selecciona un rango diferente o verifica que existan eventos programados.
+              </p>
             </div>
-          </CardContent>
+          </div>
         </Card>
       )}
 

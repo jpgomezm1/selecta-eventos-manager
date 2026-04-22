@@ -24,12 +24,12 @@ export function KPI({ kicker, value, suffix, tone = "neutral", hint }: KPIProps)
 
   return (
     <div>
-      <div className="kicker mb-2">{kicker}</div>
-      <div className={cn("font-serif text-[40px] leading-none tracking-[-0.025em] tabular-nums md:text-[48px]", toneClass)}>
+      <div className="kicker mb-1.5">{kicker}</div>
+      <div className={cn("font-serif text-[26px] leading-none tracking-[-0.02em] tabular-nums md:text-[30px]", toneClass)}>
         {value}
-        {suffix && <span className="text-[26px] md:text-[30px] text-muted-foreground">{suffix}</span>}
+        {suffix && <span className="ml-1 text-[15px] md:text-[17px] text-muted-foreground">{suffix}</span>}
       </div>
-      {hint && <div className="mt-2 text-[11.5px] text-muted-foreground">{hint}</div>}
+      {hint && <div className="mt-1.5 text-[11.5px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }

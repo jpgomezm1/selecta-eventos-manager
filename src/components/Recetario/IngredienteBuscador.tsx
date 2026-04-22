@@ -103,20 +103,20 @@ export default function IngredienteBuscador({ availableIngredientes, onAdd }: Pr
                       <button
                         type="button"
                         onClick={() => handleSelect(ing.id)}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 transition-colors flex items-center justify-between gap-2 ${
-                          isSelected ? "bg-blue-50" : ""
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-muted/40 transition-colors flex items-center justify-between gap-2 ${
+                          isSelected ? "bg-primary/5" : ""
                         }`}
                       >
-                        <span className="font-medium text-slate-800 truncate">{ing.nombre}</span>
-                        <span className="flex items-center gap-2 shrink-0 text-xs text-slate-500">
+                        <span className="font-medium text-foreground truncate">{ing.nombre}</span>
+                        <span className="flex items-center gap-2 shrink-0 text-xs text-muted-foreground">
                           <span>{ing.unidad}</span>
-                          <span className="font-medium text-slate-700">{fmt(ing.costo_por_unidad)}/{ing.unidad}</span>
+                          <span className="font-medium text-foreground">{fmt(ing.costo_por_unidad)}/{ing.unidad}</span>
                         </span>
                       </button>
 
                       {/* Inline quantity input when selected */}
                       {isSelected && (
-                        <div className="px-3 pb-2 flex items-center gap-2 bg-blue-50">
+                        <div className="px-3 pb-2 flex items-center gap-2 bg-primary/5">
                           <Input
                             ref={cantidadRef}
                             type="number"

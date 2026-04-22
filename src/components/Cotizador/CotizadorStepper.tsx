@@ -41,18 +41,18 @@ export function CotizadorStepper({ steps, currentStep, onStepClick }: Props) {
                 {/* Circle */}
                 <div
                   className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-2",
+                    "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border",
                     isCompleted
-                      ? "bg-selecta-green border-selecta-green text-white scale-100"
+                      ? "bg-primary border-primary text-primary-foreground"
                       : isActive
-                        ? "border-selecta-green bg-white text-selecta-green scale-110"
-                        : "border-slate-200 bg-slate-100 text-slate-400 group-hover:border-slate-300"
+                        ? "border-primary bg-card text-primary scale-105"
+                        : "border-border bg-muted/40 text-muted-foreground group-hover:border-border/80"
                   )}
                 >
                   {isCompleted ? (
-                    <Check className="h-5 w-5 animate-in zoom-in-50 duration-200" />
+                    <Check className="h-5 w-5 animate-in zoom-in-50 duration-200" strokeWidth={1.75} />
                   ) : (
-                    <Icon className="h-5 w-5" />
+                    <Icon className="h-5 w-5" strokeWidth={1.75} />
                   )}
                 </div>
 
@@ -62,10 +62,10 @@ export function CotizadorStepper({ steps, currentStep, onStepClick }: Props) {
                     className={cn(
                       "text-xs font-medium text-center max-w-[100px] leading-tight",
                       isCompleted
-                        ? "text-selecta-green"
+                        ? "text-primary"
                         : isActive
-                          ? "text-slate-900 font-bold"
-                          : "text-slate-400"
+                          ? "text-foreground"
+                          : "text-muted-foreground"
                     )}
                   >
                     {step.label}
@@ -73,10 +73,10 @@ export function CotizadorStepper({ steps, currentStep, onStepClick }: Props) {
 
                   {/* Optional badge / item count */}
                   {step.isSkippable && !isCompleted && (
-                    <span className="text-[10px] text-slate-400">Opcional</span>
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Opcional</span>
                   )}
                   {isCompleted && step.itemCount != null && step.itemCount > 0 && (
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-selecta-green/10 text-selecta-green border-selecta-green/20">
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal bg-primary/5 text-primary border-primary/30">
                       {step.itemCount} items
                     </Badge>
                   )}
@@ -88,8 +88,8 @@ export function CotizadorStepper({ steps, currentStep, onStepClick }: Props) {
                 <div className="flex-1 flex items-center px-2 mt-5">
                   <div
                     className={cn(
-                      "h-0.5 w-full transition-colors duration-300",
-                      isCompleted ? "bg-selecta-green" : "bg-slate-200"
+                      "h-px w-full transition-colors duration-300",
+                      isCompleted ? "bg-primary" : "bg-border"
                     )}
                   />
                 </div>
@@ -102,10 +102,10 @@ export function CotizadorStepper({ steps, currentStep, onStepClick }: Props) {
       {/* Mobile step indicator */}
       {currentStepDef && (
         <div className="sm:hidden text-center">
-          <p className="text-sm font-medium text-slate-600">
+          <p className="text-sm font-medium text-muted-foreground">
             Paso {currentStepDef.index} de {steps.length}
-            <span className="text-slate-400 mx-1.5">-</span>
-            <span className="text-slate-800 font-semibold">{currentStepDef.label}</span>
+            <span className="text-muted-foreground/50 mx-1.5">·</span>
+            <span className="text-foreground font-semibold">{currentStepDef.label}</span>
           </p>
         </div>
       )}
