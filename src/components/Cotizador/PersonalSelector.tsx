@@ -41,62 +41,53 @@ type Props = {
   onToggleAsignacion?: (costoId: string, persona: PersonalAsignacion) => void;
 };
 
-const ROLES_CONFIG: Record<string, { 
+const ROLES_CONFIG: Record<string, {
   icon: React.ComponentType<{ className?: string }>;
-  color: string; 
   description: string;
   suggestedRatio?: number; // personas por invitado
   category: "servicio" | "cocina" | "entretenimiento" | "tecnico" | "otro";
 }> = {
-  "Coordinador": { 
-    icon: Target, 
-    color: "purple", 
+  "Coordinador": {
+    icon: Target,
     description: "Coordina y supervisa el evento",
-    suggestedRatio: 100, // 1 por cada 100 invitados
+    suggestedRatio: 100,
     category: "servicio"
   },
-  "Mesero": { 
-    icon: Coffee, 
-    color: "blue", 
+  "Mesero": {
+    icon: Coffee,
     description: "Atiende mesas y sirve alimentos",
-    suggestedRatio: 15, // 1 por cada 15 invitados
+    suggestedRatio: 15,
     category: "servicio"
   },
-  "Chef": { 
-    icon: ChefHat, 
-    color: "orange", 
+  "Chef": {
+    icon: ChefHat,
     description: "Prepara y supervisa la cocina",
-    suggestedRatio: 50, // 1 por cada 50 invitados
+    suggestedRatio: 50,
     category: "cocina"
   },
-  "Bartender": { 
-    icon: Coffee, 
-    color: "green", 
+  "Bartender": {
+    icon: Coffee,
     description: "Prepara bebidas y cocteles",
-    suggestedRatio: 30, // 1 por cada 30 invitados
+    suggestedRatio: 30,
     category: "servicio"
   },
-  "Decorador": { 
-    icon: Palette, 
-    color: "pink", 
+  "Decorador": {
+    icon: Palette,
     description: "Diseña y monta decoración",
     category: "otro"
   },
-  "Técnico de Sonido": { 
-    icon: Music, 
-    color: "indigo", 
+  "Técnico de Sonido": {
+    icon: Music,
     description: "Maneja audio y sonido",
     category: "tecnico"
   },
-  "Fotógrafo": { 
-    icon: Camera, 
-    color: "slate", 
+  "Fotógrafo": {
+    icon: Camera,
     description: "Captura momentos del evento",
     category: "entretenimiento"
   },
-  "Otro": { 
-    icon: Users, 
-    color: "gray", 
+  "Otro": {
+    icon: Users,
     description: "Personal especializado",
     category: "otro"
   },
@@ -206,17 +197,17 @@ export function PersonalSelector({
       <Card
         key={person.id}
         className={cn(
-          "group relative overflow-hidden transition-all duration-300 border-2",
+          "group relative overflow-hidden transition-all duration-300 border",
           selected
-            ? "border-selecta-green bg-selecta-green/5"
-            : "border-slate-200 hover:border-slate-300"
+            ? "border-primary bg-primary/5"
+            : "border-border hover:border-border/80"
         )}
       >
         {/* Badge de sugerido */}
         {suggested && !selected && (
           <div className="absolute top-3 right-3 z-10">
-            <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs">
-              <Lightbulb className="h-3 w-3 mr-1" />
+            <Badge variant="outline" className="text-xs font-normal text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]">
+              <Lightbulb className="h-3 w-3 mr-1" strokeWidth={1.75} />
               Sugerido: {suggested}
             </Badge>
           </div>
@@ -224,24 +215,21 @@ export function PersonalSelector({
 
         {/* Badge de seleccionado */}
         {selected && (
-          <div className="absolute top-3 right-3 z-10 bg-selecta-green text-white rounded-full p-1.5">
-            <CheckCircle2 className="h-3 w-3" />
+          <div className="absolute top-3 right-3 z-10 bg-primary text-primary-foreground rounded-full p-1.5">
+            <CheckCircle2 className="h-3 w-3" strokeWidth={1.75} />
           </div>
         )}
 
         <CardHeader className="pb-3">
           <div className="flex items-center space-x-3">
-            <div className={cn(
-              "p-3 rounded-xl",
-              `bg-${config.color}-100`
-            )}>
-              <Icon className={cn("h-5 w-5", `text-${config.color}-600`)} />
+            <div className="p-2 rounded-md bg-muted/60">
+              <Icon className="h-5 w-5 text-muted-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-slate-800 truncate group-hover:text-selecta-green transition-colors">
+              <h4 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                 {person.rol}
               </h4>
-              <p className="text-sm text-slate-600 line-clamp-1">
+              <p className="text-sm text-muted-foreground line-clamp-1">
                 {config.description}
               </p>
             </div>
@@ -250,21 +238,21 @@ export function PersonalSelector({
 
         <CardContent className="pt-0 space-y-4">
           {/* Precio */}
-          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-            <div className="flex items-center space-x-1">
-              <DollarSign className="h-4 w-4 text-selecta-green" />
-              <span className="font-bold text-lg text-selecta-green">
+          <div className="flex items-center justify-between p-3 bg-muted/40 rounded-md">
+            <div className="flex items-baseline gap-1">
+              <span className="text-xs text-muted-foreground">$</span>
+              <span className="font-semibold text-lg text-primary tabular-nums">
                 {tarifa.toLocaleString()}
               </span>
             </div>
-            <span className="text-xs text-slate-500">por persona</span>
+            <span className="kicker text-muted-foreground">Por persona</span>
           </div>
 
           {/* Sugerencia */}
           {suggested && (
-            <div className="flex items-center space-x-2 p-2 bg-amber-50 rounded-lg border border-amber-200">
-              <Target className="h-4 w-4 text-amber-600" />
-              <span className="text-sm text-amber-700">
+            <div className="flex items-center space-x-2 p-2 bg-muted/40 rounded-md border border-border">
+              <Target className="h-4 w-4 text-[hsl(30_55%_42%)]" strokeWidth={1.75} />
+              <span className="text-sm text-muted-foreground">
                 Sugerido: {suggested} para {invitados} invitados
               </span>
             </div>
@@ -274,11 +262,11 @@ export function PersonalSelector({
           <div className="flex items-center justify-between pt-2">
             {qty > 0 ? (
               <div className="flex items-center space-x-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => onQtyChange(person.id, Math.max(0, qty - 1))}
-                  className="h-8 w-8 p-0 hover:bg-red-50 hover:border-red-200"
+                  className="h-8 w-8 p-0"
                 >
                   <Minus className="h-3 w-3" />
                 </Button>
@@ -290,23 +278,20 @@ export function PersonalSelector({
                     const val = parseInt(e.target.value, 10);
                     onQtyChange(person.id, isNaN(val) ? 0 : Math.max(0, val));
                   }}
-                  className="w-16 h-8 text-center text-sm font-medium border-slate-200"
+                  className="w-16 h-8 text-center text-sm font-medium tabular-nums"
                 />
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => onQtyChange(person.id, qty + 1)}
-                  className="h-8 w-8 p-0 hover:bg-green-50 hover:border-green-200"
+                  className="h-8 w-8 p-0"
                 >
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
             ) : (
-              <Button
-                onClick={() => onAdd(person)}
-                className="flex-1 bg-slate-800 hover:bg-selecta-green transition-colors"
-              >
-                <Plus className="h-4 w-4 mr-1" />
+              <Button onClick={() => onAdd(person)} className="flex-1">
+                <Plus className="h-4 w-4 mr-1" strokeWidth={1.75} />
                 Añadir
               </Button>
             )}
@@ -318,14 +303,13 @@ export function PersonalSelector({
                 size="sm"
                 onClick={() => {
                   onAdd(person);
-                  // Añadir cantidad sugerida
                   for (let i = 1; i < suggested; i++) {
                     setTimeout(() => onAdd(person), i * 100);
                   }
                 }}
-                className="ml-2 border-amber-300 text-amber-600 hover:bg-amber-50"
+                className="ml-2 text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)] hover:bg-[hsl(30_55%_42%)]/10"
               >
-                <Lightbulb className="h-3 w-3 mr-1" />
+                <Lightbulb className="h-3 w-3 mr-1" strokeWidth={1.75} />
                 +{suggested}
               </Button>
             )}
@@ -333,9 +317,9 @@ export function PersonalSelector({
 
           {/* Costo total si está seleccionado */}
           {qty > 0 && (
-            <div className="flex items-center justify-between p-2 bg-selecta-green/10 rounded-lg">
-              <span className="text-sm font-medium text-selecta-green">Total:</span>
-              <span className="font-bold text-selecta-green">
+            <div className="flex items-center justify-between p-2 bg-primary/5 rounded-md border border-primary/20">
+              <span className="kicker text-primary">Total</span>
+              <span className="font-semibold text-primary tabular-nums">
                 ${(tarifa * qty).toLocaleString()}
               </span>
             </div>
@@ -378,51 +362,48 @@ export function PersonalSelector({
       <Card
         key={person.id}
         className={cn(
-          "transition-all duration-200 hover:shadow-md border-l-4",
-          selected 
-            ? "border-l-selecta-green bg-selecta-green/5" 
-            : "border-l-transparent hover:border-l-slate-300"
+          "transition-all duration-200 hover:shadow-[var(--shadow-soft)] border-l-2",
+          selected
+            ? "border-l-primary bg-primary/5"
+            : "border-l-transparent hover:border-l-border"
         )}
       >
         <CardContent className="p-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center space-x-4 flex-1 min-w-0">
-              <div className={cn(
-                "p-2 rounded-lg",
-                `bg-${config.color}-100`
-              )}>
-                <Icon className={cn("h-5 w-5", `text-${config.color}-600`)} />
+              <div className="p-2 rounded-md bg-muted/60">
+                <Icon className="h-5 w-5 text-muted-foreground" />
               </div>
-              
+
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-1">
-                  <h4 className="font-semibold text-slate-800">{person.rol}</h4>
+                  <h4 className="font-semibold text-foreground">{person.rol}</h4>
                   {selected && (
-                    <Badge className="bg-selecta-green text-white text-xs">
+                    <Badge variant="default" className="text-xs font-normal tabular-nums">
                       {qty} seleccionado{qty > 1 ? 's' : ''}
                     </Badge>
                   )}
                   {suggested && !selected && (
-                    <Badge className="bg-amber-100 text-amber-700 text-xs">
+                    <Badge variant="outline" className="text-xs font-normal text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]">
                       Sugerido: {suggested}
                     </Badge>
                   )}
                 </div>
-                <p className="text-sm text-slate-600 truncate">{config.description}</p>
+                <p className="text-sm text-muted-foreground truncate">{config.description}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-4 shrink-0">
               <div className="text-right">
-                <div className="flex items-center space-x-1">
-                  <DollarSign className="h-4 w-4 text-selecta-green" />
-                  <span className="font-bold text-lg text-selecta-green">
+                <div className="flex items-baseline gap-1 justify-end">
+                  <span className="text-xs text-muted-foreground">$</span>
+                  <span className="font-semibold text-lg text-primary tabular-nums">
                     {tarifa.toLocaleString()}
                   </span>
                 </div>
                 {qty > 0 && (
-                  <div className="text-sm text-slate-500">
-                    Total: ${(tarifa * qty).toLocaleString()}
+                  <div className="text-sm text-muted-foreground tabular-nums">
+                    Total ${(tarifa * qty).toLocaleString()}
                   </div>
                 )}
               </div>
@@ -430,8 +411,8 @@ export function PersonalSelector({
               <div className="flex items-center space-x-2">
                 {qty > 0 ? (
                   <>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => onQtyChange(person.id, Math.max(0, qty - 1))}
                       className="h-8 w-8 p-0"
@@ -446,10 +427,10 @@ export function PersonalSelector({
                         const val = parseInt(e.target.value, 10);
                         onQtyChange(person.id, isNaN(val) ? 1 : Math.max(1, val));
                       }}
-                      className="w-16 h-8 text-center text-sm font-medium border-slate-200"
+                      className="w-16 h-8 text-center text-sm font-medium tabular-nums"
                     />
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => onQtyChange(person.id, qty + 1)}
                       className="h-8 w-8 p-0"
@@ -458,11 +439,8 @@ export function PersonalSelector({
                     </Button>
                   </>
                 ) : (
-                  <Button
-                    onClick={() => onAdd(person)}
-                    className="bg-slate-800 hover:bg-selecta-green"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
+                  <Button onClick={() => onAdd(person)}>
+                    <Plus className="h-4 w-4 mr-1" strokeWidth={1.75} />
                     Añadir
                   </Button>
                 )}
@@ -472,7 +450,7 @@ export function PersonalSelector({
 
           {/* Asignación de personal en vista lista */}
           {qty > 0 && onToggleAsignacion && (
-            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100">
+            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
               <PersonalAsignacionPopover
                 rol={person.rol}
                 asignados={getAsignados(person.id)}
@@ -482,7 +460,7 @@ export function PersonalSelector({
               {getAsignados(person.id).length > 0 && (
                 <div className="flex flex-wrap gap-1">
                   {getAsignados(person.id).map((a) => (
-                    <Badge key={a.personal_id} variant="secondary" className="text-xs">
+                    <Badge key={a.personal_id} variant="outline" className="text-xs font-normal">
                       {a.nombre_completo}
                     </Badge>
                   ))}
@@ -498,17 +476,15 @@ export function PersonalSelector({
   return (
     <div className="space-y-6">
       {/* Header con estadísticas */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="p-6">
+      <Card>
+        <CardContent className="p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Users className="h-6 w-6 text-white" />
-              </div>
+              <Users className="h-5 w-5 text-primary" strokeWidth={1.75} />
               <div>
-                <h3 className="text-xl font-bold text-blue-900">Personal para el Evento</h3>
-                <p className="text-blue-700">
-                  {stats.totalSelected} personas seleccionadas • ${stats.totalCost.toLocaleString()} total
+                <h3 className="font-serif text-lg text-foreground">Personal para el evento</h3>
+                <p className="text-sm text-muted-foreground tabular-nums">
+                  {stats.totalSelected} personas · ${stats.totalCost.toLocaleString()} total
                 </p>
               </div>
             </div>
@@ -520,28 +496,28 @@ export function PersonalSelector({
                 onClick={() => setShowSuggestions(!showSuggestions)}
                 className={cn(
                   "transition-all",
-                  showSuggestions && "bg-amber-100 border-amber-300 text-amber-700"
+                  showSuggestions && "text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]"
                 )}
               >
-                <Lightbulb className="h-4 w-4 mr-1" />
+                <Lightbulb className="h-4 w-4 mr-1" strokeWidth={1.75} />
                 {showSuggestions ? "Ocultar" : "Mostrar"} sugerencias
               </Button>
             )}
           </div>
 
           {/* Estadísticas por categoría */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {stats.byCategory.map((category) => {
               const Icon = category.icon;
               return (
-                <div key={category.key} className="text-center p-3 bg-white/60 rounded-xl">
+                <div key={category.key} className="text-center p-3 bg-muted/40 rounded-md border border-border">
                   <div className="flex items-center justify-center mb-2">
-                    <Icon className="h-5 w-5 text-blue-600" />
+                    <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
                   </div>
-                  <div className="text-sm font-semibold text-blue-900">
+                  <div className="text-sm font-semibold text-foreground tabular-nums">
                     {category.selected}/{category.total}
                   </div>
-                  <div className="text-xs text-blue-600">{category.label}</div>
+                  <div className="kicker text-muted-foreground">{category.label}</div>
                 </div>
               );
             })}
@@ -551,49 +527,47 @@ export function PersonalSelector({
 
       {/* Sugerencias inteligentes */}
       {showSuggestions && invitados > 0 && Object.keys(suggestions).length > 0 && (
-        <Card className="bg-amber-50 border-amber-200">
-          <CardContent className="p-6">
+        <Card className="bg-muted/30 border-border">
+          <CardContent className="p-5">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <Calculator className="h-5 w-5 text-white" />
-              </div>
+              <Calculator className="h-5 w-5 text-[hsl(30_55%_42%)]" strokeWidth={1.75} />
               <div>
-                <h4 className="font-bold text-amber-900">Sugerencias para {invitados} invitados</h4>
-                <p className="text-amber-700 text-sm">Recomendaciones basadas en mejores prácticas</p>
+                <h4 className="font-serif text-base text-foreground">Sugerencias para {invitados} invitados</h4>
+                <p className="text-muted-foreground text-sm">Recomendaciones basadas en mejores prácticas</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {Object.entries(suggestions).map(([rol, cantidad]) => {
                 const person = data.find(p => p.rol === rol);
                 const config = ROLES_CONFIG[rol];
                 const current = getQty(person?.id || "");
                 const Icon = config?.icon || Users;
-                
+
                 if (!person) return null;
 
                 return (
-                  <div key={rol} className="flex items-center justify-between p-3 bg-white rounded-xl border border-amber-200">
+                  <div key={rol} className="flex items-center justify-between p-3 bg-card rounded-md border border-border">
                     <div className="flex items-center space-x-3">
-                      <Icon className="h-4 w-4 text-amber-600" />
+                      <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
                       <div>
-                        <div className="font-medium text-amber-900">{rol}</div>
-                        <div className="text-xs text-amber-600">Sugerido: {cantidad}</div>
+                        <div className="font-medium text-foreground">{rol}</div>
+                        <div className="kicker text-muted-foreground">Sugerido {cantidad}</div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2">
                       {current > 0 && (
-                        <Badge className={cn(
-                          "text-xs",
-                          current >= cantidad 
-                            ? "bg-green-100 text-green-700" 
-                            : "bg-orange-100 text-orange-700"
+                        <Badge variant="outline" className={cn(
+                          "text-xs font-normal tabular-nums",
+                          current >= cantidad
+                            ? "text-primary border-primary/40"
+                            : "text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]"
                         )}>
                           {current}/{cantidad}
                         </Badge>
                       )}
-                      
+
                       {current < cantidad && (
                         <Button
                           size="sm"
@@ -604,7 +578,7 @@ export function PersonalSelector({
                               setTimeout(() => onAdd(person), i * 100);
                             }
                           }}
-                          className="h-6 px-2 text-xs border-amber-300 text-amber-700 hover:bg-amber-50"
+                          className="h-6 px-2 text-xs"
                         >
                           +{cantidad - current}
                         </Button>
@@ -623,7 +597,7 @@ export function PersonalSelector({
         <CardContent className="p-4">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
               <Input
                 placeholder="Buscar personal..."
                 value={q}
@@ -633,10 +607,10 @@ export function PersonalSelector({
             </div>
 
             <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-              <TabsList className="grid grid-cols-6 bg-slate-100">
+              <TabsList className="grid grid-cols-6">
                 {CATEGORIES.map(({ key, label, icon: Icon }) => (
                   <TabsTrigger key={key} value={key} className="text-xs">
-                    <Icon className="h-3 w-3 mr-1" />
+                    <Icon className="h-3 w-3 mr-1" strokeWidth={1.75} />
                     {label}
                   </TabsTrigger>
                 ))}
@@ -650,12 +624,10 @@ export function PersonalSelector({
       {filtered.length === 0 ? (
         <Card className="py-12">
           <CardContent className="text-center space-y-4">
-            <div className="w-20 h-20 mx-auto bg-slate-100 rounded-full flex items-center justify-center">
-              <Eye className="h-8 w-8 text-slate-400" />
-            </div>
+            <Eye className="h-8 w-8 mx-auto text-muted-foreground" strokeWidth={1.5} />
             <div>
-              <h3 className="text-lg font-semibold text-slate-700 mb-2">No se encontró personal</h3>
-              <p className="text-slate-500">Intenta ajustar los filtros de búsqueda</p>
+              <h3 className="font-serif text-lg text-foreground mb-1">No se encontró personal</h3>
+              <p className="text-sm text-muted-foreground">Intenta ajustar los filtros de búsqueda</p>
             </div>
           </CardContent>
         </Card>

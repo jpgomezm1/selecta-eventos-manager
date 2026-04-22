@@ -107,15 +107,11 @@ export default function MovimientosPanel() {
   return (
     <div className="space-y-6">
       <div className="flex justify-end gap-2">
-        <Button
-          variant="outline"
-          onClick={() => setFacturaDialogOpen(true)}
-          className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-        >
-          <Camera className="h-4 w-4 mr-2" /> Registrar Ingreso
+        <Button variant="outline" onClick={() => setFacturaDialogOpen(true)}>
+          <Camera className="h-4 w-4 mr-2" strokeWidth={1.75} /> Registrar ingreso
         </Button>
         <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" /> Nuevo movimiento
+          <Plus className="h-4 w-4 mr-2" strokeWidth={1.75} /> Nuevo movimiento
         </Button>
       </div>
 
@@ -160,7 +156,7 @@ export default function MovimientosPanel() {
                               {mov.proveedor || (mov.evento_id ? "Evento vinculado" : "—")}
                               {(mov as { factura_url?: string }).factura_url && (
                                 <button
-                                  className="text-emerald-600 hover:text-emerald-800"
+                                  className="text-primary hover:text-primary/80 transition-colors"
                                   title="Ver factura"
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -180,7 +176,7 @@ export default function MovimientosPanel() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 text-green-600"
+                                  className="h-8 w-8 text-primary"
                                   onClick={() => {
                                     const etiqueta = tipoBadge[mov.tipo]?.label ?? mov.tipo;
                                     if (window.confirm(
@@ -200,7 +196,7 @@ export default function MovimientosPanel() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-8 w-8 text-red-500"
+                                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
                                       disabled={deleteMut.isPending}
                                     >
                                       <Trash2 className="h-4 w-4" />
@@ -217,7 +213,7 @@ export default function MovimientosPanel() {
                                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                       <AlertDialogAction
                                         onClick={() => deleteMut.mutate(mov)}
-                                        className="bg-red-600 hover:bg-red-700"
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                       >
                                         Eliminar y revertir stock
                                       </AlertDialogAction>
@@ -225,15 +221,35 @@ export default function MovimientosPanel() {
                                   </AlertDialogContent>
                                 </AlertDialog>
                               ) : mov.estado === "borrador" ? (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-red-500"
-                                  onClick={() => deleteMut.mutate(mov)}
-                                  disabled={deleteMut.isPending}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                      disabled={deleteMut.isPending}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Eliminar borrador</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Se eliminará este movimiento en borrador. No afecta el stock.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => deleteMut.mutate(mov)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        Eliminar
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               ) : null}
                             </div>
                           </TableCell>

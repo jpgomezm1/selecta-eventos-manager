@@ -11,36 +11,40 @@ export default function EventoChecklist({ checklist, onItemClick }: Props) {
     <div className="space-y-3">
       {/* Progress bar */}
       <div className="flex items-center justify-between mb-1">
-        <span className="text-sm font-medium text-slate-700">
+        <span className="text-[13px] text-foreground/75">
           {checklist.completedCount} de {checklist.totalCount} tareas completadas
         </span>
-        <span className="text-sm font-semibold text-emerald-700">{checklist.percent}%</span>
+        <span className="font-mono text-[13px] font-semibold tabular-nums text-primary">
+          {checklist.percent}%
+        </span>
       </div>
-      <div className="w-full bg-slate-100 rounded-full h-2">
+      <div className="h-1 w-full overflow-hidden rounded-full bg-muted/70">
         <div
-          className="bg-emerald-500 h-2 rounded-full transition-all duration-500"
+          className="h-full rounded-full bg-primary/80 transition-all duration-500"
           style={{ width: `${checklist.percent}%` }}
         />
       </div>
 
       {/* Items */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-3">
+      <div className="mt-4 grid grid-cols-1 gap-1 sm:grid-cols-2">
         {checklist.items.map((item) => (
           <button
             key={item.key}
             onClick={() => !item.completed && item.tab && onItemClick?.(item.tab)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors ${
+            className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] transition-colors ${
               item.completed
-                ? "text-emerald-700 bg-emerald-50/50"
-                : "text-slate-600 hover:bg-slate-50 cursor-pointer"
+                ? "text-muted-foreground"
+                : "cursor-pointer text-foreground/80 hover:bg-muted/50"
             }`}
           >
             {item.completed ? (
-              <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+              <CheckCircle2 className="h-[15px] w-[15px] flex-shrink-0 text-primary/70" strokeWidth={1.75} />
             ) : (
-              <Circle className="h-4 w-4 text-slate-300 flex-shrink-0" />
+              <Circle className="h-[15px] w-[15px] flex-shrink-0 text-muted-foreground/40" strokeWidth={1.75} />
             )}
-            <span className={item.completed ? "line-through opacity-70" : ""}>{item.label}</span>
+            <span className={item.completed ? "line-through decoration-muted-foreground/40" : ""}>
+              {item.label}
+            </span>
           </button>
         ))}
       </div>

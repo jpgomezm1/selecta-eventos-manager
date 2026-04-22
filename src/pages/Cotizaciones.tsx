@@ -19,9 +19,6 @@ import {
   DollarSign,
   Calendar,
   Eye,
-  FileText,
-  TrendingUp,
-  CheckCircle,
   AlertTriangle,
   X,
   ArrowUpDown,
@@ -31,6 +28,7 @@ import {
   User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageHeader, KPI } from "@/components/Layout/PageHeader";
 
 export default function CotizacionesListPage() {
   const nav = useNavigate();
@@ -177,26 +175,26 @@ export default function CotizacionesListPage() {
   const getStatusBadge = (estado: string) => {
     const configs = {
       "Pendiente por Aprobación": {
-        class: "bg-yellow-50 text-yellow-700 border-yellow-200",
-        label: "Pendiente"
+        class: "border-[hsl(30_55%_42%)]/30 bg-[hsl(30_55%_42%)]/10 text-[hsl(30_55%_42%)]",
+        label: "Pendiente",
       },
       "Cotización Aprobada": {
-        class: "bg-green-50 text-green-700 border-green-200",
-        label: "Aprobada"
+        class: "border-primary/25 bg-primary/10 text-primary",
+        label: "Aprobada",
       },
-      "Rechazada": {
-        class: "bg-red-50 text-red-700 border-red-200",
-        label: "Rechazada"
+      Rechazada: {
+        class: "border-destructive/30 bg-destructive/10 text-destructive",
+        label: "Rechazada",
       },
-      "Enviada": {
-        class: "bg-blue-50 text-blue-700 border-blue-200",
-        label: "Enviada"
-      }
+      Enviada: {
+        class: "border-border bg-muted/40 text-foreground/80",
+        label: "Enviada",
+      },
     };
 
     const config = configs[estado as keyof typeof configs] || configs["Pendiente por Aprobación"];
     return (
-      <Badge className={`${config.class} font-semibold border`}>
+      <Badge variant="outline" className={`${config.class} font-normal`}>
         {config.label}
       </Badge>
     );
@@ -231,65 +229,30 @@ export default function CotizacionesListPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Cotizaciones</h1>
-          <p className="text-slate-500 mt-1">Gestión de cotizaciones y presupuestos</p>
-        </div>
-        <Button onClick={() => nav("/cotizaciones/nueva")}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Cotización
-        </Button>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        kicker="Operación"
+        title="Cotizaciones"
+        description="Propuestas y presupuestos — del brief inicial a la aprobación del cliente."
+        actions={
+          <Button onClick={() => nav("/cotizaciones/nueva")} className="gap-2">
+            <Plus className="h-4 w-4" strokeWidth={1.75} />
+            Nueva cotización
+          </Button>
+        }
+      />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <Calculator className="h-5 w-5 text-blue-600" />
-              <div>
-                <div className="text-2xl font-semibold text-slate-900">{stats.total}</div>
-                <p className="text-sm text-slate-500">Total</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <FileText className="h-5 w-5 text-slate-600" />
-              <div>
-                <div className="text-2xl font-semibold text-slate-900">{stats.pendiente}</div>
-                <p className="text-sm text-slate-500">Pendientes</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <div>
-                <div className="text-2xl font-semibold text-slate-900">{stats.aprobado}</div>
-                <p className="text-sm text-slate-500">Aprobadas</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <TrendingUp className="h-5 w-5 text-emerald-600" />
-              <div>
-                <div className="text-xl font-semibold text-slate-900">${(stats.totalValue / 1000000).toFixed(1)}M</div>
-                <p className="text-sm text-slate-500">Valor Total</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* KPI editorial */}
+      <div className="grid grid-cols-2 gap-x-8 gap-y-6 border-y border-border py-6 md:grid-cols-4">
+        <KPI kicker="Total" value={stats.total} />
+        <KPI kicker="Pendientes" value={stats.pendiente} tone={stats.pendiente > 0 ? "warning" : "neutral"} />
+        <KPI kicker="Aprobadas" value={stats.aprobado} tone="primary" />
+        <KPI
+          kicker="Valor total"
+          value={`$${(stats.totalValue / 1000000).toFixed(1)}`}
+          suffix="M"
+          tone="primary"
+        />
       </div>
 
       {/* Filtros y búsqueda */}
@@ -393,25 +356,26 @@ export default function CotizacionesListPage() {
           </div>
 
           {/* Resultados de filtros */}
-          {(searchTerm || filterStatus !== 'all' || filterCliente !== 'all') && (
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200/40">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-blue-800">
-                  {filteredAndSortedData.length} cotización(es) encontrada(s)
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSearchTerm("");
-                    setFilterStatus("all");
-                    setFilterCliente("all");
-                  }}
-                  className="text-blue-700 hover:text-blue-800 hover:bg-blue-100"
-                >
-                  Limpiar filtros
-                </Button>
-              </div>
+          {(searchTerm || filterStatus !== "all" || filterCliente !== "all") && (
+            <div className="mt-4 flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2">
+              <span className="text-sm text-muted-foreground">
+                <span className="font-mono font-medium tabular-nums text-foreground">
+                  {filteredAndSortedData.length}
+                </span>{" "}
+                cotización(es) encontrada(s)
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm("");
+                  setFilterStatus("all");
+                  setFilterCliente("all");
+                }}
+                className="h-8 text-muted-foreground hover:text-foreground"
+              >
+                Limpiar filtros
+              </Button>
             </div>
           )}
         </CardContent>
@@ -419,57 +383,45 @@ export default function CotizacionesListPage() {
 
       {/* Grid de cotizaciones */}
       {filteredAndSortedData.length === 0 ? (
-        <Card>
-          <CardContent className="p-16 text-center">
-            <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-8">
-              <Calculator className="h-12 w-12 text-slate-400" />
-            </div>
-            <h3 className="text-2xl font-bold text-slate-800 mb-3">
-              {searchTerm || filterStatus !== 'all' ? "Sin resultados" : "Sin cotizaciones"}
+        <Card className="border-dashed">
+          <CardContent className="px-4 py-16 text-center">
+            <Calculator
+              className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40"
+              strokeWidth={1.25}
+            />
+            <h3 className="font-serif text-lg text-foreground">
+              {searchTerm || filterStatus !== "all" ? "Sin resultados" : "Sin cotizaciones"}
             </h3>
-            <p className="text-slate-600 text-lg max-w-md mx-auto mb-8">
-              {searchTerm || filterStatus !== 'all'
-                ? "No se encontraron cotizaciones que coincidan con los filtros aplicados"
-                : "Comienza creando tu primera cotización para gestionar presupuestos"
-              }
+            <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+              {searchTerm || filterStatus !== "all"
+                ? "No se encontraron cotizaciones que coincidan con los filtros aplicados."
+                : "Comienza creando tu primera cotización para gestionar presupuestos."}
             </p>
-            {!searchTerm && filterStatus === 'all' && (
-              <Button
-                onClick={() => nav("/cotizaciones/nueva")}
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Crear Primera Cotización
+            {!searchTerm && filterStatus === "all" && (
+              <Button onClick={() => nav("/cotizaciones/nueva")} className="mt-6">
+                <Plus className="mr-2 h-4 w-4" />
+                Crear primera cotización
               </Button>
             )}
           </CardContent>
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {paginatedData.map((c) => {
-              const borderColor =
-                c.estado === "Cotización Aprobada"
-                  ? "border-l-green-500"
-                  : c.estado === "Rechazada"
-                    ? "border-l-red-500"
-                    : "border-l-yellow-500";
               const clienteName = c.cliente?.nombre || c.cliente_nombre || "Sin especificar";
-              const clienteEmpresa = c.cliente?.empresa;
               const clienteTipo = c.cliente?.tipo;
               const contactoNombre = c.contacto?.nombre;
 
               return (
                 <Card
                   key={c.id}
-                  className={cn(
-                    "hover:shadow-md transition-shadow cursor-pointer border-l-4",
-                    borderColor
-                  )}
+                  className="cursor-pointer transition-shadow hover:shadow-md"
                   onClick={() => nav(`/cotizaciones/${c.id}`)}
                 >
-                  <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <CardTitle className="text-lg font-bold text-slate-800 line-clamp-2 flex-1 min-w-0">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <CardTitle className="line-clamp-2 min-w-0 flex-1 font-serif text-[17px] font-medium text-foreground">
                         {c.nombre_cotizacion}
                       </CardTitle>
                       {getStatusBadge(c.estado)}
@@ -478,87 +430,82 @@ export default function CotizacionesListPage() {
 
                   <CardContent className="space-y-4">
                     {/* Información del cliente */}
-                    <div className="space-y-3">
-                      <div className="flex items-center text-sm text-slate-600">
-                        {clienteTipo === 'empresa' ? (
-                          <Building2 className="h-4 w-4 mr-3 text-blue-500" />
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        {clienteTipo === "empresa" ? (
+                          <Building2 className="h-4 w-4 text-muted-foreground/60" strokeWidth={1.5} />
                         ) : (
-                          <User className="h-4 w-4 mr-3 text-selecta-green" />
+                          <User className="h-4 w-4 text-muted-foreground/60" strokeWidth={1.5} />
                         )}
-                        <div className="min-w-0 flex items-center gap-2">
-                          <span className="font-semibold">{clienteName}</span>
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className="text-foreground/85">{clienteName}</span>
                           {clienteTipo && (
-                            <Badge variant="outline" className={cn(
-                              "text-xs",
-                              clienteTipo === 'empresa'
-                                ? "bg-blue-50 text-blue-700 border-blue-200"
-                                : "bg-slate-50 text-slate-600 border-slate-200"
-                            )}>
-                              {clienteTipo === 'empresa' ? 'Empresa' : 'Persona'}
+                            <Badge
+                              variant="outline"
+                              className="border-border bg-muted/40 text-xs font-normal text-muted-foreground"
+                            >
+                              {clienteTipo === "empresa" ? "Empresa" : "Persona"}
                             </Badge>
                           )}
                         </div>
                       </div>
                       {contactoNombre && (
-                        <div className="flex items-center text-sm text-slate-500 ml-7">
-                          <span className="text-xs">Contacto: <span className="font-medium">{contactoNombre}</span></span>
+                        <div className="ml-7 text-xs text-muted-foreground">
+                          Contacto: <span className="text-foreground/75">{contactoNombre}</span>
                         </div>
                       )}
 
-                      <div className="flex items-center text-sm text-slate-600">
-                        <Layers className="h-4 w-4 mr-3 text-selecta-green" />
-                        <span className="font-semibold">{c.numero_invitados} invitados</span>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        <Layers className="h-4 w-4 text-muted-foreground/60" strokeWidth={1.5} />
+                        <span className="text-foreground/85">
+                          <span className="font-mono tabular-nums">{c.numero_invitados}</span> invitados
+                        </span>
                       </div>
 
                       {c.created_at && (
-                        <div className="flex items-center text-sm text-slate-600">
-                          <Calendar className="h-4 w-4 mr-3 text-selecta-green" />
-                          <span className="font-semibold">
-                            {new Date(c.created_at).toLocaleDateString('es-CO')}
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4 text-muted-foreground/60" strokeWidth={1.5} />
+                          <span className="font-mono text-sm tabular-nums text-foreground/85">
+                            {new Date(c.created_at).toLocaleDateString("es-CO")}
                           </span>
                         </div>
                       )}
                     </div>
 
-                    {/* Total destacado */}
-                    <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200/60">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <DollarSign className="h-5 w-5 text-emerald-600" />
-                          <span className="text-sm font-semibold text-emerald-700">Total Cotizado:</span>
-                        </div>
-                        <div className="text-xl font-bold text-emerald-600">
-                          ${c.total_cotizado.toLocaleString()}
-                        </div>
-                      </div>
+                    {/* Total */}
+                    <div className="flex items-baseline justify-between border-t border-border/60 pt-3">
+                      <span className="kicker text-muted-foreground">Total cotizado</span>
+                      <span className="font-mono text-[15px] font-semibold tabular-nums text-foreground">
+                        ${c.total_cotizado.toLocaleString()}
+                      </span>
                     </div>
 
                     {/* Botones de acción */}
-                    <div className="pt-2 space-y-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="space-y-2 pt-1" onClick={(e) => e.stopPropagation()}>
                       <Button
                         variant="outline"
                         onClick={() => nav(`/cotizaciones/${c.id}`)}
                         className="w-full"
                       >
-                        <Eye className="h-4 w-4 mr-2" />
-                        <span className="font-semibold">Abrir Cotización</span>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Abrir cotización
                       </Button>
 
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         onClick={() => handleOpenPDFModal(c.id)}
                         disabled={downloadingPdf === c.id}
-                        className="w-full bg-blue-50 hover:bg-blue-100 border-blue-200 hover:border-blue-300 text-blue-700 hover:text-blue-800"
+                        className="w-full text-muted-foreground hover:bg-muted hover:text-foreground"
                       >
                         {downloadingPdf === c.id ? (
                           <>
-                            <div className="animate-spin w-4 h-4 border-2 border-blue-300 border-t-blue-700 rounded-full mr-2" />
-                            <span className="font-semibold">Generando PDF...</span>
+                            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" />
+                            Generando PDF…
                           </>
                         ) : (
                           <>
-                            <Download className="h-4 w-4 mr-2" />
-                            <span className="font-semibold">Propuesta Selecta</span>
+                            <Download className="mr-2 h-4 w-4" />
+                            Propuesta Selecta
                           </>
                         )}
                       </Button>

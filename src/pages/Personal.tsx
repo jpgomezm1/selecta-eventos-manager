@@ -13,6 +13,7 @@ import { PersonalForm } from "@/components/Forms/PersonalForm";
 import { CargaMasivaPersonal } from "@/components/Forms/CargaMasivaPersonal";
 import { EliminarPersonalDialog } from "@/components/Personal/EliminarPersonalDialog";
 import { useToast } from "@/hooks/use-toast";
+import { PageHeader } from "@/components/Layout/PageHeader";
 import { Personal, ROLES_PERSONAL } from "@/types/database";
 
 const ITEMS_PER_PAGE = 10;
@@ -78,18 +79,14 @@ export default function PersonalPage() {
     setSelectedPersonal(null);
   };
 
+  // Los roles que llevan acento primary (operación directa con comensales) vs neutros (back).
+  const PRIMARY_ROLES = new Set(["Coordinador", "Chef", "Mesero", "Bartender"]);
+
   const getRoleBadgeVariant = (rol: string) => {
-    const variants: Record<string, string> = {
-      "Coordinador": "bg-purple-50 text-purple-700",
-      "Chef": "bg-orange-50 text-orange-700",
-      "Mesero": "bg-blue-50 text-blue-700",
-      "Bartender": "bg-emerald-50 text-emerald-700",
-      "Decorador": "bg-pink-50 text-pink-700",
-      "Técnico de Sonido": "bg-indigo-50 text-indigo-700",
-      "Fotógrafo": "bg-amber-50 text-amber-700",
-      "Otro": "bg-slate-100 text-slate-700"
-    };
-    return variants[rol] || variants["Otro"];
+    const base = "border font-medium";
+    return PRIMARY_ROLES.has(rol)
+      ? `${base} border-primary/30 bg-primary/8 text-primary`
+      : `${base} border-border bg-muted/60 text-muted-foreground`;
   };
 
   const totalPersonal = personal.length;
@@ -108,41 +105,32 @@ export default function PersonalPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-slate-200 border-t-selecta-green rounded-full animate-spin"></div>
-          <p className="text-sm text-slate-500">Cargando personal...</p>
+          <div className="w-8 h-8 rounded-full bg-muted/70 animate-pulse" />
+          <p className="text-sm text-muted-foreground">Cargando personal...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Personal</h1>
-          <p className="text-slate-500 mt-1">
-            {totalPersonal} empleados registrados
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => setIsCargaMasivaOpen(true)}
-            variant="outline"
-            size="sm"
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Importar
-          </Button>
-
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="bg-selecta-green hover:bg-selecta-green/90">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Agregar
-              </Button>
-            </DialogTrigger>
+    <div className="space-y-8">
+      <PageHeader
+        kicker="Recursos"
+        title="Personal"
+        description={`${totalPersonal} ${totalPersonal === 1 ? "empleado registrado" : "empleados registrados"} · tarifas, modalidades y liquidaciones`}
+        actions={
+          <>
+            <Button onClick={() => setIsCargaMasivaOpen(true)} variant="outline" size="sm" className="gap-2">
+              <Upload className="h-4 w-4" strokeWidth={1.75} />
+              Importar
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-2">
+                  <UserPlus className="h-4 w-4" strokeWidth={1.75} />
+                  Agregar
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>
@@ -165,8 +153,9 @@ export default function PersonalPage() {
               />
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Tabla con filtros integrados */}
       <Card>
@@ -231,12 +220,12 @@ export default function PersonalPage() {
                   <TableRow key={person.id} className="group">
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-selecta-green/10 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-medium text-selecta-green">
+                        <div className="w-8 h-8 bg-primary/10 text-primary rounded-full flex items-center justify-center">
+                          <span className="text-[11px] font-medium">
                             {person.nombre_completo.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                           </span>
                         </div>
-                        <span className="font-medium text-slate-900">{person.nombre_completo}</span>
+                        <span className="font-medium text-foreground">{person.nombre_completo}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-slate-600">{person.numero_cedula}</TableCell>
@@ -325,9 +314,7 @@ export default function PersonalPage() {
                           variant={currentPage === page ? "default" : "ghost"}
                           size="sm"
                           onClick={() => goToPage(page)}
-                          className={`h-8 w-8 p-0 ${
-                            currentPage === page ? "bg-selecta-green hover:bg-selecta-green/90" : ""
-                          }`}
+                          className="h-8 w-8 p-0 font-mono tabular-nums text-[12px]"
                         >
                           {page}
                         </Button>

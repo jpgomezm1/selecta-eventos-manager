@@ -1,16 +1,38 @@
 import { useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Clock, Send, Trophy, XCircle } from "lucide-react";
+import { Clock, Send, Trophy, XCircle, type LucideIcon } from "lucide-react";
 import { PipelineCard } from "./PipelineCard";
 import type { Cotizacion } from "@/types/cotizador";
+import { cn } from "@/lib/utils";
 
-const COLUMNS = [
-  { key: "Pendiente por Aprobación", label: "Pendiente", color: "border-t-yellow-500", icon: Clock, badgeCls: "bg-yellow-100 text-yellow-800" },
-  { key: "Enviada", label: "Enviada", color: "border-t-blue-500", icon: Send, badgeCls: "bg-blue-100 text-blue-800" },
-  { key: "Cotización Aprobada", label: "Ganada", color: "border-t-green-500", icon: Trophy, badgeCls: "bg-green-100 text-green-800" },
-  { key: "Rechazada", label: "Perdida", color: "border-t-red-500", icon: XCircle, badgeCls: "bg-red-100 text-red-800" },
-] as const;
+type ColumnTone = "neutral" | "primary" | "destructive" | "warning";
+
+type Column = {
+  key: Cotizacion["estado"] | "Pendiente por Aprobación" | "Enviada" | "Cotización Aprobada" | "Rechazada";
+  label: string;
+  tone: ColumnTone;
+  icon: LucideIcon;
+};
+
+const COLUMNS: Column[] = [
+  { key: "Pendiente por Aprobación", label: "Pendientes", tone: "warning", icon: Clock },
+  { key: "Enviada", label: "Enviadas", tone: "neutral", icon: Send },
+  { key: "Cotización Aprobada", label: "Ganadas", tone: "primary", icon: Trophy },
+  { key: "Rechazada", label: "Perdidas", tone: "destructive", icon: XCircle },
+];
+
+const TONE_ACCENT: Record<ColumnTone, string> = {
+  neutral: "bg-foreground/30",
+  primary: "bg-primary",
+  warning: "bg-[hsl(30_55%_42%)]",
+  destructive: "bg-destructive",
+};
+
+const TONE_TEXT: Record<ColumnTone, string> = {
+  neutral: "text-foreground",
+  primary: "text-primary",
+  warning: "text-[hsl(30_55%_42%)]",
+  destructive: "text-destructive",
+};
 
 type Props = {
   cotizaciones: Cotizacion[];
@@ -28,34 +50,52 @@ export function PipelineBoard({ cotizaciones, onMarcarEnviada, onRechazar, onRea
       const list = map.get(c.estado);
       if (list) list.push(c);
     }
-    // Sort each column by updated_at desc
     for (const [, list] of map) {
-      list.sort((a, b) => new Date(b.updated_at || b.created_at || "").getTime() - new Date(a.updated_at || a.created_at || "").getTime());
+      list.sort(
+        (a, b) =>
+          new Date(b.updated_at || b.created_at || "").getTime() -
+          new Date(a.updated_at || a.created_at || "").getTime()
+      );
     }
     return map;
   }, [cotizaciones]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
       {COLUMNS.map((col) => {
         const items = grouped.get(col.key) || [];
+        const Icon = col.icon;
         return (
-          <Card key={col.key} className={`border-t-4 ${col.color}`}>
-            <CardHeader className="pb-3">
+          <section
+            key={col.key}
+            className="flex flex-col overflow-hidden rounded-lg border border-border bg-card"
+          >
+            <div className="relative border-b border-border px-4 py-3">
+              <div className={cn("absolute left-0 top-0 h-0.5 w-full", TONE_ACCENT[col.tone])} />
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <col.icon className="h-4 w-4 text-slate-500" />
-                  <CardTitle className="text-sm font-semibold">{col.label}</CardTitle>
+                  <Icon className={cn("h-3.5 w-3.5", TONE_TEXT[col.tone])} strokeWidth={1.75} />
+                  <span className="kicker">{col.label}</span>
                 </div>
-                <Badge className={`${col.badgeCls} text-xs font-bold`}>{items.length}</Badge>
+                <span
+                  className={cn(
+                    "font-serif text-[15px] tabular-nums",
+                    items.length > 0 ? TONE_TEXT[col.tone] : "text-muted-foreground"
+                  )}
+                >
+                  {items.length}
+                </span>
               </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
-                {items.length === 0 ? (
-                  <p className="text-xs text-slate-400 text-center py-8">Sin cotizaciones</p>
-                ) : (
-                  items.map((c) => (
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-3">
+              {items.length === 0 ? (
+                <p className="py-10 text-center text-[11.5px] italic text-muted-foreground">
+                  Sin cotizaciones
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {items.map((c) => (
                     <PipelineCard
                       key={c.id}
                       cotizacion={c}
@@ -64,11 +104,11 @@ export function PipelineBoard({ cotizaciones, onMarcarEnviada, onRechazar, onRea
                       onReabrir={c.estado === "Rechazada" ? () => onReabrir(c.id) : undefined}
                       onAbrir={() => onNavigateToEditor(c.id)}
                     />
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
         );
       })}
     </div>

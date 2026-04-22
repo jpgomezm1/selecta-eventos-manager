@@ -9,8 +9,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { getEventoRequerimiento } from "@/integrations/supabase/apiCotizador";
 import { fetchChecklistData } from "@/integrations/supabase/apiEventoChecklist";
 import { computeChecklist } from "@/lib/eventoChecklist";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, ArrowLeft, Users, Truck, UtensilsCrossed, FileText, ShoppingCart, DollarSign, ClipboardList, Building2 } from "lucide-react";
+import {
+  Calendar,
+  MapPin,
+  ArrowLeft,
+  Users,
+  Truck,
+  UtensilsCrossed,
+  FileText,
+  ShoppingCart,
+  DollarSign,
+  Building2,
+} from "lucide-react";
 import { parseLocalDate, formatLocalDate } from "@/lib/dateLocal";
 import PersonalPanel from "@/components/Eventos/PersonalPanel";
 import MenajePanel from "@/components/Eventos/MenajePanel";
@@ -18,6 +28,7 @@ import TransportePanel from "@/components/Eventos/TransportePanel";
 import OrdenCompraPanel from "@/components/Eventos/OrdenCompraPanel";
 import EventoChecklist from "@/components/Eventos/EventoChecklist";
 import CierreEventoPanel from "@/components/Eventos/CierreEventoPanel";
+import { cn } from "@/lib/utils";
 
 type EventoHead = {
   id: string;
@@ -88,10 +99,10 @@ export default function EventoDetallePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-slate-200 border-t-selecta-green rounded-full animate-spin"></div>
-          <p className="text-sm text-slate-500">Cargando evento...</p>
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" />
+          <p className="text-sm italic text-muted-foreground">Cargando evento…</p>
         </div>
       </div>
     );
@@ -99,165 +110,149 @@ export default function EventoDetallePage() {
 
   if (hasError || !head || !req) {
     return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-          <FileText className="h-6 w-6 text-slate-400" />
-        </div>
-        <p className="text-slate-900 font-medium">Error al cargar evento</p>
-        <p className="text-slate-500 text-sm mt-1 mb-4">No se pudo obtener la información del evento</p>
-        <Button onClick={() => navigate("/eventos")} variant="outline" size="sm">
-          <ArrowLeft className="h-4 w-4 mr-2" />
+      <div className="flex h-64 flex-col items-center justify-center">
+        <FileText className="mb-3 h-8 w-8 text-muted-foreground/60" strokeWidth={1.5} />
+        <p className="font-serif text-[18px] text-foreground">No se pudo cargar el evento</p>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">
+          Probablemente haya sido eliminado o no se tenga acceso.
+        </p>
+        <Button onClick={() => navigate("/eventos")} variant="outline" size="sm" className="mt-4 gap-2">
+          <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.75} />
           Volver a Eventos
         </Button>
       </div>
     );
   }
 
-  // Fuente de verdad: cotizaciones.total_cotizado (items + lugar). Los
-  // evento_requerimiento_* no tienen lugar, así que sumar de ahí subcontaría.
   const totalRequerimiento = req.totalCotizacion;
-
-  const getEventStatus = (fechaEvento: string) => {
-    const eventDate = parseLocalDate(fechaEvento);
-    if (!eventDate) return { status: "Sin fecha", className: "bg-slate-100 text-slate-700" };
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    eventDate.setHours(0, 0, 0, 0);
-    if (eventDate < today) return { status: "Pasado", className: "bg-slate-100 text-slate-700" };
-    if (eventDate.getTime() === today.getTime()) return { status: "Hoy", className: "bg-blue-50 text-blue-700" };
-    return { status: "Próximo", className: "bg-emerald-50 text-emerald-700" };
-  };
-
   const eventStatus = getEventStatus(head.fecha_evento);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-start gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/eventos")} className="h-8 w-8 p-0 mt-1">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+    <div className="space-y-7">
+      {/* Back navigation */}
+      <div className="-mt-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/eventos")}
+          className="-ml-2 h-7 gap-1.5 text-[11.5px] text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.75} />
+          Eventos
+        </Button>
+      </div>
 
-          <div className="flex-1">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-semibold text-slate-900">{head.nombre_evento}</h1>
-                <div className="flex flex-wrap items-center gap-3 mt-2">
-                  <div className="flex items-center gap-1.5 text-sm text-slate-600">
-                    <Calendar className="h-4 w-4 text-slate-400" />
-                    <span>
-                      {formatLocalDate(head.fecha_evento, 'es-CO', {
-                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-sm text-slate-600">
-                    <MapPin className="h-4 w-4 text-slate-400" />
-                    <span>{head.ubicacion || "Sin ubicación"}</span>
-                  </div>
-                  {head.comercial_encargado && (
-                    <div className="flex items-center gap-1.5 text-sm text-slate-600">
-                      <Users className="h-4 w-4 text-slate-400" />
-                      <span>{head.comercial_encargado}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-center gap-2 mt-3">
-                  <Badge variant="secondary" className={eventStatus.className}>{eventStatus.status}</Badge>
-                  <Badge variant="secondary" className={head.estado_liquidacion === "liquidado" ? "bg-emerald-50 text-emerald-700" : "bg-orange-50 text-orange-700"}>
-                    {head.estado_liquidacion === "liquidado" ? "Liquidado" : "Pendiente"}
-                  </Badge>
-                </div>
-              </div>
+      {/* Header editorial */}
+      <header className="animate-rise stagger-1 flex flex-col gap-6 border-b border-border/70 pb-7 md:flex-row md:items-end md:justify-between">
+        <div className="min-w-0 space-y-3">
+          <span className="kicker">Evento</span>
+          <h1 className="font-serif text-[36px] leading-[1.05] tracking-[-0.028em] text-foreground md:text-[46px]">
+            {head.nombre_evento}
+          </h1>
 
-              <div className="text-right">
-                <p className="text-xs text-slate-500">Presupuesto Estimado</p>
-                <p className="text-2xl font-semibold text-slate-900">${totalRequerimiento.toLocaleString()}</p>
-              </div>
-            </div>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5" strokeWidth={1.75} />
+              <span className="capitalize tabular-nums">
+                {formatLocalDate(head.fecha_evento, "es-CO", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </span>
+            </span>
+            <span className="h-3 w-px bg-border" />
+            <span className="flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />
+              <span>{head.ubicacion || "Sin ubicación"}</span>
+            </span>
+            {head.comercial_encargado && (
+              <>
+                <span className="h-3 w-px bg-border" />
+                <span className="flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  <span>{head.comercial_encargado}</span>
+                </span>
+              </>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <StatusPill tone={eventStatus.tone}>{eventStatus.label}</StatusPill>
+            <StatusPill tone={head.estado_liquidacion === "liquidado" ? "primary" : "warning"}>
+              {head.estado_liquidacion === "liquidado" ? "Liquidado" : "Pendiente de liquidar"}
+            </StatusPill>
           </div>
         </div>
-      </div>
+
+        <div className="text-right">
+          <div className="kicker mb-2">Presupuesto estimado</div>
+          <div className="font-serif text-[34px] leading-none tracking-[-0.025em] tabular-nums text-foreground md:text-[42px]">
+            ${totalRequerimiento.toLocaleString()}
+          </div>
+        </div>
+      </header>
 
       {/* Checklist */}
       {checklist && (
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <ClipboardList className="h-5 w-5 text-slate-600" />
-            <h2 className="font-semibold text-slate-900">Progreso del Evento</h2>
+        <section className="animate-rise stagger-2 rounded-lg border border-border bg-card p-5">
+          <div className="mb-4 flex items-baseline justify-between">
+            <span className="kicker">Progreso del evento</span>
           </div>
           <EventoChecklist checklist={checklist} onItemClick={(tab) => setActiveTab(tab)} />
-        </Card>
+        </section>
       )}
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-slate-100 p-1 rounded-lg">
-          <TabsTrigger value="requerimientos" className="flex-1 min-w-[120px] text-xs sm:text-sm">
-            <FileText className="h-3.5 w-3.5 mr-1.5" />
-            Requerimientos
-          </TabsTrigger>
-          <TabsTrigger value="personal" className="flex-1 min-w-[100px] text-xs sm:text-sm">
-            <Users className="h-3.5 w-3.5 mr-1.5" />
-            Personal
-          </TabsTrigger>
-          <TabsTrigger value="menaje" className="flex-1 min-w-[90px] text-xs sm:text-sm">
-            <UtensilsCrossed className="h-3.5 w-3.5 mr-1.5" />
-            Menaje
-          </TabsTrigger>
-          <TabsTrigger value="compras" className="flex-1 min-w-[90px] text-xs sm:text-sm">
-            <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />
-            Compras
-          </TabsTrigger>
-          <TabsTrigger value="transporte" className="flex-1 min-w-[100px] text-xs sm:text-sm">
-            <Truck className="h-3.5 w-3.5 mr-1.5" />
-            Transporte
-          </TabsTrigger>
-          <TabsTrigger value="financiero" className="flex-1 min-w-[100px] text-xs sm:text-sm">
-            <DollarSign className="h-3.5 w-3.5 mr-1.5" />
-            Financiero
-          </TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="animate-rise stagger-3">
+        <TabsList className="flex h-auto w-full flex-wrap gap-1 bg-muted/60 p-1">
+          <EditorialTab value="requerimientos" icon={FileText} label="Requerimientos" />
+          <EditorialTab value="personal" icon={Users} label="Personal" />
+          <EditorialTab value="menaje" icon={UtensilsCrossed} label="Menaje" />
+          <EditorialTab value="compras" icon={ShoppingCart} label="Compras" />
+          <EditorialTab value="transporte" icon={Truck} label="Transporte" />
+          <EditorialTab value="financiero" icon={DollarSign} label="Financiero" />
         </TabsList>
 
         {/* Tab: Requerimientos */}
-        <TabsContent value="requerimientos" className="mt-4">
-          <Card>
-            <div className="p-4 border-b border-slate-200">
-              <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-slate-600" />
-                <h2 className="font-semibold text-slate-900">Requerimiento del Evento</h2>
-              </div>
+        <TabsContent value="requerimientos" className="mt-5">
+          <Card className="overflow-hidden border-border shadow-soft">
+            <div className="border-b border-border px-5 py-4">
+              <span className="kicker">Requerimiento original</span>
+              <h2 className="mt-1 font-serif text-[18px] tracking-tight text-foreground">
+                Plan cotizado para este evento
+              </h2>
             </div>
-            <div className="p-4 space-y-6">
+            <div className="space-y-7 p-5">
               <SeccionTabla
-                titulo="Menú y Platos"
-                emptyHint="Este evento no tiene platos definidos en el requerimiento."
-                icon={<UtensilsCrossed className="h-4 w-4 text-orange-600" />}
+                titulo="Menú y platos"
+                emptyHint="Este evento no tiene platos en el requerimiento original."
+                icon={UtensilsCrossed}
                 rows={req.platos.map((p) => ({ nombre: p.nombre, precio: p.precio_unitario, cantidad: p.cantidad, subtotal: p.subtotal }))}
               />
               <SeccionTabla
-                titulo="Personal Requerido"
-                emptyHint="No se definió personal en la cotización original."
-                icon={<Users className="h-4 w-4 text-blue-600" />}
+                titulo="Personal requerido"
+                emptyHint="No se definió personal en la cotización."
+                icon={Users}
                 rows={req.personal.map((p) => ({ nombre: p.rol, precio: p.tarifa_estimada_por_persona, cantidad: p.cantidad, subtotal: p.subtotal }))}
               />
               <SeccionTabla
-                titulo="Logística y Transporte"
-                emptyHint="No se definió transporte en la cotización original."
-                icon={<Truck className="h-4 w-4 text-green-600" />}
+                titulo="Logística y transporte"
+                emptyHint="No se definió transporte en la cotización."
+                icon={Truck}
                 rows={req.transportes.map((t) => ({ nombre: t.lugar, precio: t.tarifa_unitaria, cantidad: t.cantidad, subtotal: t.subtotal }))}
               />
               <SeccionTabla
                 titulo="Menaje"
-                emptyHint="No se definió menaje en la cotización original."
-                icon={<UtensilsCrossed className="h-4 w-4 text-purple-600" />}
+                emptyHint="No se definió menaje en la cotización."
+                icon={UtensilsCrossed}
                 rows={(req.menaje ?? []).map((m) => ({ nombre: m.nombre, precio: m.precio_alquiler, cantidad: m.cantidad, subtotal: m.subtotal }))}
               />
               <SeccionTabla
-                titulo="Salón / Lugar"
+                titulo="Salón / lugar"
                 emptyHint="No se seleccionó un lugar en la cotización."
-                icon={<Building2 className="h-4 w-4 text-emerald-600" />}
+                icon={Building2}
                 rows={req.lugar
                   ? [{
                       nombre: [req.lugar.nombre, req.lugar.ciudad].filter(Boolean).join(", "),
@@ -267,18 +262,18 @@ export default function EventoDetallePage() {
                     }]
                   : []}
               />
-              <div className="flex justify-end pt-4 border-t border-slate-200">
-                <div className="bg-emerald-50 rounded-lg p-4 text-right">
-                  <p className="text-xs text-emerald-600 mb-1">Total Estimado</p>
-                  <p className="text-2xl font-semibold text-emerald-700">${totalRequerimiento.toLocaleString()}</p>
-                </div>
+
+              <div className="flex items-baseline justify-between border-t border-border pt-5">
+                <span className="kicker">Total estimado</span>
+                <span className="font-serif text-[28px] leading-none tracking-tight tabular-nums text-primary">
+                  ${totalRequerimiento.toLocaleString()}
+                </span>
               </div>
             </div>
           </Card>
         </TabsContent>
 
-        {/* Tab: Personal */}
-        <TabsContent value="personal" className="mt-4">
+        <TabsContent value="personal" className="mt-5">
           <PersonalPanel
             eventoId={head.id}
             fechaEvento={head.fecha_evento}
@@ -289,8 +284,7 @@ export default function EventoDetallePage() {
           />
         </TabsContent>
 
-        {/* Tab: Menaje */}
-        <TabsContent value="menaje" className="mt-4">
+        <TabsContent value="menaje" className="mt-5">
           <MenajePanel
             eventoId={head.id}
             fechaEvento={head.fecha_evento}
@@ -304,16 +298,15 @@ export default function EventoDetallePage() {
           />
         </TabsContent>
 
-        {/* Tab: Compras */}
-        <TabsContent value="compras" className="mt-4">
-          <Card>
-            <div className="p-4 border-b border-slate-200">
-              <div className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5 text-slate-600" />
-                <h2 className="font-semibold text-slate-900">Orden de Compra</h2>
-              </div>
+        <TabsContent value="compras" className="mt-5">
+          <Card className="overflow-hidden border-border shadow-soft">
+            <div className="border-b border-border px-5 py-4">
+              <span className="kicker">Compras</span>
+              <h2 className="mt-1 font-serif text-[18px] tracking-tight text-foreground">
+                Orden de compra del evento
+              </h2>
             </div>
-            <div className="p-4">
+            <div className="p-5">
               <OrdenCompraPanel
                 eventoId={head.id}
                 eventoInfo={{
@@ -328,21 +321,19 @@ export default function EventoDetallePage() {
           </Card>
         </TabsContent>
 
-        {/* Tab: Transporte */}
-        <TabsContent value="transporte" className="mt-4">
+        <TabsContent value="transporte" className="mt-5">
           <TransportePanel eventoId={head.id} onChanged={() => refetchChecklist()} />
         </TabsContent>
 
-        {/* Tab: Financiero */}
-        <TabsContent value="financiero" className="mt-4">
-          <Card>
-            <div className="p-4 border-b border-slate-200">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-slate-600" />
-                <h2 className="font-semibold text-slate-900">Cierre Financiero</h2>
-              </div>
+        <TabsContent value="financiero" className="mt-5">
+          <Card className="overflow-hidden border-border shadow-soft">
+            <div className="border-b border-border px-5 py-4">
+              <span className="kicker">Cierre</span>
+              <h2 className="mt-1 font-serif text-[18px] tracking-tight text-foreground">
+                Cierre financiero del evento
+              </h2>
             </div>
-            <div className="p-4">
+            <div className="p-5">
               <CierreEventoPanel
                 eventoId={head.id}
                 totalRequerimiento={totalRequerimiento}
@@ -357,54 +348,116 @@ export default function EventoDetallePage() {
   );
 }
 
+/* ============= helpers ============= */
+
+function getEventStatus(fechaEvento: string): { label: string; tone: PillTone } {
+  const eventDate = parseLocalDate(fechaEvento);
+  if (!eventDate) return { label: "Sin fecha", tone: "neutral" };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  eventDate.setHours(0, 0, 0, 0);
+  if (eventDate < today) return { label: "Pasado", tone: "neutral" };
+  if (eventDate.getTime() === today.getTime()) return { label: "Hoy", tone: "warning" };
+  return { label: "Próximo", tone: "primary" };
+}
+
+type PillTone = "neutral" | "primary" | "warning" | "destructive";
+
+function StatusPill({ tone, children }: { tone: PillTone; children: React.ReactNode }) {
+  const classes: Record<PillTone, string> = {
+    neutral: "border-border bg-muted/60 text-muted-foreground",
+    primary: "border-primary/30 bg-primary/10 text-primary",
+    warning: "border-[hsl(30_55%_42%/0.3)] bg-[hsl(30_55%_42%/0.1)] text-[hsl(30_55%_30%)]",
+    destructive: "border-destructive/30 bg-destructive/10 text-destructive",
+  };
+  return (
+    <span className={cn("inline-flex rounded-full border px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.14em]", classes[tone])}>
+      {children}
+    </span>
+  );
+}
+
+function EditorialTab({
+  value,
+  icon: Icon,
+  label,
+}: {
+  value: string;
+  icon: typeof FileText;
+  label: string;
+}) {
+  return (
+    <TabsTrigger
+      value={value}
+      className="flex min-w-[110px] flex-1 items-center gap-1.5 text-[12px] font-medium data-[state=active]:bg-card data-[state=active]:shadow-soft"
+    >
+      <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+      {label}
+    </TabsTrigger>
+  );
+}
+
 /* =======================
  *   SUB-COMPONENTES
- *  ======================= */
+ * ======================= */
 
 function SeccionTabla({
   titulo,
   rows,
   emptyHint,
-  icon,
+  icon: Icon,
 }: {
   titulo: string;
   emptyHint: string;
-  icon: React.ReactNode;
+  icon: typeof FileText;
   rows: Array<{ nombre: string; precio: number; cantidad: number; subtotal: number }>;
 }) {
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        {icon}
-        <h3 className="font-medium text-slate-900">{titulo}</h3>
-        <Badge variant="secondary" className="bg-slate-100 text-slate-600 text-xs">{rows.length}</Badge>
+      <div className="flex items-baseline justify-between">
+        <div className="flex items-center gap-2">
+          <Icon className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+          <h3 className="font-serif text-[16px] tracking-tight text-foreground">{titulo}</h3>
+        </div>
+        <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
+          {rows.length}
+        </span>
       </div>
 
       {rows.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-8 bg-slate-50 rounded-lg">
-          <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mb-3">{icon}</div>
-          <p className="text-sm text-slate-500">{emptyHint}</p>
-        </div>
+        <p className="py-4 text-[12.5px] italic text-muted-foreground">{emptyHint}</p>
       ) : (
-        <div className="border border-slate-200 rounded-lg overflow-hidden">
+        <div className="overflow-hidden rounded-md border border-border">
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50 hover:bg-slate-50">
-                <TableHead className="font-medium">Item</TableHead>
-                <TableHead className="text-right font-medium">Precio Unit.</TableHead>
-                <TableHead className="text-center font-medium">Cant.</TableHead>
-                <TableHead className="text-right font-medium">Subtotal</TableHead>
+              <TableRow className="border-border bg-muted/40 hover:bg-muted/40">
+                <TableHead className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Item
+                </TableHead>
+                <TableHead className="text-right text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Precio unit.
+                </TableHead>
+                <TableHead className="text-center text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Cant.
+                </TableHead>
+                <TableHead className="text-right text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Subtotal
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((r, i) => (
-                <TableRow key={i}>
-                  <TableCell className="font-medium text-slate-900">{r.nombre}</TableCell>
-                  <TableCell className="text-right text-slate-600">${r.precio.toLocaleString()}</TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="secondary" className="bg-blue-50 text-blue-700">{r.cantidad}</Badge>
+                <TableRow key={i} className="border-border">
+                  <TableCell className="text-[13px] text-foreground">{r.nombre}</TableCell>
+                  <TableCell className="text-right tabular-nums text-muted-foreground">
+                    ${r.precio.toLocaleString()}
                   </TableCell>
-                  <TableCell className="text-right font-medium text-slate-900">${r.subtotal.toLocaleString()}</TableCell>
+                  <TableCell className="text-center tabular-nums text-foreground">
+                    {r.cantidad}
+                  </TableCell>
+                  <TableCell className="text-right font-medium tabular-nums text-foreground">
+                    ${r.subtotal.toLocaleString()}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

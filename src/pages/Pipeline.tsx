@@ -4,10 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { listCotizaciones, marcarCotizacionEnviada, rechazarCotizacion, reabrirCotizacion } from "@/integrations/supabase/apiCotizador";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, TrendingUp } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { FunnelStats } from "@/components/Pipeline/FunnelStats";
 import { PipelineBoard } from "@/components/Pipeline/PipelineBoard";
 import { RechazoDialog } from "@/components/Pipeline/RechazoDialog";
+import { PageHeader } from "@/components/Layout/PageHeader";
 
 export default function PipelinePage() {
   const nav = useNavigate();
@@ -93,17 +94,12 @@ export default function PipelinePage() {
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-emerald-100 rounded-xl">
-            <TrendingUp className="h-6 w-6 text-emerald-600" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Pipeline de Ventas</h1>
-            <p className="text-slate-500 mt-1">Seguimiento del embudo de cotizaciones</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        kicker="Operación"
+        title="Pipeline"
+        accent="de ventas"
+        description="Seguimiento del embudo de cotizaciones — del primer contacto al cierre."
+      />
 
       <FunnelStats cotizaciones={cotizaciones} />
 

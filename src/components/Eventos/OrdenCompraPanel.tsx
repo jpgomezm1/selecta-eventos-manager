@@ -150,13 +150,13 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
   };
 
   const estadoBadge = (estado: string) => {
-    const map: Record<string, string> = {
-      borrador: "bg-slate-100 text-slate-700",
-      aprobada: "bg-blue-50 text-blue-700",
-      comprada: "bg-emerald-50 text-emerald-700",
-      cancelada: "bg-red-50 text-red-700",
+    const variantMap: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+      borrador: "outline",
+      aprobada: "secondary",
+      comprada: "default",
+      cancelada: "destructive",
     };
-    return <Badge variant="secondary" className={map[estado] ?? map.borrador}>{estado.charAt(0).toUpperCase() + estado.slice(1)}</Badge>;
+    return <Badge variant={variantMap[estado] ?? "outline"} className="font-normal">{estado.charAt(0).toUpperCase() + estado.slice(1)}</Badge>;
   };
 
   const totalCalculado = items.reduce((a, i) => a + i.subtotal, 0);
@@ -194,8 +194,8 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
         <div className="flex items-center gap-2">
           {estadoBadge(orden.estado)}
           {orden.estado === "comprada" && (
-            <span className="text-xs text-emerald-600 flex items-center gap-1">
-              <CheckCircle className="h-3 w-3" /> Inventario actualizado
+            <span className="text-xs text-primary flex items-center gap-1">
+              <CheckCircle className="h-3 w-3" strokeWidth={1.75} /> Inventario actualizado
             </span>
           )}
           {orden.estado === "borrador" && (
@@ -225,7 +225,7 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
             </Button>
           )}
           {(orden.estado === "borrador" || orden.estado === "aprobada") && (
-            <Button variant="ghost" size="sm" onClick={() => handleEstado("cancelada")} className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50">
+            <Button variant="ghost" size="sm" onClick={() => handleEstado("cancelada")} className="h-8 text-muted-foreground hover:text-destructive">
               Cancelar
             </Button>
           )}
@@ -306,9 +306,9 @@ export default function OrdenCompraPanel({ eventoId, eventoInfo, onChanged }: Pr
       {/* Total */}
       {items.length > 0 && (
         <div className="flex justify-end">
-          <div className="bg-emerald-50 rounded-lg p-4 text-right">
-            <p className="text-xs text-emerald-600 mb-1">Total Estimado</p>
-            <p className="text-xl font-semibold text-emerald-700">${totalCalculado.toLocaleString()}</p>
+          <div className="rounded-md border border-border p-4 text-right">
+            <p className="kicker text-muted-foreground mb-1">Total estimado</p>
+            <p className="text-xl font-semibold text-primary tabular-nums">${totalCalculado.toLocaleString()}</p>
           </div>
         </div>
       )}

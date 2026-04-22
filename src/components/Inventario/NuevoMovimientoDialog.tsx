@@ -259,7 +259,7 @@ export default function NuevoMovimientoDialog({ open, onOpenChange }: Props) {
                         </TableCell>
                       )}
                       <TableCell>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => removeItem(idx)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeItem(idx)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </TableCell>

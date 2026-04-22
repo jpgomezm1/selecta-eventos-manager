@@ -10,10 +10,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Users, Trash2, Filter, Edit3, Save, X, TrendingUp, Briefcase } from "lucide-react";
+import { Plus, Search, Users, Trash2, Filter, Edit3, Save, X } from "lucide-react";
+import { KPI } from "@/components/Layout/PageHeader";
 
 const ROLES: PersonalCosto["rol"][] = [
   "Coordinador",
@@ -55,6 +65,7 @@ export default function PersonalCostosTab() {
   const [filterModalidad, setFilterModalidad] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Partial<PersonalCosto>>({});
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const filteredData = (data ?? []).filter((item) => {
     const matchesSearch = item.rol.toLowerCase().includes(searchTerm.toLowerCase());
@@ -79,6 +90,7 @@ export default function PersonalCostosTab() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["catalogos", "personal-costos"] });
       setNewItem({ rol: ROLES[0], modalidad_cobro: MODALIDADES[0].value, tarifa: 0 });
+      setIsCreateOpen(false);
       toast({ title: "Costo creado", description: "El costo de personal se agregó correctamente." });
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -126,186 +138,151 @@ export default function PersonalCostosTab() {
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Users className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-blue-800">{totalRegistros}</div>
-                <div className="text-sm text-blue-600">Total registros</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-emerald-50 border-emerald-200">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-emerald-100 rounded-lg">
-                <Briefcase className="h-5 w-5 text-emerald-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-emerald-800">{rolesUnicos}</div>
-                <div className="text-sm text-emerald-600">Roles configurados</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-amber-50 border-amber-200">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-amber-800">{fmt(tarifaPromedio)}</div>
-                <div className="text-sm text-amber-600">Tarifa promedio</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* KPIs editoriales */}
+      <div className="grid grid-cols-1 gap-x-8 gap-y-6 border-y border-border py-6 md:grid-cols-3">
+        <KPI kicker="Total registros" value={totalRegistros} />
+        <KPI kicker="Roles configurados" value={rolesUnicos} />
+        <KPI kicker="Tarifa promedio" value={fmt(tarifaPromedio)} tone="primary" />
       </div>
 
-      {/* Create form */}
-      <Card className="border-slate-200">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center space-x-2 text-slate-800">
-            <Plus className="h-5 w-5" />
-            <span>Agregar Costo de Personal</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Rol</label>
-              <select
-                value={newItem.rol}
-                onChange={(e) => setNewItem((p) => ({ ...p, rol: e.target.value }))}
-                className="w-full px-3 py-2 rounded-md border border-slate-300 bg-white text-sm focus:border-blue-500 focus:ring-blue-500/20"
-              >
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
-            </div>
+      {/* Toolbar */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por rol…"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="h-10 pl-10"
+          />
+        </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Modalidad de Cobro</label>
-              <select
-                value={newItem.modalidad_cobro}
-                onChange={(e) => setNewItem((p) => ({ ...p, modalidad_cobro: e.target.value }))}
-                className="w-full px-3 py-2 rounded-md border border-slate-300 bg-white text-sm focus:border-blue-500 focus:ring-blue-500/20"
-              >
-                {MODALIDADES.map((m) => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Tarifa ($)</label>
-              <Input
-                type="number"
-                min="0"
-                placeholder="0"
-                value={newItem.tarifa || ""}
-                onChange={(e) => setNewItem((p) => ({ ...p, tarifa: Number(e.target.value) }))}
-                className="bg-white border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
-              />
-            </div>
-
-            <Button
-              onClick={() => createMut.mutate()}
-              disabled={createMut.isPending || !newItem.tarifa}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <select
+              value={filterModalidad}
+              onChange={(e) => setFilterModalidad(e.target.value)}
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0"
             >
-              {createMut.isPending ? (
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full" />
-                  <span>Agregando...</span>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <Plus className="h-4 w-4" />
-                  <span>Agregar</span>
-                </div>
-              )}
-            </Button>
+              <option value="">Todas las modalidades</option>
+              {MODALIDADES.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Search & filter */}
-      <Card className="bg-white border-slate-200">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="Buscar por rol..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-slate-50 border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-slate-500" />
-              <select
-                value={filterModalidad}
-                onChange={(e) => setFilterModalidad(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:border-blue-500 focus:ring-blue-500/20"
-              >
-                <option value="">Todas las modalidades</option>
-                {MODALIDADES.map((m) => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
-                ))}
-              </select>
-            </div>
-            <Badge className="bg-blue-100 text-blue-700 border-blue-200">
-              {filteredData.length} registros
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
+          <span className="font-mono text-xs tabular-nums text-muted-foreground">
+            {filteredData.length} registros
+          </span>
 
-      {/* Table */}
-      <Card className="bg-white border-slate-200 overflow-hidden">
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Nuevo costo
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="font-serif text-2xl">Nuevo costo de personal</DialogTitle>
+                <DialogDescription>
+                  Define la tarifa para un rol y modalidad específica — usada por el cotizador.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 py-2">
+                <div className="space-y-1.5">
+                  <label className="kicker text-muted-foreground">Rol</label>
+                  <select
+                    value={newItem.rol}
+                    onChange={(e) => setNewItem((p) => ({ ...p, rol: e.target.value }))}
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    {ROLES.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="kicker text-muted-foreground">Modalidad de cobro</label>
+                  <select
+                    value={newItem.modalidad_cobro}
+                    onChange={(e) => setNewItem((p) => ({ ...p, modalidad_cobro: e.target.value }))}
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    {MODALIDADES.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="kicker text-muted-foreground">Tarifa ($)</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={newItem.tarifa || ""}
+                    onChange={(e) => setNewItem((p) => ({ ...p, tarifa: Number(e.target.value) }))}
+                  />
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setIsCreateOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={() => createMut.mutate()}
+                  disabled={createMut.isPending || !newItem.tarifa}
+                >
+                  {createMut.isPending ? "Agregando…" : "Agregar costo"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      {/* Tabla */}
+      <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50 border-slate-200">
-                <TableHead className="font-semibold text-slate-700">Rol</TableHead>
-                <TableHead className="font-semibold text-slate-700">Modalidad</TableHead>
-                <TableHead className="font-semibold text-slate-700 text-right">Tarifa ($)</TableHead>
-                <TableHead className="font-semibold text-slate-700 text-right">Acciones</TableHead>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="kicker text-muted-foreground">Rol</TableHead>
+                <TableHead className="kicker text-muted-foreground">Modalidad</TableHead>
+                <TableHead className="kicker text-right text-muted-foreground">Tarifa</TableHead>
+                <TableHead className="kicker text-right text-muted-foreground">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-12">
-                    <div className="flex flex-col items-center space-y-3">
-                      <div className="animate-spin w-8 h-8 border-2 border-slate-200 border-t-blue-600 rounded-full" />
-                      <span className="text-slate-500">Cargando costos...</span>
+                  <TableCell colSpan={4} className="py-12 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
+                      <span className="text-sm text-muted-foreground">Cargando costos…</span>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-12">
-                    <div className="flex flex-col items-center space-y-3">
-                      <Users className="h-12 w-12 text-slate-300" />
+                  <TableCell colSpan={4} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <Users className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.25} />
                       <div>
-                        <h3 className="font-medium text-slate-700">No hay costos</h3>
-                        <p className="text-sm text-slate-500 mt-1">
+                        <h3 className="font-serif text-lg text-foreground">No hay costos</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">
                           {searchTerm || filterModalidad
-                            ? "No se encontraron resultados con los filtros aplicados"
-                            : "Comienza agregando costos de personal"}
+                            ? "No se encontraron resultados con los filtros aplicados."
+                            : "Comienza agregando costos de personal."}
                         </p>
                       </div>
                     </div>
@@ -315,7 +292,7 @@ export default function PersonalCostosTab() {
                 filteredData.map((item) => {
                   const isEditing = editingId === item.id;
                   return (
-                    <TableRow key={item.id} className="hover:bg-slate-50 transition-colors">
+                    <TableRow key={item.id} className="border-border transition-colors hover:bg-muted/30">
                       <TableCell className="font-medium">
                         {isEditing ? (
                           <select
@@ -323,17 +300,19 @@ export default function PersonalCostosTab() {
                             onChange={(e) =>
                               setEditDraft((p) => ({ ...p, rol: e.target.value as PersonalCosto["rol"] }))
                             }
-                            className="w-full px-3 py-2 rounded-md border border-slate-300 bg-white text-sm"
+                            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                             autoFocus
                           >
                             {ROLES.map((r) => (
-                              <option key={r} value={r}>{r}</option>
+                              <option key={r} value={r}>
+                                {r}
+                              </option>
                             ))}
                           </select>
                         ) : (
-                          <div className="flex items-center space-x-2">
-                            <Users className="h-4 w-4 text-slate-400" />
-                            <span>{item.rol}</span>
+                          <div className="flex items-center gap-2.5">
+                            <Users className="h-4 w-4 text-muted-foreground/60" strokeWidth={1.5} />
+                            <span className="text-foreground">{item.rol}</span>
                           </div>
                         )}
                       </TableCell>
@@ -347,14 +326,19 @@ export default function PersonalCostosTab() {
                                 modalidad_cobro: e.target.value as ModalidadCobroCotizador,
                               }))
                             }
-                            className="w-full px-3 py-2 rounded-md border border-slate-300 bg-white text-sm"
+                            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                           >
                             {MODALIDADES.map((m) => (
-                              <option key={m.value} value={m.value}>{m.label}</option>
+                              <option key={m.value} value={m.value}>
+                                {m.label}
+                              </option>
                             ))}
                           </select>
                         ) : (
-                          <Badge className="bg-slate-100 text-slate-700 border-slate-200">
+                          <Badge
+                            variant="outline"
+                            className="border-border bg-muted/40 font-normal text-muted-foreground"
+                          >
                             {modalidadLabel(item.modalidad_cobro)}
                           </Badge>
                         )}
@@ -369,34 +353,59 @@ export default function PersonalCostosTab() {
                             className="w-32 text-right"
                           />
                         ) : (
-                          <span className="text-slate-600 font-medium">{fmt(item.tarifa)}</span>
+                          <span className="font-mono text-sm tabular-nums text-foreground/85">
+                            {fmt(item.tarifa)}
+                          </span>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end space-x-2">
+                        <div className="flex items-center justify-end gap-1">
                           {isEditing ? (
                             <>
-                              <Button variant="ghost" size="sm" onClick={() => saveEdit(item.id)} className="text-green-600 hover:bg-green-50">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => saveEdit(item.id)}
+                                className="h-8 w-8 p-0 text-primary hover:bg-primary/10"
+                                aria-label="Guardar"
+                              >
                                 <Save className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={cancelEdit} className="text-slate-500 hover:bg-slate-50">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={cancelEdit}
+                                className="h-8 w-8 p-0 text-muted-foreground hover:bg-muted"
+                                aria-label="Cancelar"
+                              >
                                 <X className="h-4 w-4" />
                               </Button>
                             </>
                           ) : (
                             <>
-                              <Button variant="ghost" size="sm" onClick={() => startEdit(item)} className="text-blue-600 hover:bg-blue-50">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => startEdit(item)}
+                                className="h-8 w-8 p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                aria-label="Editar"
+                              >
                                 <Edit3 className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => {
-                                  if (window.confirm(`¿Eliminar el costo de "${item.rol}" (${modalidadLabel(item.modalidad_cobro)})?`)) {
+                                  if (
+                                    window.confirm(
+                                      `¿Eliminar el costo de "${item.rol}" (${modalidadLabel(item.modalidad_cobro)})?`
+                                    )
+                                  ) {
                                     delMut.mutate(item.id);
                                   }
                                 }}
-                                className="text-red-600 hover:bg-red-50"
+                                className="h-8 w-8 p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                aria-label="Eliminar"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>

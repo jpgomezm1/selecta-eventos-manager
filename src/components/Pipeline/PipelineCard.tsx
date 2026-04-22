@@ -1,10 +1,8 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Send, XCircle, RotateCcw, ExternalLink, Calendar, User, Building2, DollarSign } from "lucide-react";
+import { Send, XCircle, RotateCcw, Check, Calendar, Building2, User } from "lucide-react";
 import type { Cotizacion } from "@/types/cotizador";
-import { cn } from "@/lib/utils";
 import { formatLocalDate } from "@/lib/dateLocal";
+import { cn } from "@/lib/utils";
 
 type Props = {
   cotizacion: Cotizacion;
@@ -19,103 +17,107 @@ export function PipelineCard({ cotizacion: c, onMarcarEnviada, onRechazar, onRea
   const clienteTipo = c.cliente?.tipo;
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-4 space-y-3">
-        {/* Name */}
-        <button
-          onClick={onAbrir}
-          className="text-sm font-bold text-slate-800 hover:text-blue-600 transition-colors text-left line-clamp-2 w-full"
-        >
-          {c.nombre_cotizacion}
-        </button>
+    <article className="group rounded-md border border-border bg-card px-3 py-3 transition-colors hover:border-primary/40 hover:bg-accent/30">
+      {/* Name */}
+      <button
+        onClick={onAbrir}
+        className="block w-full text-left font-serif text-[14px] leading-snug tracking-tight text-foreground transition-colors hover:text-primary"
+      >
+        {c.nombre_cotizacion}
+      </button>
 
-        {/* Cliente */}
-        <div className="flex items-center gap-2 text-xs text-slate-600">
-          {clienteTipo === "empresa" ? (
-            <Building2 className="h-3.5 w-3.5 text-blue-500 shrink-0" />
-          ) : (
-            <User className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-          )}
-          <span className="truncate font-medium">{clienteName}</span>
-          {clienteTipo && (
-            <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", clienteTipo === "empresa" ? "bg-blue-50 text-blue-600 border-blue-200" : "bg-slate-50 text-slate-500 border-slate-200")}>
-              {clienteTipo === "empresa" ? "Empresa" : "Persona"}
-            </Badge>
-          )}
+      {/* Cliente */}
+      <div className="mt-2 flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
+        {clienteTipo === "empresa" ? (
+          <Building2 className="h-3 w-3 shrink-0" strokeWidth={1.75} />
+        ) : (
+          <User className="h-3 w-3 shrink-0" strokeWidth={1.75} />
+        )}
+        <span className="truncate">{clienteName}</span>
+      </div>
+
+      {c.comercial_encargado && (
+        <div className="mt-0.5 text-[11px] text-muted-foreground">
+          <span className="italic">por</span> {c.comercial_encargado}
         </div>
+      )}
 
-        {/* Comercial */}
-        {c.comercial_encargado && (
-          <div className="text-xs text-slate-500">
-            <span className="font-medium">{c.comercial_encargado}</span>
-          </div>
-        )}
-
-        {/* Date */}
-        {c.fecha_evento_estimada && (
-          <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <Calendar className="h-3.5 w-3.5 shrink-0" />
-            <span>{formatLocalDate(c.fecha_evento_estimada, "es-CO")}</span>
-          </div>
-        )}
-
-        {/* Total */}
-        <div className="flex items-center gap-1.5 p-2 bg-emerald-50 rounded-lg border border-emerald-200/60">
-          <DollarSign className="h-4 w-4 text-emerald-600" />
-          <span className="text-sm font-bold text-emerald-700">
-            ${c.total_cotizado.toLocaleString()}
+      {c.fecha_evento_estimada && (
+        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <Calendar className="h-3 w-3 shrink-0" strokeWidth={1.75} />
+          <span className="capitalize tabular-nums">
+            {formatLocalDate(c.fecha_evento_estimada, "es-CO", {
+              weekday: "short",
+              day: "numeric",
+              month: "short",
+            })}
           </span>
         </div>
+      )}
 
-        {/* Motivo rechazo */}
-        {c.estado === "Rechazada" && c.motivo_rechazo && (
-          <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200 text-xs">
-            {c.motivo_rechazo}
-          </Badge>
-        )}
+      {/* Total */}
+      <div className="mt-3 flex items-baseline justify-between border-t border-border pt-2">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Total
+        </span>
+        <span className="font-serif text-[15px] leading-none tracking-tight tabular-nums text-foreground">
+          ${c.total_cotizado.toLocaleString()}
+        </span>
+      </div>
 
-        {/* Actions by stage */}
-        <div className="flex flex-wrap gap-2 pt-1">
-          {c.estado === "Pendiente por Aprobación" && (
-            <>
-              {onMarcarEnviada && (
-                <Button size="sm" variant="outline" onClick={onMarcarEnviada} className="text-xs h-7 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200">
-                  <Send className="h-3 w-3 mr-1" />
-                  Enviar
-                </Button>
-              )}
-              {onRechazar && (
-                <Button size="sm" variant="outline" onClick={onRechazar} className="text-xs h-7 bg-red-50 hover:bg-red-100 text-red-700 border-red-200">
-                  <XCircle className="h-3 w-3 mr-1" />
-                  Rechazar
-                </Button>
-              )}
-            </>
+      {/* Motivo rechazo */}
+      {c.estado === "Rechazada" && c.motivo_rechazo && (
+        <div className="mt-2 rounded-sm border border-destructive/30 bg-destructive/5 px-2 py-1 text-[11px] italic text-destructive">
+          {c.motivo_rechazo}
+        </div>
+      )}
+
+      {/* Actions */}
+      {(onMarcarEnviada || onRechazar || onReabrir) && (
+        <div className="mt-3 flex flex-wrap items-center gap-1 opacity-80 transition-opacity group-hover:opacity-100">
+          {c.estado === "Pendiente por Aprobación" && onMarcarEnviada && (
+            <PipelineAction onClick={onMarcarEnviada} icon={Send} label="Enviar" />
           )}
-
           {c.estado === "Enviada" && (
-            <>
-              <Button size="sm" variant="outline" onClick={onAbrir} className="text-xs h-7 bg-green-50 hover:bg-green-100 text-green-700 border-green-200">
-                <ExternalLink className="h-3 w-3 mr-1" />
-                Aprobar
-              </Button>
-              {onRechazar && (
-                <Button size="sm" variant="outline" onClick={onRechazar} className="text-xs h-7 bg-red-50 hover:bg-red-100 text-red-700 border-red-200">
-                  <XCircle className="h-3 w-3 mr-1" />
-                  Rechazar
-                </Button>
-              )}
-            </>
+            <PipelineAction onClick={onAbrir} icon={Check} label="Aprobar" tone="primary" />
           )}
-
+          {(c.estado === "Pendiente por Aprobación" || c.estado === "Enviada") && onRechazar && (
+            <PipelineAction onClick={onRechazar} icon={XCircle} label="Rechazar" tone="destructive" />
+          )}
           {c.estado === "Rechazada" && onReabrir && (
-            <Button size="sm" variant="outline" onClick={onReabrir} className="text-xs h-7 bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200">
-              <RotateCcw className="h-3 w-3 mr-1" />
-              Reabrir
-            </Button>
+            <PipelineAction onClick={onReabrir} icon={RotateCcw} label="Reabrir" />
           )}
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </article>
+  );
+}
+
+function PipelineAction({
+  onClick,
+  icon: Icon,
+  label,
+  tone = "neutral",
+}: {
+  onClick: () => void;
+  icon: typeof Send;
+  label: string;
+  tone?: "neutral" | "primary" | "destructive";
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={onClick}
+      className={cn(
+        "h-7 gap-1 px-2 text-[11px] font-medium",
+        tone === "primary" && "text-primary hover:bg-primary/10 hover:text-primary",
+        tone === "destructive" && "text-destructive hover:bg-destructive/10 hover:text-destructive",
+        tone === "neutral" && "text-muted-foreground hover:text-foreground"
+      )}
+    >
+      <Icon className="h-3 w-3" strokeWidth={1.75} />
+      {label}
+    </Button>
   );
 }

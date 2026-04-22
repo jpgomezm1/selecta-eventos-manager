@@ -2,111 +2,106 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Selecta Eventos — Editorial design system
+   Paleta warm (off-white + olive profundo), tipografía serif display + sans refinada.
+   Colores HSL siempre. */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Paper — fondo crema cálido (no blanco puro) */
+    --background: 42 30% 96%;
+    --foreground: 30 10% 14%;
 
+    /* Cards — blanco contra el crema para jerarquía natural */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 30 10% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 30 10% 14%;
 
-    /* Selecta Eventos Brand Colors */
-    --primary: 74 50% 53%; /* Verde principal #8BC34A */
-    --primary-foreground: 0 0% 100%;
+    /* Olive — el brand verde, pero profundo y editorial */
+    --primary: 82 28% 28%;
+    --primary-foreground: 42 30% 96%;
 
-    --secondary: 122 39% 49%; /* Verde secundario #4CAF50 */
-    --secondary-foreground: 0 0% 100%;
+    /* Warm brown — secundario, tonos tierra para acciones terciarias */
+    --secondary: 30 18% 92%;
+    --secondary-foreground: 30 18% 24%;
 
-    --accent: 189 48% 35%; /* Azul elegante #2E7D8A */
-    --accent-foreground: 0 0% 100%;
+    /* Moss — el acento más claro, para highlights y hovers */
+    --accent: 82 22% 90%;
+    --accent-foreground: 82 28% 22%;
 
-    --muted: 210 12% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 42 18% 93%;
+    --muted-foreground: 30 8% 42%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Terracotta — destructive cálido, no rojo chillón */
+    --destructive: 8 55% 48%;
+    --destructive-foreground: 42 30% 96%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 74 50% 53%;
+    /* Borders finos warm gray */
+    --border: 38 14% 86%;
+    --input: 38 14% 86%;
+    --ring: 82 28% 28%;
 
-    /* Custom Selecta Colors */
-    --selecta-green: 74 50% 53%; /* #8BC34A */
-    --selecta-green-secondary: 122 39% 49%; /* #4CAF50 */
-    --selecta-blue: 189 48% 35%; /* #2E7D8A */
-    --selecta-brown: 15 25% 47%; /* #8D6E63 */
-    --selecta-gray: 0 0% 96%;
+    /* Selecta brand tokens — mantenidos para retrocompatibilidad con tailwind.config */
+    --selecta-green: 82 28% 28%;
+    --selecta-green-secondary: 82 22% 45%;
+    --selecta-blue: 200 35% 34%;
+    --selecta-brown: 22 28% 38%;
+    --selecta-gray: 42 18% 93%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(74 50% 53%), hsl(122 39% 49%));
-    --gradient-hero: linear-gradient(135deg, hsl(74 50% 53% / 0.1), hsl(189 48% 35% / 0.1));
-    
-    /* Shadows */
-    --shadow-elegant: 0 10px 30px -10px hsl(74 50% 53% / 0.2);
-    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.1);
+    /* Gradientes y sombras editoriales */
+    --gradient-primary: linear-gradient(135deg, hsl(82 28% 28%), hsl(82 22% 38%));
+    --gradient-hero: linear-gradient(180deg, hsl(42 30% 96%), hsl(42 24% 92%));
+    --shadow-elegant: 0 1px 2px hsl(30 20% 20% / 0.04), 0 8px 24px -8px hsl(30 20% 20% / 0.08);
+    --shadow-soft: 0 1px 2px hsl(30 20% 20% / 0.04), 0 2px 8px -2px hsl(30 20% 20% / 0.06);
 
-    --radius: 0.5rem;
+    --radius: 0.625rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Sidebar — deep olive, owns the brand */
+    --sidebar-background: 82 18% 16%;
+    --sidebar-foreground: 42 18% 82%;
+    --sidebar-primary: 42 30% 96%;
+    --sidebar-primary-foreground: 82 28% 22%;
+    --sidebar-accent: 82 16% 22%;
+    --sidebar-accent-foreground: 42 30% 96%;
+    --sidebar-border: 82 12% 24%;
+    --sidebar-ring: 82 30% 60%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Typography tokens */
+    --font-serif: "Fraunces", ui-serif, Georgia, serif;
+    --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --background: 30 10% 8%;
+    --foreground: 42 24% 92%;
+    --card: 30 10% 10%;
+    --card-foreground: 42 24% 92%;
+    --popover: 30 10% 10%;
+    --popover-foreground: 42 24% 92%;
+    --primary: 82 30% 55%;
+    --primary-foreground: 30 10% 8%;
+    --secondary: 30 10% 14%;
+    --secondary-foreground: 42 24% 92%;
+    --muted: 30 10% 14%;
+    --muted-foreground: 42 10% 62%;
+    --accent: 82 18% 22%;
+    --accent-foreground: 42 24% 92%;
+    --destructive: 8 50% 50%;
+    --destructive-foreground: 42 24% 92%;
+    --border: 30 10% 18%;
+    --input: 30 10% 18%;
+    --ring: 82 30% 55%;
+    --sidebar-background: 30 10% 6%;
+    --sidebar-foreground: 42 18% 82%;
+    --sidebar-primary: 82 30% 55%;
+    --sidebar-primary-foreground: 30 10% 8%;
+    --sidebar-accent: 30 10% 14%;
+    --sidebar-accent-foreground: 42 18% 82%;
+    --sidebar-border: 30 10% 16%;
+    --sidebar-ring: 82 30% 55%;
   }
 }
 
@@ -115,7 +110,85 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground;
+  html {
+    font-feature-settings: "ss01", "ss02", "cv11", "liga";
   }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "ss01", "ss02", "cv11", "liga";
+  }
+
+  /* Display serif for main headings — Fraunces variable with optical sizing */
+  h1, h2, h3, .font-display {
+    font-family: var(--font-serif);
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" 48, "SOFT" 50;
+    letter-spacing: -0.02em;
+  }
+
+  /* Tabular numbers everywhere by default — money, counts, dates */
+  .tabular, [data-tabular] {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  .font-serif {
+    font-family: var(--font-serif);
+  }
+
+  .font-sans {
+    font-family: var(--font-sans);
+  }
+
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  /* Editorial kicker — small uppercase label above headings */
+  .kicker {
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* Paper texture — very subtle warm noise */
+  .bg-paper {
+    background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(circle at 1px 1px, hsl(30 10% 14% / 0.018) 1px, transparent 0);
+    background-size: 24px 24px;
+  }
+
+  /* Hairline divider */
+  .hairline {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(var(--border)), transparent);
+  }
+
+  /* Stagger reveal — editorial page-load cadence */
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-rise {
+    animation: rise-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.12s; }
+  .stagger-3 { animation-delay: 0.2s; }
+  .stagger-4 { animation-delay: 0.3s; }
+  .stagger-5 { animation-delay: 0.42s; }
 }

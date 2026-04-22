@@ -1,21 +1,5 @@
 import React, { useEffect } from "react";
-import {
-  Users,
-  Calendar,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  ChevronLeft,
-  ChevronRight,
-  FileText,
-  Boxes,
-  CookingPot,
-  Warehouse,
-  UserCircle,
-  SlidersHorizontal,
-  TrendingUp,
-  Truck,
-} from "lucide-react";
+import { LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -23,19 +7,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSidebar } from "@/hooks/useSidebar";
 import { cn } from "@/lib/utils";
+import { navSections, type NavItem } from "./navigation";
 
-const navigation = [
-  { title: "Personal", url: "/personal", icon: Users },
-  { title: "Eventos", url: "/eventos", icon: Calendar },
-  { title: "Cotizaciones", url: "/cotizaciones", icon: FileText },
-  { title: "Pipeline", url: "/pipeline", icon: TrendingUp },
-  { title: "Clientes", url: "/clientes", icon: UserCircle },
-  { title: "Menaje", url: "/bodega", icon: Boxes },
-  { title: "Recetario", url: "/recetario", icon: CookingPot },
-  { title: "Transporte", url: "/transporte", icon: Truck },
-  { title: "Inventario", url: "/inventario", icon: Warehouse },
-  { title: "Catálogos", url: "/catalogos", icon: SlidersHorizontal },
-];
+function isItemActive(pathname: string, item: NavItem): boolean {
+  if (item.match) return item.match.test(pathname);
+  return pathname === item.url;
+}
 
 export function AppSidebar() {
   const navigate = useNavigate();
@@ -53,220 +30,223 @@ export function AppSidebar() {
       });
     } else {
       navigate("/auth");
-      toast({
-        title: "Sesión cerrada",
-        description: "Has cerrado sesión exitosamente",
-      });
+      toast({ title: "Sesión cerrada" });
     }
   };
 
-  // Add keyboard listener: Ctrl/Cmd+B alterna el sidebar
   useEffect(() => {
-    const handleKeyboardShortcut = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "b") {
         e.preventDefault();
         toggle();
       }
     };
-    document.addEventListener('keydown', handleKeyboardShortcut);
-    return () => document.removeEventListener('keydown', handleKeyboardShortcut);
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
   }, [toggle]);
 
-  const SidebarItem = ({ item, isActive }: { item: typeof navigation[0], isActive: boolean }) => {
+  const Item = ({ item }: { item: NavItem }) => {
+    const active = isItemActive(location.pathname, item);
     const content = (
       <NavLink
         to={item.url}
-        end
-        className={({ isActive }) =>
-          cn(
-            "flex items-center text-sm font-medium transition-all duration-200",
-            isActive
-              ? "bg-selecta-green text-white shadow-lg shadow-selecta-green/25"
-              : "text-slate-400 hover:bg-slate-800 hover:text-white",
-            isCollapsed
-              ? "w-11 h-11 justify-center rounded-lg"
-              : "px-3 py-2.5 rounded-md"
-          )
-        }
+        className={cn(
+          "group relative flex items-center transition-all duration-200",
+          isCollapsed
+            ? "h-10 w-10 justify-center rounded-lg"
+            : "gap-3 rounded-md px-3 py-2 text-[13px]",
+          active
+            ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
+            : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        )}
       >
-        <item.icon className={cn(
-          "shrink-0",
-          isCollapsed ? "h-[22px] w-[22px]" : "h-5 w-5 mr-3"
-        )} />
-
-        {!isCollapsed && (
-          <span className="whitespace-nowrap">{item.title}</span>
+        <item.icon
+          className={cn(
+            "shrink-0 transition-transform",
+            isCollapsed ? "h-[18px] w-[18px]" : "h-[17px] w-[17px]",
+            active ? "" : "group-hover:scale-105"
+          )}
+          strokeWidth={active ? 2 : 1.75}
+        />
+        {!isCollapsed && <span className="truncate tracking-tight">{item.title}</span>}
+        {!isCollapsed && active && (
+          <span className="ml-auto h-1 w-1 rounded-full bg-sidebar-primary-foreground/60" />
         )}
       </NavLink>
     );
 
     if (isCollapsed) {
       return (
-        <TooltipProvider>
-          <Tooltip delayDuration={0}>
-            <TooltipTrigger asChild>
-              {content}
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={8} className="bg-slate-800 text-white border-slate-700 font-medium">
-              <p>{item.title}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>{content}</TooltipTrigger>
+          <TooltipContent
+            side="right"
+            sideOffset={12}
+            className="border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+          >
+            {item.title}
+          </TooltipContent>
+        </Tooltip>
       );
     }
-
     return content;
   };
 
   return (
-    <aside
-      className={cn(
-        "bg-slate-900 flex flex-col h-screen lg:flex hidden transition-all duration-300 ease-in-out shrink-0",
-        isCollapsed ? "w-20" : "w-60"
-      )}
-    >
-      {/* Header */}
-      <div className={cn(
-        "border-b border-slate-800",
-        isCollapsed ? "px-3 py-4" : "px-4 py-5"
-      )}>
-        <div className={cn(
-          "flex items-center",
-          isCollapsed ? "justify-center" : "justify-between"
-        )}>
-          <div className={cn(
-            "flex items-center",
-            isCollapsed ? "" : "gap-3"
-          )}>
-            <button
-              onClick={isCollapsed ? toggle : undefined}
-              className={cn(
-                "bg-white rounded-lg flex items-center justify-center shrink-0 transition-transform",
-                isCollapsed ? "w-10 h-10 p-2 hover:scale-105 cursor-pointer" : "w-9 h-9 p-1.5 cursor-default"
-              )}
-              aria-label={isCollapsed ? "Expandir sidebar" : undefined}
-            >
+    <TooltipProvider>
+      <aside
+        className={cn(
+          "hidden h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-300 ease-out lg:flex",
+          isCollapsed ? "w-[72px]" : "w-64"
+        )}
+      >
+        {/* Brand */}
+        <div
+          className={cn(
+            "flex items-center border-b border-sidebar-border/60",
+            isCollapsed ? "h-16 justify-center px-3" : "h-16 justify-between px-5"
+          )}
+        >
+          <button
+            onClick={isCollapsed ? toggle : undefined}
+            className={cn(
+              "flex items-center gap-3 text-left",
+              isCollapsed ? "cursor-pointer" : "cursor-default"
+            )}
+            aria-label={isCollapsed ? "Expandir menú" : undefined}
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-primary p-1 shadow-sm">
               <img
                 src="https://storage.googleapis.com/cluvi/Web-Risk/logo_selecta.png"
-                alt="Selecta Logo"
-                className="w-full h-full object-contain"
+                alt="Selecta"
+                className="h-full w-full object-contain"
               />
-            </button>
+            </span>
             {!isCollapsed && (
-              <div>
-                <h2 className="font-semibold text-white">Selecta</h2>
-                <p className="text-xs text-slate-500">Eventos</p>
-              </div>
+              <span className="flex flex-col leading-none">
+                <span className="font-serif text-[19px] font-semibold tracking-tight text-sidebar-primary">
+                  Selecta
+                </span>
+                <span className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-sidebar-foreground/50">
+                  Eventos · Catering
+                </span>
+              </span>
             )}
-          </div>
+          </button>
 
           {!isCollapsed && (
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={toggle}
-              className="p-0 h-8 w-8 hover:bg-slate-800 transition-colors rounded-md"
-              aria-label="Colapsar sidebar"
+              className="h-7 w-7 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              aria-label="Colapsar menú"
             >
-              <ChevronLeft className="h-4 w-4 text-slate-400" />
+              <ChevronLeft className="h-4 w-4" />
             </Button>
           )}
         </div>
-      </div>
 
-      {/* Navigation */}
-      <div className={cn(
-        "flex-1 overflow-y-auto",
-        isCollapsed ? "px-3 py-6" : "px-3 py-4"
-      )}>
-        {!isCollapsed && (
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3 px-3">
-            Menú
-          </p>
-        )}
-        <nav className={cn(
-          "flex flex-col",
-          isCollapsed ? "items-center space-y-3" : "space-y-1"
-        )}>
-          {navigation.map((item) => (
-            <SidebarItem
-              key={item.title}
-              item={item}
-              isActive={location.pathname === item.url}
-            />
+        {/* Sections */}
+        <nav
+          className={cn(
+            "flex-1 overflow-y-auto",
+            isCollapsed ? "px-3 py-5 space-y-6" : "px-3 py-5 space-y-5"
+          )}
+        >
+          {navSections.map((section, idx) => (
+            <div key={section.label} className="space-y-1">
+              {!isCollapsed && (
+                <div className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/40">
+                  {section.label}
+                </div>
+              )}
+              {isCollapsed && idx > 0 && (
+                <div className="mx-auto mb-3 h-px w-6 bg-sidebar-border" />
+              )}
+              <div className={cn("flex flex-col", isCollapsed ? "items-center gap-2" : "gap-0.5")}>
+                {section.items.map((item) => (
+                  <Item key={item.url} item={item} />
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
-      </div>
 
-      {/* Expand button when collapsed */}
-      {isCollapsed && (
-        <div className="px-3 pb-4">
-          <TooltipProvider>
+        {/* Footer */}
+        <div
+          className={cn(
+            "border-t border-sidebar-border/60",
+            isCollapsed ? "flex flex-col items-center gap-2 px-3 py-4" : "px-3 py-4 space-y-2"
+          )}
+        >
+          {isCollapsed && (
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
+                  size="icon"
                   onClick={toggle}
-                  className="w-full h-11 bg-slate-800 hover:bg-slate-700 transition-colors rounded-lg text-slate-400 hover:text-white"
-                  aria-label="Expandir sidebar"
+                  className="h-10 w-10 rounded-lg bg-sidebar-accent/40 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                  aria-label="Expandir menú"
                 >
-                  <ChevronRight className="h-5 w-5" />
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={8} className="bg-slate-800 text-white border-slate-700">
-                <p>Expandir menú</p>
+              <TooltipContent
+                side="right"
+                sideOffset={12}
+                className="border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground"
+              >
+                Expandir menú
               </TooltipContent>
             </Tooltip>
-          </TooltipProvider>
-        </div>
-      )}
+          )}
 
-      {/* Footer */}
-      <div className={cn(
-        "border-t border-slate-800",
-        isCollapsed ? "p-3" : "p-3"
-      )}>
-        {/* Logout Button */}
-        <TooltipProvider>
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 onClick={handleLogout}
                 className={cn(
-                  "w-full text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors rounded-md font-medium",
-                  isCollapsed ? "h-10 p-0" : "justify-start px-3 py-2.5"
+                  "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-destructive",
+                  isCollapsed ? "h-10 w-10 p-0 rounded-lg" : "w-full justify-start gap-3 px-3 py-2 text-[13px] font-normal"
                 )}
               >
-                <LogOut className={cn(
-                  "h-5 w-5 shrink-0",
-                  isCollapsed ? "" : "mr-3"
-                )} />
-                {!isCollapsed && <span>Cerrar Sesión</span>}
+                <LogOut className="h-[17px] w-[17px] shrink-0" strokeWidth={1.75} />
+                {!isCollapsed && <span>Cerrar sesión</span>}
               </Button>
             </TooltipTrigger>
             {isCollapsed && (
-              <TooltipContent side="right" sideOffset={12} className="bg-slate-800 text-white border-slate-700">
-                <p>Cerrar Sesión</p>
+              <TooltipContent
+                side="right"
+                sideOffset={12}
+                className="border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground"
+              >
+                Cerrar sesión
               </TooltipContent>
             )}
           </Tooltip>
-        </TooltipProvider>
 
-        {/* Developed by Irrelevant */}
-        {!isCollapsed && (
-          <div className="mt-2 rounded-md bg-slate-800/50 px-3 py-2">
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-[10px] text-slate-500">by</span>
+          {!isCollapsed && (
+            <a
+              href="https://irrelevant.com.co"
+              target="_blank"
+              rel="noreferrer"
+              className="group flex items-center justify-center gap-2 border-t border-sidebar-border/40 pt-3"
+            >
+              <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-sidebar-foreground/35">
+                by
+              </span>
               <img
                 src="https://storage.googleapis.com/cluvi/nuevo_irre-removebg-preview.png"
-                alt="Irrelevant Logo"
-                className="w-12 h-auto object-contain opacity-70 hover:opacity-100 transition-opacity"
+                alt="Irrelevant"
+                className="h-[18px] w-auto opacity-70 transition-opacity group-hover:opacity-100 [filter:brightness(0)_invert(1)]"
               />
-            </div>
-          </div>
-        )}
-      </div>
-    </aside>
+            </a>
+          )}
+        </div>
+      </aside>
+    </TooltipProvider>
   );
 }

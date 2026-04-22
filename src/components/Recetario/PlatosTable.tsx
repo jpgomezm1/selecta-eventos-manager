@@ -19,7 +19,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Eye, UtensilsCrossed, DollarSign, ChefHat, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Eye, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { KPI } from "@/components/Layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import PlatoDetailSheet from "./PlatoDetailSheet";
 
@@ -83,41 +84,11 @@ export default function PlatosTable() {
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center">
-              <UtensilsCrossed className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Total platos</p>
-              <p className="text-xl font-bold">{platos.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-green-50 flex items-center justify-center">
-              <DollarSign className="h-5 w-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Con precio definido</p>
-              <p className="text-xl font-bold">{conPrecio}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-amber-50 flex items-center justify-center">
-              <ChefHat className="h-5 w-5 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Costo promedio receta</p>
-              <p className="text-xl font-bold">{fmt(costoPromedio)}</p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* KPIs */}
+      <div className="grid grid-cols-1 gap-x-8 gap-y-6 border-y border-border py-6 md:grid-cols-3">
+        <KPI kicker="Total platos" value={platos.length} />
+        <KPI kicker="Con precio definido" value={conPrecio} tone="primary" />
+        <KPI kicker="Costo promedio" value={fmt(costoPromedio)} />
       </div>
 
       {/* Search + Filter + New */}

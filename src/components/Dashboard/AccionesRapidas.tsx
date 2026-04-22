@@ -1,27 +1,33 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  Plus, 
-  Users, 
-  Mail, 
-  AlertTriangle, 
-  DollarSign, 
+import {
+  Plus,
+  Users,
+  Mail,
+  AlertTriangle,
+  DollarSign,
   CheckSquare,
-  Zap,
-  Activity
+  ArrowUpRight,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { PanelHeader } from "@/components/Layout/PageHeader";
 import { CronogramaDialog } from "./CronogramaDialog";
+
+type SmartAction = {
+  tone: "urgent" | "warning" | "ok";
+  label: string;
+  description: string;
+  icon: typeof AlertTriangle;
+  onClick: () => void;
+};
 
 export function AccionesRapidas() {
   const [stats, setStats] = useState({
     eventosSinPersonal: 0,
     pagosPendientes: 0,
     conflictos: 0,
-    totalEventosProximos: 0
+    totalEventosProximos: 0,
   });
   const [isCronogramaDialogOpen, setIsCronogramaDialogOpen] = useState(false);
   const navigate = useNavigate();
@@ -32,207 +38,172 @@ export function AccionesRapidas() {
 
   const cargarEstadisticas = async () => {
     try {
-      // Eventos próximos sin personal
       const { data: eventosSinPersonal } = await supabase
         .from("eventos")
-        .select(`
-          id,
-          evento_personal(id)
-        `)
-        .gte("fecha_evento", new Date().toISOString().split('T')[0])
-        .lte("fecha_evento", new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+        .select(`id, evento_personal(id)`)
+        .gte("fecha_evento", new Date().toISOString().split("T")[0])
+        .lte(
+          "fecha_evento",
+          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+        );
 
-      const eventosVacios = eventosSinPersonal?.filter(e => e.evento_personal.length === 0).length || 0;
+      const eventosVacios = eventosSinPersonal?.filter((e) => e.evento_personal.length === 0).length || 0;
 
-      // Pagos pendientes
       const { data: pagosPendientes } = await supabase
         .from("evento_personal")
         .select("id")
         .eq("estado_pago", "pendiente");
 
-      // Total eventos próximos
       const { data: eventosProximos } = await supabase
         .from("eventos")
         .select("id")
-        .gte("fecha_evento", new Date().toISOString().split('T')[0]);
+        .gte("fecha_evento", new Date().toISOString().split("T")[0]);
 
       setStats({
         eventosSinPersonal: eventosVacios,
         pagosPendientes: pagosPendientes?.length || 0,
-        conflictos: 0, // Se calculará más adelante
-        totalEventosProximos: eventosProximos?.length || 0
+        conflictos: 0,
+        totalEventosProximos: eventosProximos?.length || 0,
       });
     } catch (error) {
       console.error("Error cargando estadísticas:", error);
     }
   };
 
-  const getBotonInteligente = () => {
+  const getSmartAction = (): SmartAction => {
     if (stats.eventosSinPersonal > 0) {
-      return (
-        <Button 
-          className="w-full h-14 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
-          onClick={() => navigate('/eventos')}
-        >
-          <div className="flex items-center justify-center space-x-3">
-            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-              <AlertTriangle className="h-5 w-5" />
-            </div>
-            <div className="text-left">
-              <div className="text-sm font-bold">🚨 URGENTE</div>
-              <div className="text-xs opacity-90">Asignar Personal ({stats.eventosSinPersonal})</div>
-            </div>
-          </div>
-        </Button>
-      );
+      return {
+        tone: "urgent",
+        label: "Asignar personal",
+        description: `${stats.eventosSinPersonal} evento${stats.eventosSinPersonal > 1 ? "s" : ""} sin cobertura`,
+        icon: AlertTriangle,
+        onClick: () => navigate("/eventos"),
+      };
     }
-
     if (stats.pagosPendientes > 0) {
-      return (
-        <Button 
-          className="w-full h-14 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
-          onClick={() => navigate('/personal')}
-        >
-          <div className="flex items-center justify-center space-x-3">
-            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-              <DollarSign className="h-5 w-5" />
-            </div>
-            <div className="text-left">
-              <div className="text-sm font-bold">💰 PAGOS</div>
-              <div className="text-xs opacity-90">Liquidar ({stats.pagosPendientes} pendientes)</div>
-            </div>
-          </div>
-        </Button>
-      );
+      return {
+        tone: "warning",
+        label: "Liquidar pagos",
+        description: `${stats.pagosPendientes} pendiente${stats.pagosPendientes > 1 ? "s" : ""}`,
+        icon: DollarSign,
+        onClick: () => navigate("/personal"),
+      };
     }
-
-    return (
-      <Button 
-        className="w-full h-14 bg-gradient-primary hover:bg-gradient-primary/90 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
-        onClick={() => navigate('/eventos')}
-      >
-        <div className="flex items-center justify-center space-x-3">
-          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-            <CheckSquare className="h-5 w-5" />
-          </div>
-          <div className="text-left">
-            <div className="text-sm font-bold">✅ TODO BIEN</div>
-            <div className="text-xs opacity-90">Sistema bajo control</div>
-          </div>
-        </div>
-      </Button>
-    );
+    return {
+      tone: "ok",
+      label: "Todo en orden",
+      description: "Sin pendientes inmediatos",
+      icon: CheckSquare,
+      onClick: () => navigate("/eventos"),
+    };
   };
 
+  const smart = getSmartAction();
+  const SmartIcon = smart.icon;
+
+  const smartStyles =
+    smart.tone === "urgent"
+      ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      : smart.tone === "warning"
+      ? "bg-[hsl(30_55%_42%)] text-white hover:bg-[hsl(30_55%_38%)]"
+      : "bg-primary text-primary-foreground hover:bg-primary/90";
+
+  const quickActions = [
+    {
+      label: "Crear evento",
+      description: "Programar un nuevo servicio",
+      icon: Plus,
+      onClick: () => navigate("/eventos"),
+    },
+    {
+      label: "Agregar empleado",
+      description: "Registrar nuevo personal",
+      icon: Users,
+      onClick: () => navigate("/personal"),
+    },
+    {
+      label: "Enviar cronogramas",
+      description: "Notificar horarios al equipo",
+      icon: Mail,
+      onClick: () => setIsCronogramaDialogOpen(true),
+    },
+  ];
+
   return (
-    <Card className="border-0 shadow-none bg-transparent">
-      <CardHeader className="pb-6">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-gradient-to-r from-selecta-green to-primary rounded-2xl flex items-center justify-center shadow-lg">
-            <Zap className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <CardTitle className="text-xl font-bold bg-gradient-to-r from-selecta-green to-primary bg-clip-text text-transparent">
-              Acciones Rápidas
-            </CardTitle>
-            <p className="text-slate-600 font-medium">Herramientas esenciales de gestión</p>
-          </div>
-        </div>
-      </CardHeader>
+    <div className="p-6">
+      <PanelHeader kicker="Atajos" title="Acciones rápidas" description="Herramientas del día" />
 
-      <CardContent className="space-y-8">
-        {/* Botón inteligente contextual */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-slate-200/60 shadow-sm">
-          {getBotonInteligente()}
-        </div>
+      <div className="mt-6 space-y-6">
+        {/* Smart action — contextual */}
+        <button
+          onClick={smart.onClick}
+          className={`group flex w-full items-center gap-4 rounded-md px-4 py-3.5 text-left transition-colors ${smartStyles}`}
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white/15">
+            <SmartIcon className="h-4.5 w-4.5" strokeWidth={1.75} />
+          </span>
+          <span className="flex-1">
+            <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] opacity-75">
+              {smart.tone === "urgent" ? "Urgente" : smart.tone === "warning" ? "Revisar" : "Estado"}
+            </span>
+            <span className="block font-serif text-[17px] leading-tight tracking-tight">
+              {smart.label}
+            </span>
+            <span className="block text-[12px] opacity-80">{smart.description}</span>
+          </span>
+          <ArrowUpRight className="h-4 w-4 opacity-70 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+        </button>
 
-        {/* Acciones Principales */}
-        <div>
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-8 h-8 bg-selecta-green/20 rounded-xl flex items-center justify-center">
-              <Activity className="h-4 w-4 text-selecta-green" />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-800">Acciones Principales</h3>
-              <p className="text-xs text-slate-600">Funciones más utilizadas del sistema</p>
-            </div>
-          </div>
-
-          {/* Grid de 3 botones principales */}
-          <div className="grid grid-cols-1 gap-4">
-            {/* Crear Evento */}
-            <Button 
-              variant="outline" 
-              className="h-16 flex items-center justify-start space-x-4 bg-white/80 backdrop-blur-sm border-slate-200/60 hover:bg-blue-50/80 hover:border-blue-200/60 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] px-6"
-              onClick={() => navigate('/eventos')}
-            >
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
-                <Plus className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="text-left flex-1">
-                <div className="font-bold text-slate-800">Crear Evento</div>
-                <div className="text-sm text-slate-600">Programar un nuevo evento</div>
-              </div>
-            </Button>
-
-            {/* Agregar Empleado */}
-            <Button 
-              variant="outline" 
-              className="h-16 flex items-center justify-start space-x-4 bg-white/80 backdrop-blur-sm border-slate-200/60 hover:bg-emerald-50/80 hover:border-emerald-200/60 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] px-6"
-              onClick={() => navigate('/personal')}
-            >
-              <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0">
-                <Users className="h-6 w-6 text-emerald-600" />
-              </div>
-              <div className="text-left flex-1">
-                <div className="font-bold text-slate-800">Agregar Empleado</div>
-                <div className="text-sm text-slate-600">Registrar nuevo personal</div>
-              </div>
-            </Button>
-
-            {/* Enviar Cronogramas */}
-            <Button 
-              variant="outline" 
-              className="h-16 flex items-center justify-start space-x-4 bg-white/80 backdrop-blur-sm border-slate-200/60 hover:bg-violet-50/80 hover:border-violet-200/60 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] px-6"
-              onClick={() => setIsCronogramaDialogOpen(true)}
-            >
-              <div className="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center shrink-0">
-                <Mail className="h-6 w-6 text-violet-600" />
-              </div>
-              <div className="text-left flex-1">
-                <div className="font-bold text-slate-800">Enviar Cronogramas</div>
-                <div className="text-sm text-slate-600">Notificar horarios al personal</div>
-              </div>
-            </Button>
-          </div>
+        {/* Quick actions list */}
+        <div className="space-y-px overflow-hidden rounded-md border border-border">
+          {quickActions.map((action, idx) => {
+            const Icon = action.icon;
+            return (
+              <button
+                key={action.label}
+                onClick={action.onClick}
+                className={`group flex w-full items-center gap-4 bg-card px-4 py-3.5 text-left transition-colors hover:bg-accent ${
+                  idx > 0 ? "border-t border-border" : ""
+                }`}
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                  <Icon className="h-4 w-4" strokeWidth={1.75} />
+                </span>
+                <span className="flex-1">
+                  <span className="block text-[13px] font-medium text-foreground">{action.label}</span>
+                  <span className="block text-[11.5px] text-muted-foreground">{action.description}</span>
+                </span>
+                <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/50 transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-foreground" />
+              </button>
+            );
+          })}
         </div>
 
-        {/* Estadísticas rápidas */}
-        <div className="bg-gradient-to-r from-selecta-green/10 to-primary/10 backdrop-blur-sm rounded-2xl p-6 border border-selecta-green/20">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-8 h-8 bg-selecta-green/20 rounded-xl flex items-center justify-center">
-              <Activity className="h-4 w-4 text-selecta-green" />
-            </div>
-            <h3 className="font-bold text-slate-800">Resumen del Sistema</h3>
-          </div>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-selecta-green">{stats.totalEventosProximos}</div>
-              <div className="text-xs font-medium text-slate-600 uppercase tracking-wide">Eventos próximos</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">{stats.eventosSinPersonal}</div>
-              <div className="text-xs font-medium text-slate-600 uppercase tracking-wide">Sin personal</div>
-            </div>
-          </div>
+        {/* Resumen */}
+        <div className="grid grid-cols-2 gap-4 border-t border-border pt-5">
+          <StatItem label="Eventos próximos" value={stats.totalEventosProximos} tone="neutral" />
+          <StatItem label="Sin personal" value={stats.eventosSinPersonal} tone={stats.eventosSinPersonal > 0 ? "destructive" : "neutral"} />
         </div>
+      </div>
 
-        {/* Dialog de Cronogramas */}
-        <CronogramaDialog
-          isOpen={isCronogramaDialogOpen}
-          onClose={() => setIsCronogramaDialogOpen(false)}
-        />
-      </CardContent>
-    </Card>
+      <CronogramaDialog isOpen={isCronogramaDialogOpen} onClose={() => setIsCronogramaDialogOpen(false)} />
+    </div>
+  );
+}
+
+function StatItem({ label, value, tone }: { label: string; value: number; tone: "neutral" | "destructive" }) {
+  return (
+    <div>
+      <div
+        className={`font-serif text-3xl tracking-tight tabular-nums ${
+          tone === "destructive" && value > 0 ? "text-destructive" : "text-foreground"
+        }`}
+      >
+        {value}
+      </div>
+      <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        {label}
+      </div>
+    </div>
   );
 }

@@ -194,8 +194,8 @@ export default function IngredientesTable() {
                       <TableCell className="text-right text-slate-400">{fmt(ing.costo_por_unidad)}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={saveEdit}><Check className="h-4 w-4 text-green-600" /></Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingId(null)}><X className="h-4 w-4 text-slate-400" /></Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={saveEdit}><Check className="h-4 w-4 text-primary" /></Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingId(null)}><X className="h-4 w-4 text-muted-foreground" /></Button>
                         </div>
                       </TableCell>
                     </>
@@ -216,16 +216,16 @@ export default function IngredientesTable() {
                           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEdit(ing)}><Pencil className="h-4 w-4" /></Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button size="icon" variant="ghost" className="h-7 w-7"><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Eliminar ingrediente</AlertDialogTitle>
-                                <AlertDialogDescription>¿Estás seguro de eliminar "{ing.nombre}"? Esta acción no se puede deshacer.</AlertDialogDescription>
+                                <AlertDialogDescription>¿Está seguro de eliminar "{ing.nombre}"? Esta acción no se puede deshacer.</AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => deleteMut.mutate(ing.id)} className="bg-red-600 hover:bg-red-700">Eliminar</AlertDialogAction>
+                                <AlertDialogAction onClick={() => deleteMut.mutate(ing.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
@@ -436,14 +436,14 @@ function CostoCelda({ ingrediente }: { ingrediente: IngredienteCatalogo }) {
       <div>{fmt(ingrediente.costo_por_unidad)}</div>
       {principalIsNotCheapest && (
         <div className="flex items-center justify-end gap-1">
-          <TrendingDown className="h-3 w-3 text-green-600" />
-          <span className="text-[11px] text-green-600 font-medium">
+          <TrendingDown className="h-3 w-3 text-primary" />
+          <span className="text-[11px] text-primary font-medium">
             {cheapest.proveedor}: {fmt(cheapest.costo_por_unidad_base)}
           </span>
         </div>
       )}
       {proveedores.length > 1 && !principalIsNotCheapest && (
-        <div className="text-[11px] text-slate-400">Mejor precio activo</div>
+        <div className="text-[11px] text-muted-foreground">Mejor precio activo</div>
       )}
     </div>
   );
@@ -547,7 +547,7 @@ function ProveedoresSubtable({ ingrediente }: { ingrediente: IngredienteCatalogo
                 </TableHeader>
                 <TableBody>
                   {proveedores.map((p) => (
-                    <TableRow key={p.id} className={p.id === cheapestId && proveedores.length > 1 ? "bg-green-50" : ""}>
+                    <TableRow key={p.id} className={p.id === cheapestId && proveedores.length > 1 ? "bg-primary/[0.04]" : ""}>
                       <TableCell>
                         <Button
                           size="icon"
@@ -556,7 +556,7 @@ function ProveedoresSubtable({ ingrediente }: { ingrediente: IngredienteCatalogo
                           onClick={() => principalMut.mutate(p.id)}
                           title="Marcar como principal"
                         >
-                          <Star className={`h-4 w-4 ${p.es_principal ? "fill-amber-400 text-amber-400" : "text-slate-300"}`} />
+                          <Star className={`h-4 w-4 ${p.es_principal ? "fill-[hsl(30_55%_42%)] text-[hsl(30_55%_42%)]" : "text-muted-foreground/50"}`} />
                         </Button>
                       </TableCell>
                       <TableCell className="font-medium">{p.proveedor}</TableCell>
@@ -565,7 +565,7 @@ function ProveedoresSubtable({ ingrediente }: { ingrediente: IngredienteCatalogo
                       <TableCell className="text-right">
                         <span className="font-medium">{fmt(p.costo_por_unidad_base)}</span>
                         {p.id === cheapestId && proveedores.length > 1 && (
-                          <Badge variant="outline" className="ml-2 text-[10px] border-green-300 text-green-700 bg-green-50">
+                          <Badge variant="outline" className="ml-2 text-[10px] font-normal border-primary/40 text-primary bg-primary/5">
                             <TrendingDown className="h-3 w-3 mr-0.5" /> Más barato
                           </Badge>
                         )}
@@ -574,14 +574,14 @@ function ProveedoresSubtable({ ingrediente }: { ingrediente: IngredienteCatalogo
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-7 w-7"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
                           onClick={() => {
                             if (window.confirm(`¿Eliminar el proveedor "${p.proveedor}" de ${ingrediente.nombre}?`)) {
                               deleteMut.mutate(p.id);
                             }
                           }}
                         >
-                          <Trash2 className="h-4 w-4 text-red-500" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>

@@ -18,6 +18,7 @@ import type { ChecklistResult } from "@/lib/eventoChecklist";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from "react-router-dom";
 import { parseLocalDate } from "@/lib/dateLocal";
+import { PageHeader } from "@/components/Layout/PageHeader";
 import { requiereRegistroHoras } from "@/lib/calcularPagoPersonal";
 
 const localizer = dateFnsLocalizer({
@@ -168,13 +169,28 @@ export default function EventosPage() {
 
   const getEventStatus = (fechaEvento: string) => {
     const eventDate = parseLocalDate(fechaEvento);
-    if (!eventDate) return { status: "Sin fecha", variant: "bg-slate-100 text-slate-500" };
+    if (!eventDate)
+      return {
+        status: "Sin fecha",
+        variant: "border-border bg-muted/40 text-muted-foreground",
+      };
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     eventDate.setHours(0, 0, 0, 0);
-    if (eventDate < today) return { status: "Pasado", variant: "bg-slate-100 text-slate-600" };
-    if (eventDate.getTime() === today.getTime()) return { status: "Hoy", variant: "bg-blue-100 text-blue-700" };
-    return { status: "Próximo", variant: "bg-emerald-100 text-emerald-700" };
+    if (eventDate < today)
+      return {
+        status: "Pasado",
+        variant: "border-border bg-muted/40 text-muted-foreground",
+      };
+    if (eventDate.getTime() === today.getTime())
+      return {
+        status: "Hoy",
+        variant: "border-primary/30 bg-primary/10 text-primary",
+      };
+    return {
+      status: "Próximo",
+      variant: "border-primary/25 bg-primary/10 text-primary",
+    };
   };
 
   // Filtrar eventos
@@ -230,21 +246,33 @@ export default function EventosPage() {
 
   const eventStyleGetter = (event: CalendarEvent) => {
     const { status } = getEventStatus(event.resource.fecha_evento);
-    const isLiquidado = event.resource.estado_liquidacion === 'liquidado';
-    let backgroundColor = '#f1f5f9';
-    let borderColor = '#cbd5e1';
-    if (status === 'Hoy') { backgroundColor = '#dbeafe'; borderColor = '#3b82f6'; }
-    else if (status === 'Próximo') { backgroundColor = '#d1fae5'; borderColor = '#10b981'; }
-    if (isLiquidado) { backgroundColor = '#ecfdf5'; borderColor = '#059669'; }
+    const isLiquidado = event.resource.estado_liquidacion === "liquidado";
+
+    // Default: pasado sin liquidar (muted warm)
+    let backgroundColor = "hsl(38 14% 90%)";
+    let borderColor = "hsl(30 20% 55%)";
+    let textColor = "hsl(30 15% 30%)";
+
+    if (status === "Hoy" || status === "Próximo") {
+      backgroundColor = "hsl(82 28% 28%)"; // primary olive
+      borderColor = "hsl(82 28% 22%)";
+      textColor = "hsl(42 30% 96%)"; // paper
+    }
+    if (isLiquidado) {
+      backgroundColor = "hsl(82 18% 50%)"; // sage muted
+      borderColor = "hsl(82 18% 40%)";
+      textColor = "hsl(42 30% 96%)";
+    }
+
     return {
       style: {
         backgroundColor,
         borderLeft: `3px solid ${borderColor}`,
-        borderRadius: '4px',
-        color: '#374151',
-        fontSize: '12px',
-        padding: '2px 6px',
-      }
+        borderRadius: "6px",
+        color: textColor,
+        fontSize: "12px",
+        padding: "2px 6px",
+      },
     };
   };
 
@@ -267,15 +295,11 @@ export default function EventosPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Eventos</h1>
-          <p className="text-slate-500 mt-1">
-            {eventos.length} eventos registrados
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        kicker="Operación"
+        title="Eventos"
+        description={`${eventos.length} ${eventos.length === 1 ? "evento registrado" : "eventos registrados"} · agenda operativa del catering`}
+      />
 
       {/* Filters & View Toggle */}
       <Card>
@@ -334,8 +358,81 @@ export default function EventosPage() {
 
       {/* Content */}
       {viewMode === 'calendar' ? (
-        <Card className="p-4">
-          <div style={{ height: '600px' }}>
+        <Card className="overflow-hidden">
+          <div className="h-[620px] overflow-hidden bg-background">
+            <style>{`
+              .rbc-calendar {
+                font-family: inherit;
+              }
+              .rbc-header {
+                background: hsl(var(--muted) / 0.4);
+                border-bottom: 1px solid hsl(var(--border));
+                color: hsl(var(--muted-foreground));
+                font-weight: 600;
+                font-size: 11px;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+                padding: 12px 8px;
+              }
+              .rbc-month-view, .rbc-time-view {
+                border-color: hsl(var(--border));
+              }
+              .rbc-day-bg + .rbc-day-bg,
+              .rbc-month-row + .rbc-month-row,
+              .rbc-time-header-content,
+              .rbc-time-content > * + * > * {
+                border-color: hsl(var(--border));
+              }
+              .rbc-today {
+                background-color: hsl(var(--primary) / 0.06);
+              }
+              .rbc-off-range-bg {
+                background-color: hsl(var(--muted) / 0.3);
+              }
+              .rbc-off-range {
+                color: hsl(var(--muted-foreground) / 0.5);
+              }
+              .rbc-event {
+                font-size: 12px;
+                font-weight: 500;
+              }
+              .rbc-event:hover {
+                opacity: 0.85;
+                cursor: pointer;
+              }
+              .rbc-date-cell {
+                padding: 8px;
+                color: hsl(var(--foreground));
+              }
+              .rbc-button-link {
+                color: hsl(var(--foreground));
+              }
+              .rbc-show-more {
+                color: hsl(var(--primary));
+                font-weight: 500;
+              }
+              .rbc-toolbar button {
+                color: hsl(var(--foreground));
+                border-color: hsl(var(--border));
+                border-radius: 6px;
+              }
+              .rbc-toolbar button:hover,
+              .rbc-toolbar button:focus {
+                background-color: hsl(var(--muted) / 0.5);
+                border-color: hsl(var(--border));
+              }
+              .rbc-toolbar button.rbc-active,
+              .rbc-toolbar button.rbc-active:hover {
+                background-color: hsl(var(--primary));
+                border-color: hsl(var(--primary));
+                color: hsl(var(--primary-foreground));
+              }
+              .rbc-toolbar-label {
+                font-family: var(--font-serif, serif);
+                font-size: 17px;
+                color: hsl(var(--foreground));
+              }
+            `}</style>
             <BigCalendar
               localizer={localizer}
               culture="es"
@@ -355,7 +452,7 @@ export default function EventosPage() {
                 time: "Hora",
                 event: "Evento",
                 noEventsInRange: "No hay eventos en este rango",
-                showMore: (total) => `+ ${total} más`
+                showMore: (total) => `+ ${total} más`,
               }}
               eventPropGetter={eventStyleGetter}
               onSelectEvent={(event) => nav(`/eventos/${event.resource.id}`)}
@@ -366,19 +463,19 @@ export default function EventosPage() {
       ) : (
         <div>
           {filteredEventos.length === 0 ? (
-            <Card>
-              <div className="flex flex-col items-center justify-center py-12 px-4">
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                  <Calendar className="h-6 w-6 text-slate-400" />
-                </div>
-                <p className="text-slate-900 font-medium">
+            <Card className="border-dashed">
+              <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
+                <Calendar
+                  className="mb-3 h-10 w-10 text-muted-foreground/40"
+                  strokeWidth={1.25}
+                />
+                <h3 className="font-serif text-lg text-foreground">
                   {eventos.length === 0 ? "No hay eventos registrados" : "Sin resultados"}
-                </p>
-                <p className="text-slate-500 text-sm mt-1">
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
                   {eventos.length === 0
-                    ? "Los eventos se crean al aprobar una cotización"
-                    : "Intenta con otros criterios de búsqueda"
-                  }
+                    ? "Los eventos se crean al aprobar una cotización."
+                    : "Intenta con otros criterios de búsqueda."}
                 </p>
               </div>
             </Card>
@@ -398,40 +495,47 @@ export default function EventosPage() {
                     >
                       <div className="p-4">
                         {/* Header */}
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-slate-900 truncate group-hover:text-selecta-green transition-colors">
+                        <div className="mb-3 flex items-start justify-between">
+                          <div className="min-w-0 flex-1">
+                            <h3 className="truncate font-serif text-[17px] font-medium text-foreground transition-colors group-hover:text-primary">
                               {evento.nombre_evento}
                             </h3>
-                            <p className="text-sm text-slate-500 mt-0.5">
+                            <p className="mt-0.5 text-sm text-muted-foreground">
                               {(() => {
                                 const d = parseLocalDate(evento.fecha_evento);
                                 return d ? format(d, "EEE, d MMM yyyy", { locale: es }) : "Sin fecha";
                               })()}
                             </p>
                           </div>
-                          <div className="flex gap-1.5 ml-2">
-                            <Badge variant="secondary" className={variant}>{status}</Badge>
-                            {evento.estado_liquidacion === 'liquidado' && (
-                              <Badge variant="secondary" className="bg-green-100 text-green-700">Liquidado</Badge>
+                          <div className="ml-2 flex gap-1.5">
+                            <Badge variant="outline" className={`font-normal ${variant}`}>
+                              {status}
+                            </Badge>
+                            {evento.estado_liquidacion === "liquidado" && (
+                              <Badge
+                                variant="outline"
+                                className="border-border bg-muted/40 font-normal text-muted-foreground"
+                              >
+                                Liquidado
+                              </Badge>
                             )}
                           </div>
                         </div>
 
                         {/* Info */}
-                        <div className="space-y-2 mb-3">
-                          <div className="flex items-center text-sm text-slate-600">
-                            <MapPin className="h-4 w-4 mr-2 text-slate-400" />
-                            <span className="truncate">{evento.ubicacion || 'Sin ubicación'}</span>
+                        <div className="mb-3 space-y-2">
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <MapPin className="mr-2 h-4 w-4 text-muted-foreground/60" strokeWidth={1.5} />
+                            <span className="truncate">{evento.ubicacion || "Sin ubicación"}</span>
                           </div>
                           <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center text-slate-600">
-                              <Users className="h-4 w-4 mr-2 text-slate-400" />
+                            <div className="flex items-center text-muted-foreground">
+                              <Users className="mr-2 h-4 w-4 text-muted-foreground/60" strokeWidth={1.5} />
                               <span>{evento.personal?.length || 0} empleados</span>
                             </div>
                             <div className="text-right">
-                              <div className="text-[10px] uppercase tracking-wide text-slate-400">Cotizado</div>
-                              <div className="font-medium text-slate-900">
+                              <div className="kicker text-muted-foreground">Cotizado</div>
+                              <div className="font-mono text-sm font-medium tabular-nums text-foreground">
                                 ${(evento.costo_total || 0).toLocaleString()}
                               </div>
                             </div>
@@ -441,18 +545,22 @@ export default function EventosPage() {
                         {/* Progress bar */}
                         {cl && (
                           <div className="mb-3">
-                            <div className="flex items-center justify-between text-xs mb-1">
-                              <span className="text-slate-500">{cl.completedCount}/{cl.totalCount} tareas</span>
-                              <span className="font-medium text-slate-700">{cl.percent}%</span>
+                            <div className="mb-1 flex items-center justify-between text-[11px]">
+                              <span className="text-muted-foreground">
+                                {cl.completedCount}/{cl.totalCount} tareas
+                              </span>
+                              <span className="font-mono font-semibold tabular-nums text-foreground/80">
+                                {cl.percent}%
+                              </span>
                             </div>
-                            <div className="w-full bg-slate-100 rounded-full h-1.5">
+                            <div className="h-[3px] w-full overflow-hidden rounded-full bg-muted/70">
                               <div
-                                className="bg-emerald-500 h-1.5 rounded-full transition-all"
+                                className="h-full rounded-full bg-primary/80 transition-all"
                                 style={{ width: `${cl.percent}%` }}
                               />
                             </div>
                             {hints.length > 0 && (
-                              <p className="text-xs text-slate-400 mt-1 truncate">
+                              <p className="mt-1.5 truncate text-[11px] text-muted-foreground/70">
                                 Falta: {hints.join(", ")}
                               </p>
                             )}
@@ -460,24 +568,28 @@ export default function EventosPage() {
                         )}
 
                         {/* Actions */}
-                        <div className="flex items-center justify-between pt-3 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
+                        <div
+                          className="flex items-center justify-between border-t border-border/60 pt-3"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => nav(`/eventos/${evento.id}`)}
-                            className="h-8 text-slate-600"
+                            className="h-8 text-muted-foreground hover:text-foreground"
                           >
-                            <Eye className="h-4 w-4 mr-1" />
+                            <Eye className="mr-1 h-4 w-4" />
                             Ver
                           </Button>
 
                           <div className="flex items-center gap-1">
-                            {evento.estado_liquidacion !== 'liquidado' && evento.personal.length > 0 && (
+                            {evento.estado_liquidacion !== "liquidado" && evento.personal.length > 0 && (
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleLiquidarEvento(evento)}
-                                className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                className="h-8 w-8 p-0 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                                aria-label="Liquidar evento"
                               >
                                 <DollarSign className="h-4 w-4" />
                               </Button>
@@ -492,22 +604,23 @@ export default function EventosPage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                  <p className="text-sm text-slate-500">
-                    {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, filteredEventos.length)} de {filteredEventos.length}
+                <div className="mt-4 flex items-center justify-between">
+                  <p className="font-mono text-xs tabular-nums text-muted-foreground">
+                    {startIndex + 1}–{Math.min(startIndex + ITEMS_PER_PAGE, filteredEventos.length)} de{" "}
+                    {filteredEventos.length}
                   </p>
                   <div className="flex items-center gap-1">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
                       className="h-8 w-8 p-0"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
-                      .filter(page => {
+                      .filter((page) => {
                         if (totalPages <= 5) return true;
                         if (page === 1 || page === totalPages) return true;
                         if (page >= currentPage - 1 && page <= currentPage + 1) return true;
@@ -516,25 +629,22 @@ export default function EventosPage() {
                       .map((page, index, array) => (
                         <span key={page} className="flex items-center">
                           {index > 0 && array[index - 1] !== page - 1 && (
-                            <span className="px-1 text-slate-400">...</span>
+                            <span className="px-1 text-muted-foreground/60">…</span>
                           )}
                           <Button
                             variant={currentPage === page ? "default" : "ghost"}
                             size="sm"
                             onClick={() => setCurrentPage(page)}
-                            className={`h-8 w-8 p-0 ${
-                              currentPage === page ? "bg-selecta-green hover:bg-selecta-green/90" : ""
-                            }`}
+                            className="h-8 w-8 p-0 font-mono tabular-nums"
                           >
                             {page}
                           </Button>
                         </span>
-                      ))
-                    }
+                      ))}
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
                       className="h-8 w-8 p-0"
                     >

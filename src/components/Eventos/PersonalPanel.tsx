@@ -186,29 +186,15 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
     setIsLiquidacionOpen(true);
   };
 
-  const getRoleBadgeClass = (rol: string) => {
-    const variants: Record<string, string> = {
-      "Coordinador": "bg-purple-50 text-purple-700",
-      "Chef": "bg-orange-50 text-orange-700",
-      "Mesero": "bg-blue-50 text-blue-700",
-      "Bartender": "bg-emerald-50 text-emerald-700",
-      "Decorador": "bg-pink-50 text-pink-700",
-      "Técnico de Sonido": "bg-indigo-50 text-indigo-700",
-      "Fotógrafo": "bg-yellow-50 text-yellow-700",
-      "Otro": "bg-slate-100 text-slate-700"
-    };
-    return variants[rol] || variants["Otro"];
-  };
-
   return (
     <Card>
-      <div className="p-4 border-b border-slate-200">
+      <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-slate-600" />
-            <h2 className="font-semibold text-slate-900">Gestión de Personal</h2>
+            <Users className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+            <h2 className="font-semibold text-foreground">Gestión de personal</h2>
           </div>
-          <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+          <Badge variant="outline" className="font-normal">
             {asignados.length} asignados
           </Badge>
         </div>
@@ -300,7 +286,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className={getRoleBadgeClass(p.rol)}>{p.rol}</Badge>
+                      <Badge variant="outline" className="font-normal">{p.rol}</Badge>
                     </TableCell>
                     <TableCell className="text-center">
                       <Input
@@ -344,7 +330,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
                           onChange={(e) => handleUpdateRow(p.evento_personal_id!, { pago_calculado: Number(e.target.value) })}
                         />
                         {!requiereRegistroHoras(p.modalidad_cobro) && (
-                          <div className="text-[10px] text-emerald-600 text-right mt-0.5 mr-1">Tarifa fija</div>
+                          <div className="text-[10px] text-muted-foreground text-right mt-0.5 mr-1 uppercase tracking-wide">Tarifa fija</div>
                         )}
                       </div>
                     </TableCell>
@@ -369,7 +355,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
                           <Save className="h-3 w-3 mr-1" />
                           Guardar
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleRemove(p.evento_personal_id!)} disabled={p.estado_pago === 'pagado'} className="h-8 w-8 p-0 text-slate-500 hover:text-red-600 hover:bg-red-50">
+                        <Button variant="ghost" size="sm" onClick={() => handleRemove(p.evento_personal_id!)} disabled={p.estado_pago === 'pagado'} className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -404,8 +390,8 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
               })()}
               <div className="w-px h-10 bg-slate-200" />
               <div className="text-center">
-                <div className="text-xs text-slate-500">Total Calculado</div>
-                <div className="text-xl font-semibold text-emerald-700">${totalCalculado.toLocaleString()}</div>
+                <div className="kicker text-muted-foreground">Total calculado</div>
+                <div className="text-xl font-semibold text-primary tabular-nums">${totalCalculado.toLocaleString()}</div>
               </div>
             </div>
 
@@ -429,11 +415,11 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
           </div>
 
           {sinHoras.length > 0 && (
-            <div className="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200 flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" />
+            <div className="mt-3 p-3 bg-muted/40 rounded-md border border-border flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-[hsl(30_55%_42%)] flex-shrink-0 mt-0.5" strokeWidth={1.75} />
               <div>
-                <p className="text-sm font-medium text-orange-800">Horas requeridas</p>
-                <p className="text-xs text-orange-700">
+                <p className="text-sm font-medium text-foreground">Horas requeridas</p>
+                <p className="text-xs text-muted-foreground">
                   {sinHoras.map(p => p.nombre_completo).join(', ')} — cobran por hora y necesitan horas definidas.
                 </p>
               </div>
@@ -441,11 +427,11 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
           )}
 
           {sinPagoExclusivo.length > 0 && (
-            <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200 flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="mt-3 p-3 bg-destructive/5 rounded-md border border-destructive/20 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" strokeWidth={1.75} />
               <div>
-                <p className="text-sm font-medium text-red-800">Sin pago calculado</p>
-                <p className="text-xs text-red-700">
+                <p className="text-sm font-medium text-destructive">Sin pago calculado</p>
+                <p className="text-xs text-destructive/80">
                   {sinPagoExclusivo.map(p => p.nombre_completo).join(', ')} — no tienen pago asignado.
                 </p>
               </div>

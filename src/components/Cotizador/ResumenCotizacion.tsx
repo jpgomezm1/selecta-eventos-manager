@@ -11,7 +11,6 @@ import {
   Save,
   Calculator,
   Users,
-  DollarSign,
   Utensils,
   Truck,
   ChefHat,
@@ -21,8 +20,6 @@ import {
   AlertCircle,
   Sparkles,
   TrendingUp,
-  Eye,
-  EyeOff,
   BarChart3
 } from "lucide-react";
 import type { CotizacionItemsState } from "@/types/cotizador";
@@ -42,38 +39,19 @@ type Props = {
 };
 
 const SECTION_CONFIG = {
-  platos: {
-    icon: Utensils,
-    color: "orange",
-    label: "Platos y Menú",
-    bgColor: "bg-orange-50",
-    textColor: "text-orange-700",
-    borderColor: "border-orange-200"
-  },
-  personal: {
-    icon: ChefHat,
-    color: "blue", 
-    label: "Personal de Servicio",
-    bgColor: "bg-blue-50",
-    textColor: "text-blue-700",
-    borderColor: "border-blue-200"
-  },
-  transportes: {
-    icon: Truck,
-    color: "green",
-    label: "Logística y Transporte",
-    bgColor: "bg-green-50",
-    textColor: "text-green-700",
-    borderColor: "border-green-200"
-  },
-  menaje: {
-    icon: Package,
-    color: "purple",
-    label: "Menaje y Alquiler",
-    bgColor: "bg-purple-50",
-    textColor: "text-purple-700",
-    borderColor: "border-purple-200"
-  }
+  platos: { icon: Utensils, label: "Platos y menú" },
+  personal: { icon: ChefHat, label: "Personal de servicio" },
+  transportes: { icon: Truck, label: "Logística y transporte" },
+  menaje: { icon: Package, label: "Menaje y alquiler" },
+};
+
+type SectionItem = {
+  tipo: keyof CotizacionItemsState;
+  id: string;
+  nombre: string;
+  precio: number;
+  cantidad: number;
+  subtotal: number;
 };
 
 export function ResumenCotizacion({
@@ -88,7 +66,6 @@ export function ResumenCotizacion({
   guardando,
   fullWidth = false,
 }: Props) {
-  // Calcular estadísticas
   const totalItems = items.platos.length + items.personal.length + items.transportes.length + (items.menaje ?? []).length;
   const totalQuantity = [
     ...items.platos.map(p => p.cantidad),
@@ -100,14 +77,12 @@ export function ResumenCotizacion({
   const costPerGuest = invitados > 0 ? total / invitados : 0;
   const hasItems = totalItems > 0;
 
-  // Calcular porcentajes
   const platosPercentage = total > 0 ? (subtotales.platos / total) * 100 : 0;
   const personalPercentage = total > 0 ? (subtotales.personal / total) * 100 : 0;
   const transportesPercentage = total > 0 ? (subtotales.transportes / total) * 100 : 0;
   const menajePercentage = total > 0 ? ((subtotales.menaje ?? 0) / total) * 100 : 0;
   const lugarPercentage = total > 0 ? (lugarCosto / total) * 100 : 0;
 
-  // Preparar datos por sección
   const sections = [
     {
       key: "platos" as const,
@@ -167,41 +142,38 @@ export function ResumenCotizacion({
     }
   ].filter(section => section.items.length > 0);
 
-  const renderItemRow = (item, sectionColor: string) => (
+  const renderItemRow = (item: SectionItem) => (
     <div
       key={`${item.tipo}-${item.id}`}
-      className="bg-white rounded-xl p-4 border border-slate-200 hover:shadow-md transition-all duration-200 flex flex-col gap-2"
+      className="bg-card rounded-md p-4 border border-border hover:shadow-[var(--shadow-soft)] transition-all duration-200 flex flex-col gap-2"
     >
-      {/* Fila 1: nombre completo + botón eliminar */}
       <div className="flex items-start justify-between gap-2">
-        <h4 className="font-medium text-slate-800 break-words flex-1">
+        <h4 className="font-medium text-foreground break-words flex-1">
           {item.nombre}
         </h4>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => onRemove(item.tipo, item.id)}
-          className="h-7 w-7 p-0 shrink-0 text-red-500 hover:bg-red-50 hover:text-red-600"
+          className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-destructive"
         >
           <Trash2 className="h-3 w-3" />
         </Button>
       </div>
 
-      {/* Fila 2: precio×qty | controles ± | subtotal */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center space-x-1 text-sm text-slate-600">
-          <DollarSign className="h-3 w-3" />
-          <span>{item.precio.toLocaleString()}</span>
+        <div className="flex items-baseline gap-1 text-sm text-muted-foreground tabular-nums">
+          <span>${item.precio.toLocaleString()}</span>
           <span>×</span>
           <span>{item.cantidad}</span>
         </div>
 
-        <div className="flex items-center space-x-1 bg-slate-50 rounded-lg p-1">
+        <div className="flex items-center space-x-1 bg-muted/40 rounded-md p-1">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => onQtyChange(item.tipo, item.id, Math.max(1, item.cantidad - 1))}
-            className="h-7 w-7 p-0 hover:bg-white"
+            className="h-7 w-7 p-0 hover:bg-card"
           >
             <Minus className="h-3 w-3" />
           </Button>
@@ -211,20 +183,20 @@ export function ResumenCotizacion({
             min={1}
             value={item.cantidad}
             onChange={(e) => onQtyChange(item.tipo, item.id, Math.max(1, Number(e.target.value)))}
-            className="w-14 h-7 text-center text-sm border-0 bg-transparent focus:bg-white focus:border focus:border-slate-300"
+            className="w-14 h-7 text-center text-sm border-0 bg-transparent focus:bg-card focus:border focus:border-border tabular-nums"
           />
 
           <Button
             variant="ghost"
             size="sm"
             onClick={() => onQtyChange(item.tipo, item.id, item.cantidad + 1)}
-            className="h-7 w-7 p-0 hover:bg-white"
+            className="h-7 w-7 p-0 hover:bg-card"
           >
             <Plus className="h-3 w-3" />
           </Button>
         </div>
 
-        <div className={cn("font-semibold text-right", `text-${sectionColor}-600`)}>
+        <div className="font-semibold text-right text-primary tabular-nums">
           ${item.subtotal.toLocaleString()}
         </div>
       </div>
@@ -233,58 +205,51 @@ export function ResumenCotizacion({
 
   return (
     <Card className={cn(!fullWidth && "sticky top-4")}>
-      {/* Header mejorado */}
-      <CardHeader className="bg-emerald-50 border-b border-emerald-200 pb-4">
+      <CardHeader className="pb-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-emerald-100 rounded-lg">
-              <Calculator className="h-5 w-5 text-emerald-700" />
-            </div>
+            <Calculator className="h-5 w-5 text-primary" strokeWidth={1.75} />
             <div>
-              <CardTitle className="text-emerald-800 text-lg">Resumen de Cotización</CardTitle>
-              <p className="text-emerald-600 text-sm">Detalles y totales</p>
+              <CardTitle className="font-serif text-foreground text-lg">Resumen de cotización</CardTitle>
+              <p className="text-muted-foreground text-sm">Detalles y totales</p>
             </div>
           </div>
 
           {hasItems && (
-            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+            <Badge variant="outline" className="font-normal tabular-nums">
               {totalItems} elementos
             </Badge>
           )}
         </div>
 
-        {/* Estadísticas del evento */}
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          <div className="text-center p-3 bg-white rounded-xl">
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          <div className="text-center p-3 bg-muted/40 rounded-md border border-border">
             <div className="flex items-center justify-center mb-1">
-              <Users className="h-4 w-4 text-emerald-600" />
+              <Users className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
             </div>
-            <div className="font-semibold text-emerald-800">{invitados}</div>
-            <div className="text-xs text-emerald-600">Invitados</div>
+            <div className="font-semibold text-foreground tabular-nums">{invitados}</div>
+            <div className="kicker text-muted-foreground">Invitados</div>
           </div>
-          
-          <div className="text-center p-3 bg-white rounded-xl">
+
+          <div className="text-center p-3 bg-muted/40 rounded-md border border-border">
             <div className="flex items-center justify-center mb-1">
-              <TrendingUp className="h-4 w-4 text-emerald-600" />
+              <TrendingUp className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
             </div>
-            <div className="font-semibold text-emerald-800">
+            <div className="font-semibold text-foreground tabular-nums">
               ${costPerGuest.toLocaleString()}
             </div>
-            <div className="text-xs text-emerald-600">Por invitado</div>
+            <div className="kicker text-muted-foreground">Por invitado</div>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="p-6 space-y-6">
         {!hasItems ? (
-          /* Estado vacío mejorado */
           <div className="text-center py-12 space-y-4">
-            <div className="w-16 h-16 mx-auto bg-slate-100 rounded-full flex items-center justify-center">
-              <Sparkles className="h-6 w-6 text-slate-400" />
-            </div>
+            <Sparkles className="h-8 w-8 mx-auto text-muted-foreground" strokeWidth={1.5} />
             <div>
-              <h3 className="font-medium text-slate-700 mb-2">¡Comienza tu cotización!</h3>
-              <p className="text-slate-500 text-sm">
+              <h3 className="font-serif text-lg text-foreground mb-1">Comienza tu cotización</h3>
+              <p className="text-muted-foreground text-sm">
                 Selecciona elementos desde las pestañas para ver el resumen aquí
               </p>
             </div>
@@ -294,43 +259,40 @@ export function ResumenCotizacion({
             {/* Distribución de costos */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-slate-800 flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  Distribución de Costos
+                <h4 className="font-semibold text-foreground flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+                  Distribución de costos
                 </h4>
-                <span className="text-sm text-slate-600">{totalQuantity} items</span>
+                <span className="text-sm text-muted-foreground tabular-nums">{totalQuantity} items</span>
               </div>
 
               <div className="space-y-2">
                 {sections.map((section) => (
                   <div key={section.key} className="flex items-center gap-3">
-                    <section.icon className={cn("h-4 w-4", section.textColor)} />
+                    <section.icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
                     <div className="flex-1">
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium text-slate-700">{section.label}</span>
-                        <span className="text-slate-600">{section.percentage.toFixed(1)}%</span>
+                        <span className="font-medium text-foreground">{section.label}</span>
+                        <span className="text-muted-foreground tabular-nums">{section.percentage.toFixed(1)}%</span>
                       </div>
-                      <Progress
-                        value={section.percentage}
-                        className="h-2"
-                      />
+                      <Progress value={section.percentage} className="h-1.5" />
                     </div>
-                    <span className={cn("text-sm font-semibold", section.textColor)}>
+                    <span className="text-sm font-semibold text-primary tabular-nums">
                       ${section.subtotal.toLocaleString()}
                     </span>
                   </div>
                 ))}
                 {lugarCosto > 0 && (
                   <div className="flex items-center gap-3">
-                    <MapPin className="h-4 w-4 text-emerald-700" />
+                    <MapPin className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
                     <div className="flex-1">
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium text-slate-700">Lugar del Evento</span>
-                        <span className="text-slate-600">{lugarPercentage.toFixed(1)}%</span>
+                        <span className="font-medium text-foreground">Lugar del evento</span>
+                        <span className="text-muted-foreground tabular-nums">{lugarPercentage.toFixed(1)}%</span>
                       </div>
-                      <Progress value={lugarPercentage} className="h-2" />
+                      <Progress value={lugarPercentage} className="h-1.5" />
                     </div>
-                    <span className="text-sm font-semibold text-emerald-700">
+                    <span className="text-sm font-semibold text-primary tabular-nums">
                       ${lugarCosto.toLocaleString()}
                     </span>
                   </div>
@@ -344,25 +306,18 @@ export function ResumenCotizacion({
             <div className="space-y-6">
               {sections.map((section) => (
                 <div key={section.key} className="space-y-3">
-                  <div className={cn(
-                    "flex items-center justify-between p-3 rounded-xl border",
-                    section.bgColor,
-                    section.borderColor
-                  )}>
+                  <div className="flex items-center justify-between p-3 rounded-md border border-border bg-muted/40">
                     <div className="flex items-center space-x-2">
-                      <section.icon className={cn("h-5 w-5", section.textColor)} />
-                      <h4 className={cn("font-semibold", section.textColor)}>
+                      <section.icon className="h-4 w-4 text-primary" strokeWidth={1.75} />
+                      <h4 className="font-semibold text-foreground">
                         {section.label}
                       </h4>
-                      <Badge className={cn(
-                        "text-xs",
-                        `bg-${section.color}-100 text-${section.color}-700 border-${section.color}-200`
-                      )}>
+                      <Badge variant="outline" className="text-xs font-normal tabular-nums">
                         {section.items.length}
                       </Badge>
                     </div>
-                    
-                    <div className={cn("font-bold", section.textColor)}>
+
+                    <div className="font-semibold text-primary tabular-nums">
                       ${section.subtotal.toLocaleString()}
                     </div>
                   </div>
@@ -371,7 +326,7 @@ export function ResumenCotizacion({
                     "space-y-2",
                     fullWidth && "grid grid-cols-1 md:grid-cols-2 gap-3 space-y-0"
                   )}>
-                    {section.items.map(item => renderItemRow(item, section.color))}
+                    {section.items.map(item => renderItemRow(item))}
                   </div>
                 </div>
               ))}
@@ -381,55 +336,49 @@ export function ResumenCotizacion({
 
             {/* Total final */}
             <div className="space-y-4">
-              <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-2">
-                    <DollarSign className="h-5 w-5 text-emerald-600" />
-                    <span className="text-slate-600 font-medium">Total de la Cotización</span>
-                  </div>
-                </div>
-                
+              <div className="rounded-md p-6 border border-border">
+                <div className="kicker text-muted-foreground mb-2">Total de la cotización</div>
+
                 <div className={cn(
-                  "font-bold text-emerald-600 mb-2",
+                  "font-serif font-semibold text-primary tabular-nums mb-2",
                   fullWidth ? "text-4xl" : "text-3xl"
                 )}>
                   ${total.toLocaleString()}
                 </div>
-                
-                <div className="flex items-center justify-between text-sm text-slate-600">
+
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span>Cálculo en tiempo real</span>
-                  <span>
+                  <span className="tabular-nums">
                     {invitados > 0 && `$${costPerGuest.toLocaleString()} por invitado`}
                   </span>
                 </div>
               </div>
 
-              {/* Alertas inteligentes */}
               {total > 0 && (
                 <div className="space-y-2">
                   {total < 50000 && (
-                    <div className="flex items-center space-x-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                      <AlertCircle className="h-4 w-4 text-amber-600" />
-                      <span className="text-amber-700 text-sm">
-                        Cotización básica - Considera agregar más elementos
+                    <div className="flex items-center space-x-2 p-3 bg-muted/40 rounded-md border border-border">
+                      <AlertCircle className="h-4 w-4 text-[hsl(30_55%_42%)]" strokeWidth={1.75} />
+                      <span className="text-sm text-muted-foreground">
+                        Cotización básica — considera agregar más elementos
                       </span>
                     </div>
                   )}
-                  
+
                   {total >= 50000 && total < 150000 && (
-                    <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <CheckCircle2 className="h-4 w-4 text-blue-600" />
-                      <span className="text-blue-700 text-sm">
-                        Cotización completa - ¡Excelente propuesta!
+                    <div className="flex items-center space-x-2 p-3 bg-primary/5 rounded-md border border-primary/20">
+                      <CheckCircle2 className="h-4 w-4 text-primary" strokeWidth={1.75} />
+                      <span className="text-sm text-foreground">
+                        Cotización completa — excelente propuesta
                       </span>
                     </div>
                   )}
-                  
+
                   {total >= 150000 && (
-                    <div className="flex items-center space-x-2 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                      <Sparkles className="h-4 w-4 text-purple-600" />
-                      <span className="text-purple-700 text-sm">
-                        Cotización premium - Propuesta de alto valor
+                    <div className="flex items-center space-x-2 p-3 bg-primary/10 rounded-md border border-primary/30">
+                      <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.75} />
+                      <span className="text-sm text-foreground">
+                        Cotización premium — propuesta de alto valor
                       </span>
                     </div>
                   )}
@@ -439,24 +388,21 @@ export function ResumenCotizacion({
           </>
         )}
 
-        {/* Botón de guardar mejorado */}
+        {/* Botón de guardar */}
         <Button
-          className={cn(
-            "w-full h-12 font-semibold text-base transition-all duration-200",
-            "bg-emerald-600 hover:bg-emerald-700"
-          )}
-          onClick={onGuardar} 
+          className="w-full h-11 font-semibold"
+          onClick={onGuardar}
           disabled={guardando || !hasItems}
         >
           {guardando ? (
             <div className="flex items-center space-x-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-foreground border-t-transparent" />
               <span>Guardando...</span>
             </div>
           ) : (
             <div className="flex items-center space-x-2">
-              <Save className="h-4 w-4" />
-              <span>Guardar Cotización</span>
+              <Save className="h-4 w-4" strokeWidth={1.75} />
+              <span>Guardar cotización</span>
             </div>
           )}
         </Button>

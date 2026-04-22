@@ -97,33 +97,33 @@ export function LugaresSelector({ lugares, onChange, readOnly = false }: Props) 
           <div
             key={idx}
             className={cn(
-              "flex items-center gap-3 p-3 rounded-lg border",
+              "flex items-center gap-3 p-3 rounded-md border",
               lugar.es_seleccionado
-                ? "bg-green-50 border-green-200"
-                : "bg-slate-50 border-slate-200"
+                ? "bg-primary/5 border-primary/30"
+                : "bg-muted/40 border-border"
             )}
           >
             {lugar.es_seleccionado ? (
-              <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+              <CheckCircle2 className="h-4 w-4 text-primary shrink-0" strokeWidth={1.75} />
             ) : (
-              <Circle className="h-4 w-4 text-slate-300 shrink-0" />
+              <Circle className="h-4 w-4 text-muted-foreground/50 shrink-0" strokeWidth={1.75} />
             )}
             <div className="flex-1 min-w-0">
-              <div className="font-medium text-sm text-slate-800 flex items-center gap-2">
-                <MapPin className="h-3.5 w-3.5 text-slate-400" />
+              <div className="font-medium text-sm text-foreground flex items-center gap-2">
+                <MapPin className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
                 {lugar.nombre}
                 {lugar.es_seleccionado && (
-                  <Badge className="bg-green-100 text-green-700 text-xs">Seleccionado</Badge>
+                  <Badge variant="outline" className="text-xs font-normal text-primary border-primary/40">Seleccionado</Badge>
                 )}
               </div>
               {(lugar.direccion || lugar.ciudad) && (
-                <div className="text-xs text-slate-500 mt-0.5 ml-5">
+                <div className="text-xs text-muted-foreground mt-0.5 ml-5">
                   {[lugar.direccion, lugar.ciudad].filter(Boolean).join(", ")}
                 </div>
               )}
             </div>
             {(lugar.precio_referencia ?? 0) > 0 && (
-              <span className="text-sm font-semibold text-emerald-600 shrink-0">
+              <span className="text-sm font-semibold text-primary shrink-0 tabular-nums">
                 ${lugar.precio_referencia!.toLocaleString()}
               </span>
             )}
@@ -141,8 +141,8 @@ export function LugaresSelector({ lugares, onChange, readOnly = false }: Props) 
           className={cn(
             "transition-all",
             lugar.es_seleccionado
-              ? "border-green-300 shadow-sm ring-1 ring-green-200"
-              : "border-slate-200"
+              ? "border-primary/40 bg-primary/[0.03]"
+              : "border-border"
           )}
         >
           <CardContent className="p-4">
@@ -155,9 +155,9 @@ export function LugaresSelector({ lugares, onChange, readOnly = false }: Props) 
                 title="Seleccionar esta ubicación"
               >
                 {lugar.es_seleccionado ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <CheckCircle2 className="h-5 w-5 text-primary" strokeWidth={1.75} />
                 ) : (
-                  <Circle className="h-5 w-5 text-slate-300 hover:text-slate-400" />
+                  <Circle className="h-5 w-5 text-muted-foreground/50 hover:text-muted-foreground" strokeWidth={1.75} />
                 )}
               </button>
 
@@ -189,12 +189,12 @@ export function LugaresSelector({ lugares, onChange, readOnly = false }: Props) 
                         <CommandList>
                           <CommandEmpty>
                             <div className="text-center py-2">
-                              <p className="text-sm text-slate-500 mb-2">No se encontraron lugares en el catálogo</p>
-                              <p className="text-xs text-slate-400">Escribe el nombre manualmente abajo</p>
+                              <p className="text-sm text-muted-foreground mb-2">No se encontraron lugares en el catálogo</p>
+                              <p className="text-xs text-muted-foreground/70">Escribe el nombre manualmente abajo</p>
                             </div>
                           </CommandEmpty>
                           {activeCatalogo.length > 0 && (
-                            <CommandGroup heading="Catálogo de Lugares">
+                            <CommandGroup heading="Catálogo de lugares">
                               {activeCatalogo.map((cat) => (
                                 <CommandItem
                                   key={cat.id}
@@ -204,24 +204,24 @@ export function LugaresSelector({ lugares, onChange, readOnly = false }: Props) 
                                 >
                                   <Check
                                     className={cn(
-                                      "mr-2 h-4 w-4",
+                                      "mr-2 h-4 w-4 text-primary",
                                       lugar.nombre === cat.nombre ? "opacity-100" : "opacity-0"
                                     )}
                                   />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                      <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                                      <span className="font-medium text-sm">{cat.nombre}</span>
+                                      <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" strokeWidth={1.75} />
+                                      <span className="font-medium text-sm text-foreground">{cat.nombre}</span>
                                     </div>
-                                    <div className="text-xs text-slate-500 ml-5.5">
+                                    <div className="text-xs text-muted-foreground ml-5.5">
                                       {[cat.direccion, cat.ciudad].filter(Boolean).join(", ")}
                                       {cat.capacidad_estimada && (
-                                        <span className="ml-2 text-slate-400">
+                                        <span className="ml-2 text-muted-foreground/70 tabular-nums">
                                           ({cat.capacidad_estimada} personas)
                                         </span>
                                       )}
                                       {cat.precio_referencia > 0 && (
-                                        <span className="ml-2 text-emerald-600 font-medium">
+                                        <span className="ml-2 text-primary font-medium tabular-nums">
                                           ${cat.precio_referencia.toLocaleString()}
                                         </span>
                                       )}
@@ -237,7 +237,7 @@ export function LugaresSelector({ lugares, onChange, readOnly = false }: Props) 
                   </Popover>
 
                   {lugar.es_seleccionado && (
-                    <Badge className="bg-green-100 text-green-700 shrink-0">
+                    <Badge variant="outline" className="shrink-0 font-normal text-primary border-primary/40">
                       Principal
                     </Badge>
                   )}
@@ -272,13 +272,13 @@ export function LugaresSelector({ lugares, onChange, readOnly = false }: Props) 
                     className="h-9 text-sm"
                   />
                   <div className="relative">
-                    <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-emerald-500" />
+                    <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
                     <Input
                       type="number"
                       placeholder="Precio lugar"
                       value={lugar.precio_referencia || ""}
                       onChange={(e) => handleFieldChange(idx, "precio_referencia", e.target.value ? Number(e.target.value) : 0)}
-                      className="h-9 text-sm pl-8"
+                      className="h-9 text-sm pl-8 tabular-nums"
                     />
                   </div>
                 </div>
@@ -291,7 +291,7 @@ export function LugaresSelector({ lugares, onChange, readOnly = false }: Props) 
                   variant="ghost"
                   size="sm"
                   onClick={() => handleRemove(idx)}
-                  className="mt-1 text-red-400 hover:text-red-600 hover:bg-red-50 shrink-0"
+                  className="mt-1 text-muted-foreground hover:text-destructive shrink-0"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -311,7 +311,7 @@ export function LugaresSelector({ lugares, onChange, readOnly = false }: Props) 
             onClick={handleAdd}
             className="flex-1 border-dashed"
           >
-            <MapPin className="h-4 w-4 mr-2" />
+            <MapPin className="h-4 w-4 mr-2" strokeWidth={1.75} />
             Agregar desde catálogo
           </Button>
         )}
@@ -322,7 +322,7 @@ export function LugaresSelector({ lugares, onChange, readOnly = false }: Props) 
           onClick={handleAddCustom}
           className="flex-1 border-dashed"
         >
-          <PenLine className="h-4 w-4 mr-2" />
+          <PenLine className="h-4 w-4 mr-2" strokeWidth={1.75} />
           Agregar lugar personalizado
         </Button>
       </div>

@@ -5,23 +5,32 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Plus, 
-  Search, 
-  Package, 
-  Trash2, 
-  AlertTriangle, 
+import {
+  Plus,
+  Search,
+  Package,
+  Trash2,
+  AlertTriangle,
   CheckCircle2,
-  TrendingUp,
   Filter,
   Edit3,
   Save,
-  X
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { KPI } from "@/components/Layout/PageHeader";
 
 export default function InventarioTable() {
   const qc = useQueryClient();
@@ -41,6 +50,7 @@ export default function InventarioTable() {
   const [filterCategory, setFilterCategory] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<Partial<MenajeCatalogo>>({});
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   // Filtrar datos
   const filteredData = (data ?? []).filter(item => {
@@ -63,9 +73,10 @@ export default function InventarioTable() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["menaje-catalogo"] });
       setNewItem({ nombre: "", categoria: "", unidad: "unidad", stock_total: 0, precio_alquiler: 0, activo: true });
-      toast({ 
-        title: "¡Elemento creado!",
-        description: "El nuevo elemento se agregó al inventario correctamente."
+      setIsCreateOpen(false);
+      toast({
+        title: "Elemento creado",
+        description: "El nuevo elemento se agregó al inventario correctamente.",
       });
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -128,205 +139,166 @@ export default function InventarioTable() {
 
   return (
     <div className="space-y-6">
-      {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Package className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-blue-800">{totalItems}</div>
-                <div className="text-sm text-blue-600">Total de elementos</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-amber-50 border-amber-200">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-amber-800">{lowStockItems}</div>
-                <div className="text-sm text-amber-600">Stock bajo</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-emerald-50 border-emerald-200">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-emerald-100 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-emerald-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-emerald-800">{totalValue}</div>
-                <div className="text-sm text-emerald-600">Unidades totales</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* KPIs */}
+      <div className="grid grid-cols-1 gap-x-8 gap-y-6 border-y border-border py-6 md:grid-cols-3">
+        <KPI kicker="Total de elementos" value={totalItems} />
+        <KPI
+          kicker="Stock bajo"
+          value={lowStockItems}
+          tone={lowStockItems > 0 ? "warning" : "neutral"}
+        />
+        <KPI kicker="Unidades totales" value={totalValue} tone="primary" />
       </div>
 
-      {/* Formulario de creación */}
-      <Card className="border-slate-200">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center space-x-2 text-slate-800">
-            <Plus className="h-5 w-5" />
-            <span>Agregar Nuevo Elemento</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Nombre</label>
-              <Input
-                placeholder="Ej: Platos hondos"
-                value={newItem.nombre ?? ""}
-                onChange={(e) => setNewItem((p) => ({ ...p, nombre: e.target.value }))}
-                className="bg-white border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
-              />
-            </div>
+      {/* Toolbar: búsqueda + filtro + acción */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nombre o categoría…"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="h-10 pl-10"
+          />
+        </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Categoría</label>
-              <Input
-                placeholder="Ej: Vajilla"
-                value={newItem.categoria ?? ""}
-                onChange={(e) => setNewItem((p) => ({ ...p, categoria: e.target.value }))}
-                className="bg-white border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Unidad</label>
-              <Input
-                placeholder="unidad"
-                value={newItem.unidad ?? "unidad"}
-                onChange={(e) => setNewItem((p) => ({ ...p, unidad: e.target.value }))}
-                className="bg-white border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Stock inicial</label>
-              <Input
-                type="number"
-                min="0"
-                placeholder="0"
-                value={newItem.stock_total ?? 0}
-                onChange={(e) => setNewItem((p) => ({ ...p, stock_total: Number(e.target.value) }))}
-                className="bg-white border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Precio alquiler</label>
-              <Input
-                type="number"
-                min="0"
-                placeholder="0"
-                value={newItem.precio_alquiler ?? 0}
-                onChange={(e) => setNewItem((p) => ({ ...p, precio_alquiler: Number(e.target.value) }))}
-                className="bg-white border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
-              />
-            </div>
-
-            <Button 
-              onClick={() => createMut.mutate()} 
-              disabled={createMut.isPending || !newItem.nombre || !newItem.categoria}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0"
             >
-              {createMut.isPending ? (
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full" />
-                  <span>Agregando...</span>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <Plus className="h-4 w-4" />
-                  <span>Agregar</span>
-                </div>
-              )}
-            </Button>
+              <option value="">Todas las categorías</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Filtros y búsqueda */}
-      <Card className="bg-white border-slate-200">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="Buscar por nombre o categoría..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-slate-50 border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
-              />
-            </div>
+          <span className="font-mono text-xs tabular-nums text-muted-foreground">
+            {filteredData.length} elementos
+          </span>
 
-            <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-slate-500" />
-              <select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:border-blue-500 focus:ring-blue-500/20"
-              >
-                <option value="">Todas las categorías</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Nuevo elemento
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="font-serif text-2xl">Nuevo elemento de menaje</DialogTitle>
+                <DialogDescription>
+                  Define el catálogo base. El stock se actualiza después desde movimientos.
+                </DialogDescription>
+              </DialogHeader>
 
-            <Badge className="bg-blue-100 text-blue-700 border-blue-200">
-              {filteredData.length} elementos
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
+              <div className="grid grid-cols-1 gap-4 py-2 sm:grid-cols-2">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="kicker text-muted-foreground">Nombre</label>
+                  <Input
+                    placeholder="Ej: Platos hondos"
+                    value={newItem.nombre ?? ""}
+                    onChange={(e) => setNewItem((p) => ({ ...p, nombre: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="kicker text-muted-foreground">Categoría</label>
+                  <Input
+                    placeholder="Ej: Vajilla"
+                    value={newItem.categoria ?? ""}
+                    onChange={(e) => setNewItem((p) => ({ ...p, categoria: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="kicker text-muted-foreground">Unidad</label>
+                  <Input
+                    placeholder="unidad"
+                    value={newItem.unidad ?? "unidad"}
+                    onChange={(e) => setNewItem((p) => ({ ...p, unidad: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="kicker text-muted-foreground">Stock inicial</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={newItem.stock_total ?? 0}
+                    onChange={(e) => setNewItem((p) => ({ ...p, stock_total: Number(e.target.value) }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="kicker text-muted-foreground">Precio alquiler</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={newItem.precio_alquiler ?? 0}
+                    onChange={(e) =>
+                      setNewItem((p) => ({ ...p, precio_alquiler: Number(e.target.value) }))
+                    }
+                  />
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setIsCreateOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={() => createMut.mutate()}
+                  disabled={createMut.isPending || !newItem.nombre || !newItem.categoria}
+                >
+                  {createMut.isPending ? "Agregando…" : "Agregar elemento"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
 
       {/* Tabla */}
-      <Card className="bg-white border-slate-200 overflow-hidden">
+      <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50 border-slate-200">
-                <TableHead className="font-semibold text-slate-700">Elemento</TableHead>
-                <TableHead className="font-semibold text-slate-700">Categoría</TableHead>
-                <TableHead className="font-semibold text-slate-700">Unidad</TableHead>
-                <TableHead className="font-semibold text-slate-700 text-center">Stock</TableHead>
-                <TableHead className="font-semibold text-slate-700 text-right">Precio Alquiler</TableHead>
-                <TableHead className="font-semibold text-slate-700 text-center">Estado</TableHead>
-                <TableHead className="font-semibold text-slate-700 text-right">Acciones</TableHead>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="kicker text-muted-foreground">Elemento</TableHead>
+                <TableHead className="kicker text-muted-foreground">Categoría</TableHead>
+                <TableHead className="kicker text-muted-foreground">Unidad</TableHead>
+                <TableHead className="kicker text-center text-muted-foreground">Stock</TableHead>
+                <TableHead className="kicker text-right text-muted-foreground">Precio alquiler</TableHead>
+                <TableHead className="kicker text-center text-muted-foreground">Estado</TableHead>
+                <TableHead className="kicker text-right text-muted-foreground">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12">
-                    <div className="flex flex-col items-center space-y-3">
-                      <div className="animate-spin w-8 h-8 border-2 border-slate-200 border-t-selecta-green rounded-full" />
-                      <span className="text-slate-500">Cargando inventario...</span>
+                  <TableCell colSpan={7} className="py-12 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
+                      <span className="text-sm text-muted-foreground">Cargando inventario…</span>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12">
-                    <div className="flex flex-col items-center space-y-3">
-                      <Package className="h-12 w-12 text-slate-300" />
+                  <TableCell colSpan={7} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <Package className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.25} />
                       <div>
-                        <h3 className="font-medium text-slate-700">No hay elementos</h3>
-                        <p className="text-sm text-slate-500 mt-1">
-                          {searchTerm || filterCategory ? "No se encontraron resultados con los filtros aplicados" : "Comienza agregando elementos a tu inventario"}
+                        <h3 className="font-serif text-lg text-foreground">No hay elementos</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {searchTerm || filterCategory
+                            ? "No se encontraron resultados con los filtros aplicados."
+                            : "Comienza agregando elementos al catálogo."}
                         </p>
                       </div>
                     </div>
@@ -339,7 +311,7 @@ export default function InventarioTable() {
                   const isEditing = editingId === item.id;
 
                   return (
-                    <TableRow key={item.id} className="hover:bg-slate-50 transition-colors">
+                    <TableRow key={item.id} className="border-border transition-colors hover:bg-muted/30">
                       <TableCell className="font-medium">
                         {isEditing ? (
                           <Input
@@ -349,9 +321,9 @@ export default function InventarioTable() {
                             autoFocus
                           />
                         ) : (
-                          <div className="flex items-center space-x-2">
-                            <Package className="h-4 w-4 text-slate-400" />
-                            <span>{item.nombre}</span>
+                          <div className="flex items-center gap-2.5">
+                            <Package className="h-4 w-4 text-muted-foreground/60" strokeWidth={1.5} />
+                            <span className="text-foreground">{item.nombre}</span>
                           </div>
                         )}
                       </TableCell>
@@ -363,7 +335,10 @@ export default function InventarioTable() {
                             onChange={(e) => setEditValues((v) => ({ ...v, categoria: e.target.value }))}
                           />
                         ) : (
-                          <Badge className="bg-slate-100 text-slate-700 border-slate-200">
+                          <Badge
+                            variant="outline"
+                            className="border-border bg-muted/40 font-normal text-muted-foreground"
+                          >
                             {item.categoria}
                           </Badge>
                         )}
@@ -377,7 +352,7 @@ export default function InventarioTable() {
                             className="w-24"
                           />
                         ) : (
-                          <span className="text-slate-600">{item.unidad}</span>
+                          <span className="text-muted-foreground">{item.unidad}</span>
                         )}
                       </TableCell>
 
@@ -391,12 +366,14 @@ export default function InventarioTable() {
                             className="w-20 text-center"
                           />
                         ) : (
-                          <span className={cn(
-                            "font-semibold",
-                            status.color === "red" && "text-red-600",
-                            status.color === "amber" && "text-amber-600",
-                            status.color === "green" && "text-green-600"
-                          )}>
+                          <span
+                            className={cn(
+                              "font-mono text-sm font-semibold tabular-nums",
+                              status.color === "red" && "text-destructive",
+                              status.color === "amber" && "text-[hsl(30_55%_42%)]",
+                              status.color === "green" && "text-foreground"
+                            )}
+                          >
                             {item.stock_total}
                           </span>
                         )}
@@ -408,83 +385,93 @@ export default function InventarioTable() {
                             type="number"
                             min="0"
                             value={editValues.precio_alquiler ?? 0}
-                            onChange={(e) => setEditValues((v) => ({ ...v, precio_alquiler: Number(e.target.value) }))}
+                            onChange={(e) =>
+                              setEditValues((v) => ({ ...v, precio_alquiler: Number(e.target.value) }))
+                            }
                             className="w-24 text-right"
                           />
                         ) : (
-                          <span className="text-slate-600 font-medium">
+                          <span className="font-mono text-sm tabular-nums text-foreground/80">
                             ${item.precio_alquiler.toLocaleString()}
                           </span>
                         )}
                       </TableCell>
 
                       <TableCell className="text-center">
-                        <Badge className={cn(
-                          "flex items-center space-x-1 w-fit mx-auto",
-                          status.color === "red" && "bg-red-100 text-red-700 border-red-200",
-                          status.color === "amber" && "bg-amber-100 text-amber-700 border-amber-200",
-                          status.color === "green" && "bg-green-100 text-green-700 border-green-200"
-                        )}>
-                          <StatusIcon className="h-3 w-3" />
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "mx-auto inline-flex w-fit items-center gap-1 font-normal",
+                            status.color === "red" && "border-destructive/30 bg-destructive/10 text-destructive",
+                            status.color === "amber" &&
+                              "border-[hsl(30_55%_42%)]/30 bg-[hsl(30_55%_42%)]/10 text-[hsl(30_55%_42%)]",
+                            status.color === "green" && "border-primary/25 bg-primary/10 text-primary"
+                          )}
+                        >
+                          <StatusIcon className="h-3 w-3" strokeWidth={2} />
                           <span>{status.label}</span>
                         </Badge>
                       </TableCell>
 
                       <TableCell className="text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                         {isEditing ? (
-                           <>
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               onClick={() => saveEditing(item.id)}
-                               className="text-green-600 hover:bg-green-50"
-                             >
-                               <Save className="h-4 w-4" />
-                             </Button>
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               onClick={cancelEditing}
-                               className="text-slate-500 hover:bg-slate-50"
-                             >
-                               <X className="h-4 w-4" />
-                             </Button>
-                           </>
-                         ) : (
-                           <>
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               onClick={() => startEditing(item)}
-                               className="text-blue-600 hover:bg-blue-50"
-                             >
-                               <Edit3 className="h-4 w-4" />
-                             </Button>
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               onClick={() => {
-                                 if (window.confirm(`¿Eliminar "${item.nombre}" del inventario?`)) {
-                                   delMut.mutate(item.id);
-                                 }
-                               }}
-                               className="text-red-600 hover:bg-red-50"
-                             >
-                               <Trash2 className="h-4 w-4" />
-                             </Button>
-                           </>
-                         )}
-                       </div>
-                     </TableCell>
-                   </TableRow>
-                 );
-               })
-             )}
-           </TableBody>
-         </Table>
-       </div>
-     </Card>
+                        <div className="flex items-center justify-end gap-1">
+                          {isEditing ? (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => saveEditing(item.id)}
+                                className="h-8 w-8 p-0 text-primary hover:bg-primary/10"
+                                aria-label="Guardar"
+                              >
+                                <Save className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={cancelEditing}
+                                className="h-8 w-8 p-0 text-muted-foreground hover:bg-muted"
+                                aria-label="Cancelar"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => startEditing(item)}
+                                className="h-8 w-8 p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                aria-label="Editar"
+                              >
+                                <Edit3 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  if (window.confirm(`¿Eliminar "${item.nombre}" del inventario?`)) {
+                                    delMut.mutate(item.id);
+                                  }
+                                }}
+                                className="h-8 w-8 p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                aria-label="Eliminar"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
    </div>
  );
 }

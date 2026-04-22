@@ -113,49 +113,44 @@ export function PlatosSelector({
     const selected = isSelected(plato.id);
 
     return (
-      <Card 
-        key={plato.id} 
+      <Card
+        key={plato.id}
         className={cn(
-          "relative transition-all duration-200 hover:shadow-md border h-full",
-          selected 
-            ? "border-selecta-green bg-selecta-green/5" 
-            : "border-slate-200 hover:border-slate-300"
+          "relative transition-all duration-200 hover:shadow-[var(--shadow-soft)] border h-full",
+          selected
+            ? "border-primary bg-primary/5"
+            : "border-border hover:border-border/80"
         )}
       >
         {selected && (
-          <div className="absolute top-3 right-3 z-10 bg-selecta-green text-white rounded-full p-1">
-            <CheckCircle2 className="h-3 w-3" />
+          <div className="absolute top-3 right-3 z-10 bg-primary text-primary-foreground rounded-full p-1">
+            <CheckCircle2 className="h-3 w-3" strokeWidth={1.75} />
           </div>
         )}
 
         <CardContent className="p-4 h-full flex flex-col">
           {/* Título - altura fija */}
           <div className="mb-3">
-            <h4 className="font-medium text-slate-800 leading-tight text-sm min-h-[2.5rem] flex items-start">
+            <h4 className="font-medium text-foreground leading-tight text-sm min-h-[2.5rem] flex items-start">
               <span className="line-clamp-2">
                 {plato.nombre}
               </span>
             </h4>
           </div>
-          
+
           {/* Badges - uno debajo del otro con altura fija */}
           <div className="space-y-2 mb-4 min-h-[3.5rem] flex flex-col justify-start">
-            <Badge 
-              variant="outline" 
-              className="text-xs bg-slate-50 w-fit max-w-full truncate"
+            <Badge
+              variant="outline"
+              className="text-xs font-normal w-fit max-w-full truncate"
               title={plato.categoria}
             >
               {plato.categoria}
             </Badge>
-            
-            <Badge 
-              variant="secondary" 
-              className={cn(
-                "text-xs w-fit max-w-full truncate",
-                plato.tipo_menu === "Menu General" 
-                  ? "bg-blue-100 text-blue-700" 
-                  : "bg-purple-100 text-purple-700"
-              )}
+
+            <Badge
+              variant="outline"
+              className="text-xs font-normal w-fit max-w-full truncate text-muted-foreground"
               title={plato.tipo_menu}
             >
               {plato.tipo_menu === "Menu General" ? "General" : "Personalizable"}
@@ -163,9 +158,9 @@ export function PlatosSelector({
           </div>
 
           {/* Precio */}
-          <div className="flex items-center space-x-1 py-2 mb-4">
-            <DollarSign className="h-4 w-4 text-selecta-green" />
-            <span className="font-bold text-lg text-selecta-green">
+          <div className="flex items-baseline gap-1 py-2 mb-4">
+            <span className="text-xs text-muted-foreground">$</span>
+            <span className="font-semibold text-lg text-primary tabular-nums">
               {precio.toLocaleString()}
             </span>
           </div>
@@ -175,15 +170,15 @@ export function PlatosSelector({
             {qty > 0 ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => onQtyChange(plato.id, Math.max(0, qty - 1))}
                     className="h-8 w-8 p-0 shrink-0"
                   >
                     <Minus className="h-3 w-3" />
                   </Button>
-                  
+
                   <Input
                     type="number"
                     min={0}
@@ -192,11 +187,11 @@ export function PlatosSelector({
                       const val = parseInt(e.target.value, 10);
                       onQtyChange(plato.id, isNaN(val) ? 0 : Math.max(0, val));
                     }}
-                    className="w-16 h-8 text-center text-sm font-medium border-slate-200"
+                    className="w-16 h-8 text-center text-sm font-medium tabular-nums"
                   />
-                  
-                  <Button 
-                    variant="outline" 
+
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => onQtyChange(plato.id, qty + 1)}
                     className="h-8 w-8 p-0 shrink-0"
@@ -204,20 +199,20 @@ export function PlatosSelector({
                     <Plus className="h-3 w-3" />
                   </Button>
                 </div>
-                
-                <div className="text-center p-2 bg-selecta-green/10 rounded-lg">
-                  <span className="text-sm font-medium text-selecta-green">
-                    Total: ${(precio * qty).toLocaleString()}
+
+                <div className="text-center py-1.5 rounded-md bg-primary/5 border border-primary/20">
+                  <span className="text-sm font-medium text-primary tabular-nums">
+                    ${(precio * qty).toLocaleString()}
                   </span>
                 </div>
               </div>
             ) : (
               <Button
                 onClick={() => onAdd(plato)}
-                className="w-full bg-slate-800 hover:bg-selecta-green transition-colors"
+                className="w-full"
                 size="sm"
               >
-                <Plus className="h-4 w-4 mr-1" />
+                <Plus className="h-4 w-4 mr-1" strokeWidth={1.75} />
                 Añadir
               </Button>
             )}
@@ -233,50 +228,45 @@ export function PlatosSelector({
     const selected = isSelected(plato.id);
 
     return (
-      <Card 
+      <Card
         key={plato.id}
         className={cn(
-          "transition-all duration-200 hover:shadow-sm border-l-4",
-          selected 
-            ? "border-l-selecta-green bg-selecta-green/5" 
-            : "border-l-transparent hover:border-l-slate-300"
+          "transition-all duration-200 hover:shadow-[var(--shadow-soft)] border-l-2",
+          selected
+            ? "border-l-primary bg-primary/5"
+            : "border-l-transparent hover:border-l-border"
         )}
       >
         <CardContent className="p-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2 mb-3">
-                <h4 className="font-medium text-slate-800 flex-1 line-clamp-2 leading-tight">
+                <h4 className="font-medium text-foreground flex-1 line-clamp-2 leading-tight">
                   {plato.nombre}
                 </h4>
-                
+
                 {selected && (
-                  <Badge className="bg-selecta-green text-white text-xs shrink-0 ml-2">
+                  <Badge variant="default" className="text-xs font-normal shrink-0 ml-2 tabular-nums">
                     {qty}
                   </Badge>
                 )}
               </div>
-              
+
               {/* Badges en columna para modo lista también */}
               <div className="space-y-2 mb-3">
                 <div className="flex flex-wrap gap-2">
-                  <Badge 
-                    variant="outline" 
-                    className="text-xs max-w-[200px] truncate"
+                  <Badge
+                    variant="outline"
+                    className="text-xs font-normal max-w-[200px] truncate"
                     title={plato.categoria}
                   >
                     {plato.categoria}
                   </Badge>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Badge 
-                    variant="secondary" 
-                    className={cn(
-                      "text-xs max-w-[200px] truncate",
-                      plato.tipo_menu === "Menu General" 
-                        ? "bg-blue-100 text-blue-700" 
-                        : "bg-purple-100 text-purple-700"
-                    )}
+                  <Badge
+                    variant="outline"
+                    className="text-xs font-normal max-w-[200px] truncate text-muted-foreground"
                     title={plato.tipo_menu}
                   >
                     {plato.tipo_menu === "Menu General" ? "General" : "Personalizable"}
@@ -284,14 +274,14 @@ export function PlatosSelector({
                 </div>
               </div>
 
-              <div className="flex items-center space-x-1">
-                <DollarSign className="h-4 w-4 text-selecta-green" />
-                <span className="font-bold text-selecta-green">
+              <div className="flex items-baseline gap-1">
+                <span className="text-xs text-muted-foreground">$</span>
+                <span className="font-semibold text-primary tabular-nums">
                   {precio.toLocaleString()}
                 </span>
                 {qty > 0 && (
-                  <span className="text-sm text-slate-500 ml-2">
-                    • Total: ${(precio * qty).toLocaleString()}
+                  <span className="text-sm text-muted-foreground ml-2">
+                    · Total ${(precio * qty).toLocaleString()}
                   </span>
                 )}
               </div>
@@ -300,8 +290,8 @@ export function PlatosSelector({
             <div className="flex items-center space-x-2 shrink-0">
               {qty > 0 ? (
                 <>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => onQtyChange(plato.id, Math.max(0, qty - 1))}
                     className="h-8 w-8 p-0"
@@ -316,10 +306,10 @@ export function PlatosSelector({
                       const val = parseInt(e.target.value, 10);
                       onQtyChange(plato.id, isNaN(val) ? 0 : Math.max(0, val));
                     }}
-                    className="w-16 h-8 text-center text-sm font-medium border-slate-200"
+                    className="w-16 h-8 text-center text-sm font-medium tabular-nums"
                   />
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => onQtyChange(plato.id, qty + 1)}
                     className="h-8 w-8 p-0"
@@ -328,12 +318,8 @@ export function PlatosSelector({
                   </Button>
                 </>
               ) : (
-                <Button
-                  onClick={() => onAdd(plato)}
-                  className="bg-slate-800 hover:bg-selecta-green"
-                  size="sm"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
+                <Button onClick={() => onAdd(plato)} size="sm">
+                  <Plus className="h-4 w-4 mr-1" strokeWidth={1.75} />
                   Añadir
                 </Button>
               )}
@@ -348,19 +334,17 @@ export function PlatosSelector({
     <div className="space-y-4">
       {/* Header con resumen */}
       {totalSelected > 0 && (
-        <Card className="bg-selecta-green/5 border-selecta-green/20">
+        <Card className="bg-primary/5 border-primary/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-selecta-green/10 rounded-lg">
-                  <Utensils className="h-5 w-5 text-white" />
-                </div>
+                <Utensils className="h-5 w-5 text-primary" strokeWidth={1.75} />
                 <div>
-                  <div className="font-semibold text-selecta-green">
+                  <div className="font-semibold text-primary">
                     {totalSelected} platos seleccionados
                   </div>
-                  <div className="text-sm text-selecta-green/70">
-                    Total: ${totalCost.toLocaleString()}
+                  <div className="text-sm text-primary/70 tabular-nums">
+                    Total ${totalCost.toLocaleString()}
                   </div>
                 </div>
               </div>
@@ -453,14 +437,14 @@ export function PlatosSelector({
 
       {/* Mensaje de sugerencia inicial */}
       {totalSelected === 0 && !hasActiveFilters && (
-        <Card className="bg-amber-50 border-amber-200">
+        <Card className="bg-muted/40 border-border">
           <CardContent className="p-4 text-center">
-            <div className="space-y-2">
-              <div className="text-amber-800 font-medium">
-                ¡Comienza a armar tu menú!
+            <div className="space-y-1">
+              <div className="font-serif text-base text-foreground">
+                Comienza a armar tu menú
               </div>
-              <div className="text-amber-600 text-sm">
-                Selecciona platos para crear una propuesta completa para tus clientes
+              <div className="text-muted-foreground text-sm">
+                Selecciona platos para crear una propuesta completa
               </div>
             </div>
           </CardContent>
@@ -468,14 +452,14 @@ export function PlatosSelector({
       )}
 
       {/* Información de resultados */}
-      <div className="flex items-center justify-between text-sm text-slate-600">
-        <span>
-          Mostrando {filteredData.length} de {data.length} platos
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <span className="tabular-nums">
+          {filteredData.length} de {data.length} platos
         </span>
-        
+
         {hasActiveFilters && (
-          <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-            <Filter className="h-3 w-3 mr-1" />
+          <Badge variant="outline" className="font-normal">
+            <Filter className="h-3 w-3 mr-1" strokeWidth={1.75} />
             Filtros activos
           </Badge>
         )}
@@ -485,12 +469,10 @@ export function PlatosSelector({
       {filteredData.length === 0 ? (
         <Card className="py-12">
           <CardContent className="text-center space-y-4">
-            <div className="w-16 h-16 mx-auto bg-slate-100 rounded-full flex items-center justify-center">
-              <Search className="h-6 w-6 text-slate-400" />
-            </div>
+            <Search className="h-8 w-8 mx-auto text-muted-foreground" strokeWidth={1.5} />
             <div>
-              <h3 className="font-medium text-slate-700 mb-2">No se encontraron platos</h3>
-              <p className="text-slate-500 text-sm mb-4">
+              <h3 className="font-serif text-lg text-foreground mb-1">No se encontraron platos</h3>
+              <p className="text-muted-foreground text-sm mb-4">
                 {q ? `No hay platos que coincidan con "${q}"` : "Intenta ajustar los filtros"}
               </p>
               {hasActiveFilters && (

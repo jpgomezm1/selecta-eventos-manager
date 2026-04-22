@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Search, Package, AlertTriangle, DollarSign, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { KPI } from "@/components/Layout/PageHeader";
 
 const PAGE_SIZE = 20;
 
@@ -47,29 +48,11 @@ export default function StockTable() {
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="flex items-center gap-3 rounded-lg border p-4">
-          <Package className="h-8 w-8 text-blue-500" />
-          <div>
-            <p className="text-sm text-slate-500">Total items</p>
-            <p className="text-xl font-semibold">{totalItems}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-lg border p-4">
-          <AlertTriangle className="h-8 w-8 text-red-500" />
-          <div>
-            <p className="text-sm text-slate-500">Sin stock</p>
-            <p className="text-xl font-semibold">{sinStock}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-lg border p-4">
-          <DollarSign className="h-8 w-8 text-green-500" />
-          <div>
-            <p className="text-sm text-slate-500">Valor total inventario</p>
-            <p className="text-xl font-semibold">{fmt(valorTotal)}</p>
-          </div>
-        </div>
+      {/* KPIs */}
+      <div className="grid grid-cols-1 gap-x-8 gap-y-6 border-y border-border py-6 md:grid-cols-3">
+        <KPI kicker="Total items" value={totalItems} />
+        <KPI kicker="Sin stock" value={sinStock} tone={sinStock > 0 ? "destructive" : "neutral"} />
+        <KPI kicker="Valor total" value={fmt(valorTotal)} tone="primary" />
       </div>
 
       {/* Search */}
@@ -110,7 +93,7 @@ export default function StockTable() {
                     <TableCell className="font-medium">{i.nombre}</TableCell>
                     <TableCell>{i.unidad}</TableCell>
                     <TableCell className="text-right">
-                      <span className={stock <= 0 ? "text-red-600 font-semibold" : ""}>
+                      <span className={stock <= 0 ? "text-destructive font-semibold" : ""}>
                         {stock}
                       </span>
                     </TableCell>

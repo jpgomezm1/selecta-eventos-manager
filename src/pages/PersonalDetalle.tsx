@@ -18,6 +18,7 @@ import { Personal, EventoPersonal, Evento } from "@/types/database";
 import { RegistroPagos } from "@/components/Forms/RegistroPagos";
 import { getModalidadCobroLabel } from "@/lib/calcularPagoPersonal";
 import { parseLocalDate, formatLocalDate } from "@/lib/dateLocal";
+import { KPI } from "@/components/Layout/PageHeader";
 import * as XLSX from "xlsx";
 
 interface TrabajoConEvento extends EventoPersonal {
@@ -389,20 +390,6 @@ export default function PersonalDetalle() {
     );
   };
 
-  const getRoleBadgeVariant = (rol: string) => {
-    const variants: Record<string, string> = {
-      "Coordinador": "bg-purple-50 text-purple-700",
-      "Chef": "bg-orange-50 text-orange-700",
-      "Mesero": "bg-blue-50 text-blue-700",
-      "Bartender": "bg-emerald-50 text-emerald-700",
-      "Decorador": "bg-pink-50 text-pink-700",
-      "Técnico de Sonido": "bg-indigo-50 text-indigo-700",
-      "Fotógrafo": "bg-amber-50 text-amber-700",
-      "Otro": "bg-slate-100 text-slate-700"
-    };
-    return variants[rol] || variants["Otro"];
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -434,99 +421,78 @@ export default function PersonalDetalle() {
     );
   }
 
+  const initials = personal.nombre_completo
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/personal")}
-            className="h-8 w-8 p-0"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-selecta-green/10 rounded-full flex items-center justify-center">
-              <span className="text-sm font-semibold text-selecta-green">
-                {personal.nombre_completo.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-              </span>
-            </div>
-
-            <div>
-              <h1 className="text-2xl font-semibold text-slate-900">
-                {personal.nombre_completo}
-              </h1>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant="secondary" className={getRoleBadgeVariant(personal.rol)}>
-                  {personal.rol}
-                </Badge>
-                <span className="text-sm text-slate-500">CC: {personal.numero_cedula}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 text-sm text-slate-600">
-          <span className="font-medium">${Number(personal.tarifa).toLocaleString()}</span>
-          <span className="text-slate-400">/</span>
-          <span>{getModalidadCobroLabel(personal.modalidad_cobro)}</span>
-        </div>
+    <div className="space-y-7">
+      {/* Back navigation */}
+      <div className="-mt-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/personal")}
+          className="-ml-2 h-7 gap-1.5 text-[11.5px] text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.75} />
+          Personal
+        </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-              <Calendar className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-semibold text-slate-900">{totalTrabajos}</p>
-              <p className="text-xs text-slate-500">Trabajos totales</p>
+      {/* Header editorial */}
+      <header className="animate-rise stagger-1 flex flex-col gap-6 border-b border-border/70 pb-7 md:flex-row md:items-end md:justify-between">
+        <div className="flex items-start gap-5">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-border bg-accent">
+            <span className="font-serif text-[20px] font-medium tracking-tight text-primary">
+              {initials}
+            </span>
+          </div>
+          <div className="min-w-0 space-y-2">
+            <span className="kicker">Empleado</span>
+            <h1 className="font-serif text-[32px] leading-[1.05] tracking-[-0.028em] text-foreground md:text-[40px]">
+              {personal.nombre_completo}
+            </h1>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-[12.5px] text-muted-foreground">
+              <span className="inline-flex rounded-full border border-border bg-card px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-foreground">
+                {personal.rol}
+              </span>
+              <span className="tabular-nums">CC {personal.numero_cedula}</span>
             </div>
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center">
-              <Clock className="h-5 w-5 text-orange-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-semibold text-slate-900">${totalPendiente.toLocaleString()}</p>
-              <p className="text-xs text-slate-500">Pendiente</p>
-            </div>
+        <div className="text-right">
+          <div className="kicker mb-1.5">Tarifa</div>
+          <div className="font-serif text-[26px] leading-none tracking-tight tabular-nums text-foreground">
+            ${Number(personal.tarifa).toLocaleString()}
           </div>
-        </Card>
+          <div className="mt-1 text-[11.5px] italic text-muted-foreground">
+            {getModalidadCobroLabel(personal.modalidad_cobro)}
+          </div>
+        </div>
+      </header>
 
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
-              <DollarSign className="h-5 w-5 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-semibold text-slate-900">${totalPagado.toLocaleString()}</p>
-              <p className="text-xs text-slate-500">Total pagado</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-semibold text-slate-900">
-                ${totalTrabajos > 0 ? Math.round((totalPagado + totalPendiente) / totalTrabajos).toLocaleString() : '0'}
-              </p>
-              <p className="text-xs text-slate-500">Promedio/evento</p>
-            </div>
-          </div>
-        </Card>
+      {/* KPIs */}
+      <div className="animate-rise stagger-2 grid grid-cols-2 gap-x-8 gap-y-6 border-b border-border pb-6 md:grid-cols-4">
+        <KPI kicker="Trabajos totales" value={totalTrabajos} />
+        <KPI
+          kicker="Pendiente"
+          value={`$${totalPendiente.toLocaleString()}`}
+          tone={totalPendiente > 0 ? "warning" : "neutral"}
+        />
+        <KPI
+          kicker="Total pagado"
+          value={`$${totalPagado.toLocaleString()}`}
+          tone="primary"
+        />
+        <KPI
+          kicker="Promedio / evento"
+          value={`$${totalTrabajos > 0 ? Math.round((totalPagado + totalPendiente) / totalTrabajos).toLocaleString() : "0"}`}
+        />
       </div>
 
       {/* Tabs */}

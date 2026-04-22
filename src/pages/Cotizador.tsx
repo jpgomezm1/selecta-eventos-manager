@@ -577,17 +577,17 @@ export default function Cotizador() {
     <div className="mb-6">
       <Tabs value={activeKey} onValueChange={(v) => setActiveKey(v)} className="w-full">
         <div className="flex items-center justify-between">
-          <TabsList className="flex-1 mr-4 bg-slate-100 rounded-lg p-1">
+          <TabsList className="flex-1 mr-4">
             {opciones.map((o) => (
               <TabsTrigger
                 key={o.key}
                 value={o.key}
-                className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-selecta-green rounded-md font-semibold transition-all duration-200"
+                className="flex-1 font-medium"
               >
                 <div className="flex items-center space-x-2">
                   <div
-                    className={`w-2 h-2 rounded-full ${
-                      o.key === activeKey ? "bg-selecta-green" : "bg-slate-400"
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      o.key === activeKey ? "bg-primary" : "bg-muted-foreground/50"
                     }`}
                   />
                   <span className="truncate">{o.nombre_opcion}</span>
@@ -598,11 +598,11 @@ export default function Cotizador() {
 
           <div className="flex items-center space-x-2">
             <Button variant="outline" size="sm" onClick={addOpcion}>
-              <Plus className="h-4 w-4 mr-1" />
+              <Plus className="h-4 w-4 mr-1" strokeWidth={1.75} />
               <span className="hidden sm:inline">Agregar</span>
             </Button>
             <Button variant="outline" size="sm" onClick={() => duplicateOpcion(activeKey)}>
-              <Copy className="h-4 w-4 mr-1" />
+              <Copy className="h-4 w-4 mr-1" strokeWidth={1.75} />
               <span className="hidden sm:inline">Duplicar</span>
             </Button>
           </div>
@@ -610,58 +610,58 @@ export default function Cotizador() {
       </Tabs>
 
       {/* Option header with name editing and delete */}
-      <div className="flex items-center justify-between mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+      <div className="flex items-center justify-between mt-4 p-4 bg-muted/40 rounded-md border border-border">
         <div className="flex items-center space-x-3">
           {editingOption === current.key ? (
             <div className="flex items-center space-x-2">
               <Input
                 value={editingName}
                 onChange={(e) => setEditingName(e.target.value)}
-                className="max-w-xs h-10"
+                className="max-w-xs h-10 font-serif"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") saveOptionName();
                   if (e.key === "Escape") cancelEditingOption();
                 }}
                 autoFocus
               />
-              <Button variant="ghost" size="sm" onClick={saveOptionName} className="text-green-600 hover:bg-green-50">
+              <Button variant="ghost" size="sm" onClick={saveOptionName} className="text-primary">
                 <Check className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" onClick={cancelEditingOption} className="text-red-600 hover:bg-red-50">
+              <Button variant="ghost" size="sm" onClick={cancelEditingOption} className="text-muted-foreground hover:text-destructive">
                 <X className="h-4 w-4" />
               </Button>
             </div>
           ) : (
             <>
-              <h3 className="text-lg font-bold text-slate-800">{current.nombre_opcion}</h3>
+              <h3 className="font-serif text-lg text-foreground">{current.nombre_opcion}</h3>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => startEditingOption(current.key, current.nombre_opcion)}
-                className="text-slate-500 hover:text-selecta-green"
+                className="text-muted-foreground hover:text-primary"
               >
-                <Edit3 className="h-4 w-4" />
+                <Edit3 className="h-4 w-4" strokeWidth={1.75} />
               </Button>
             </>
           )}
         </div>
 
         <div className="flex items-center space-x-3">
-          <div className="hidden md:flex items-center space-x-3 text-sm">
-            <Badge variant="outline" className="bg-white">
-              <div className="w-2 h-2 bg-orange-400 rounded-full mr-1.5" />
+          <div className="hidden md:flex items-center space-x-2 text-sm">
+            <Badge variant="outline" className="bg-card font-normal tabular-nums">
+              <div className="w-1 h-1 bg-muted-foreground rounded-full mr-1.5" />
               {current.items.platos.length} platos
             </Badge>
-            <Badge variant="outline" className="bg-white">
-              <div className="w-2 h-2 bg-blue-400 rounded-full mr-1.5" />
+            <Badge variant="outline" className="bg-card font-normal tabular-nums">
+              <div className="w-1 h-1 bg-muted-foreground rounded-full mr-1.5" />
               {current.items.personal.length} personal
             </Badge>
-            <Badge variant="outline" className="bg-white">
-              <div className="w-2 h-2 bg-green-400 rounded-full mr-1.5" />
+            <Badge variant="outline" className="bg-card font-normal tabular-nums">
+              <div className="w-1 h-1 bg-muted-foreground rounded-full mr-1.5" />
               {current.items.transportes.length} transportes
             </Badge>
-            <Badge variant="outline" className="bg-white">
-              <div className="w-2 h-2 bg-purple-400 rounded-full mr-1.5" />
+            <Badge variant="outline" className="bg-card font-normal tabular-nums">
+              <div className="w-1 h-1 bg-muted-foreground rounded-full mr-1.5" />
               {(current.items.menaje ?? []).length} menaje
             </Badge>
           </div>
@@ -671,7 +671,7 @@ export default function Cotizador() {
               variant="ghost"
               size="sm"
               onClick={() => removeOpcion(current.key)}
-              className="text-red-500 hover:text-red-600 hover:bg-red-50"
+              className="text-muted-foreground hover:text-destructive"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -685,8 +685,9 @@ export default function Cotizador() {
     <div className="container mx-auto px-4 py-8 pb-28">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900">Nueva Cotización</h1>
-        <p className="text-slate-500 mt-1">Crea presupuestos profesionales paso a paso</p>
+        <span className="kicker text-muted-foreground">Cotizador</span>
+        <h1 className="font-serif text-3xl font-semibold text-foreground mt-1">Nueva cotización</h1>
+        <p className="text-muted-foreground mt-1 text-sm">Construye el presupuesto paso a paso</p>
       </div>
 
       {/* Stepper */}
@@ -697,8 +698,8 @@ export default function Cotizador() {
         {currentStep === 1 && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg font-semibold text-slate-900">
-                Información del Evento
+              <CardTitle className="font-serif text-lg text-foreground">
+                Información del evento
               </CardTitle>
             </CardHeader>
             <CardContent className="p-8 space-y-6">
@@ -776,8 +777,8 @@ export default function Cotizador() {
 
               {/* Ubicaciones */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
-                  Ubicaciones del Evento
+                <label className="text-sm font-medium text-foreground">
+                  Ubicaciones del evento
                 </label>
                 <LugaresSelector
                   lugares={lugares}
@@ -786,40 +787,40 @@ export default function Cotizador() {
               </div>
 
               {selectedCliente && (
-                <Card className="bg-slate-50 border-slate-200">
+                <Card className="bg-muted/40 border-border">
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <Badge variant="outline" className={selectedCliente.tipo === 'empresa' ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-slate-100 text-slate-700 border-slate-200"}>
-                        {selectedCliente.tipo === 'empresa' ? 'Empresa' : 'Persona Natural'}
+                      <Badge variant="outline" className="font-normal">
+                        {selectedCliente.tipo === 'empresa' ? 'Empresa' : 'Persona natural'}
                       </Badge>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
-                        <span className="text-slate-500 text-xs">Nombre</span>
-                        <p className="font-medium text-slate-800">{selectedCliente.nombre}</p>
+                        <span className="kicker text-muted-foreground">Nombre</span>
+                        <p className="font-medium text-foreground">{selectedCliente.nombre}</p>
                       </div>
                       {selectedCliente.tipo === 'persona_natural' && selectedCliente.cedula && (
                         <div>
-                          <span className="text-slate-500 text-xs">Cedula</span>
-                          <p className="font-medium text-slate-800">{selectedCliente.cedula}</p>
+                          <span className="kicker text-muted-foreground">Cédula</span>
+                          <p className="font-medium text-foreground">{selectedCliente.cedula}</p>
                         </div>
                       )}
                       {selectedCliente.tipo === 'empresa' && selectedCliente.nit && (
                         <div>
-                          <span className="text-slate-500 text-xs">NIT</span>
-                          <p className="font-medium text-slate-800">{selectedCliente.nit}</p>
+                          <span className="kicker text-muted-foreground">NIT</span>
+                          <p className="font-medium text-foreground">{selectedCliente.nit}</p>
                         </div>
                       )}
                       {selectedCliente.telefono && (
                         <div>
-                          <span className="text-slate-500 text-xs">Telefono</span>
-                          <p className="font-medium text-slate-800">{selectedCliente.telefono}</p>
+                          <span className="kicker text-muted-foreground">Teléfono</span>
+                          <p className="font-medium text-foreground">{selectedCliente.telefono}</p>
                         </div>
                       )}
                       {selectedCliente.correo && (
                         <div>
-                          <span className="text-slate-500 text-xs">Correo</span>
-                          <p className="font-medium text-slate-800">{selectedCliente.correo}</p>
+                          <span className="kicker text-muted-foreground">Correo</span>
+                          <p className="font-medium text-foreground">{selectedCliente.correo}</p>
                         </div>
                       )}
                     </div>
@@ -947,18 +948,18 @@ export default function Cotizador() {
             {opciones.length >= 2 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg font-semibold text-slate-900">
-                    Comparación de Opciones
+                  <CardTitle className="font-serif text-lg text-foreground">
+                    Comparación de opciones
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-slate-200 bg-slate-50">
-                          <th className="text-left p-4 font-semibold text-slate-600">Categoría</th>
+                        <tr className="border-b border-border bg-muted/40">
+                          <th className="text-left p-4 kicker text-muted-foreground">Categoría</th>
                           {opciones.map((o) => (
-                            <th key={o.key} className="text-right p-4 font-semibold text-slate-800">
+                            <th key={o.key} className="text-right p-4 font-semibold text-foreground">
                               {o.nombre_opcion}
                             </th>
                           ))}
@@ -966,30 +967,30 @@ export default function Cotizador() {
                       </thead>
                       <tbody>
                         {[
-                          { label: "Platos y Menú", key: "platos" as const },
+                          { label: "Platos y menú", key: "platos" as const },
                           { label: "Personal", key: "personal" as const },
                           { label: "Transporte", key: "transportes" as const },
                           { label: "Menaje", key: "menaje" as const },
                           { label: "Lugar", key: "lugar" as const },
                         ].map((cat) => (
-                          <tr key={cat.key} className="border-b border-slate-100">
-                            <td className="p-4 text-slate-600">{cat.label}</td>
+                          <tr key={cat.key} className="border-b border-border/60">
+                            <td className="p-4 text-muted-foreground">{cat.label}</td>
                             {opciones.map((o) => {
                               const sub = calcSubtotales(o.items);
                               return (
-                                <td key={o.key} className="p-4 text-right font-medium text-slate-800">
+                                <td key={o.key} className="p-4 text-right font-medium text-foreground tabular-nums">
                                   ${sub[cat.key].toLocaleString()}
                                 </td>
                               );
                             })}
                           </tr>
                         ))}
-                        <tr className="bg-emerald-50 font-bold">
-                          <td className="p-4 text-emerald-700">TOTAL</td>
+                        <tr className="bg-primary/5 font-semibold">
+                          <td className="p-4 kicker text-primary">Total</td>
                           {opciones.map((o) => {
                             const sub = calcSubtotales(o.items);
                             return (
-                              <td key={o.key} className="p-4 text-right text-emerald-700">
+                              <td key={o.key} className="p-4 text-right text-primary tabular-nums">
                                 ${sub.total.toLocaleString()}
                               </td>
                             );
@@ -1045,37 +1046,37 @@ export default function Cotizador() {
             <div className="flex items-center space-x-3 overflow-x-auto mx-4">
               <div className="hidden sm:flex items-center space-x-2">
                 {current.items.platos.length > 0 && (
-                  <Badge variant="outline" className="text-xs whitespace-nowrap">
-                    <div className="w-1.5 h-1.5 bg-orange-400 rounded-full mr-1" />
+                  <Badge variant="outline" className="text-xs font-normal whitespace-nowrap tabular-nums">
+                    <div className="w-1 h-1 bg-muted-foreground rounded-full mr-1.5" />
                     {current.items.platos.length} platos
                   </Badge>
                 )}
                 {current.items.personal.length > 0 && (
-                  <Badge variant="outline" className="text-xs whitespace-nowrap">
-                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mr-1" />
+                  <Badge variant="outline" className="text-xs font-normal whitespace-nowrap tabular-nums">
+                    <div className="w-1 h-1 bg-muted-foreground rounded-full mr-1.5" />
                     {current.items.personal.length} personal
                   </Badge>
                 )}
                 {current.items.transportes.length > 0 && (
-                  <Badge variant="outline" className="text-xs whitespace-nowrap">
-                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full mr-1" />
+                  <Badge variant="outline" className="text-xs font-normal whitespace-nowrap tabular-nums">
+                    <div className="w-1 h-1 bg-muted-foreground rounded-full mr-1.5" />
                     {current.items.transportes.length} transportes
                   </Badge>
                 )}
                 {(current.items.menaje ?? []).length > 0 && (
-                  <Badge variant="outline" className="text-xs whitespace-nowrap">
-                    <div className="w-1.5 h-1.5 bg-purple-400 rounded-full mr-1" />
+                  <Badge variant="outline" className="text-xs font-normal whitespace-nowrap tabular-nums">
+                    <div className="w-1 h-1 bg-muted-foreground rounded-full mr-1.5" />
                     {(current.items.menaje ?? []).length} menaje
                   </Badge>
                 )}
                 {lugarCosto > 0 && (
-                  <Badge variant="outline" className="text-xs whitespace-nowrap">
-                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full mr-1" />
+                  <Badge variant="outline" className="text-xs font-normal whitespace-nowrap tabular-nums">
+                    <div className="w-1 h-1 bg-muted-foreground rounded-full mr-1.5" />
                     Lugar ${lugarCosto.toLocaleString()}
                   </Badge>
                 )}
               </div>
-              <span className="text-lg font-bold text-emerald-600 whitespace-nowrap">
+              <span className="text-lg font-semibold text-primary tabular-nums whitespace-nowrap">
                 $ {subt.total.toLocaleString()}
               </span>
             </div>
@@ -1087,16 +1088,12 @@ export default function Cotizador() {
                   variant="ghost"
                   onClick={goNext}
                   size="sm"
-                  className="h-9 text-slate-500 hover:text-slate-700 hidden sm:flex"
+                  className="h-9 text-muted-foreground hover:text-foreground hidden sm:flex"
                 >
                   Saltar
                 </Button>
               )}
-              <Button
-                onClick={goNext}
-                size="sm"
-                className="h-9 bg-selecta-green hover:bg-selecta-green/90"
-              >
+              <Button onClick={goNext} size="sm" className="h-9">
                 Siguiente
                 <ArrowRight className="h-4 w-4 ml-1.5" />
               </Button>
