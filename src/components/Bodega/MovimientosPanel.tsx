@@ -127,7 +127,7 @@ export default function MovimientosPanel() {
     setOpen(true);
   };
 
-  const handleEdit = (movimiento: any) => {
+  const handleEdit = (movimiento) => {
     setEditing(movimiento);
     setOpen(true);
   };
@@ -183,7 +183,7 @@ export default function MovimientosPanel() {
         description: "El stock se ha actualizado correctamente."
       });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const deleteMut = useMutation({
@@ -196,7 +196,7 @@ export default function MovimientosPanel() {
         description: "El registro se removió del sistema."
       });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const getEstadoBadge = (estado: string) => {

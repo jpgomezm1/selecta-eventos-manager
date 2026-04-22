@@ -88,18 +88,18 @@ export default function EventosPage() {
       if (error) throw error;
 
       const eventosConPersonal: EventoConPersonal[] = (data || []).map((evento) => {
-        const personalAsignado = evento.evento_personal?.map((ep: any) => ({
+        const personalAsignado: PersonalAsignado[] = (evento.evento_personal?.map((ep) => ({
           ...ep.personal,
           hora_inicio: ep.hora_inicio,
           hora_fin: ep.hora_fin,
           horas_trabajadas: ep.horas_trabajadas,
           pago_calculado: ep.pago_calculado,
-          estado_pago: ep.estado_pago,
+          estado_pago: ep.estado_pago ?? "pendiente",
           fecha_pago: ep.fecha_pago,
           metodo_pago: ep.metodo_pago,
           notas_pago: ep.notas_pago,
           evento_personal_id: ep.id,
-        })) || [];
+        })) || []) as PersonalAsignado[];
         const cotizacionInfo = evento.cotizacion_versiones?.cotizaciones;
         const ubicacionEvento = cotizacionInfo?.ubicacion_evento || evento.ubicacion;
         const comercialEncargado = cotizacionInfo?.comercial_encargado;

@@ -127,7 +127,7 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
       setNextKey(key);
       setStep("review");
     },
-    onError: (err: any) => {
+    onError: (err) => {
       toast({ title: "Error al escanear", description: err.message, variant: "destructive" });
       setStep("upload");
     },
@@ -284,7 +284,7 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
       });
       resetAndClose();
     },
-    onError: (err: any) => {
+    onError: (err) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });

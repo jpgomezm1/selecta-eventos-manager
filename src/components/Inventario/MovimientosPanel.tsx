@@ -62,7 +62,7 @@ export default function MovimientosPanel() {
       qc.invalidateQueries({ queryKey: ["ingredientes-stock"] });
       toast({ title: "Movimiento confirmado" });
     },
-    onError: (err: any) => {
+    onError: (err) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });
@@ -79,7 +79,7 @@ export default function MovimientosPanel() {
       qc.invalidateQueries({ queryKey: ["ingredientes-stock"] });
       toast({ title: "Movimiento eliminado" });
     },
-    onError: (err: any) => {
+    onError: (err) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });

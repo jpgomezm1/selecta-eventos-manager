@@ -71,7 +71,7 @@ export default function LugaresCatalogoTab() {
       setNewItem({ nombre: "", direccion: "", ciudad: "", capacidad_estimada: null, precio_referencia: 0 });
       toast({ title: "Lugar creado", description: "El lugar se agregó al catálogo correctamente." });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const updateMut = useMutation({
@@ -83,7 +83,7 @@ export default function LugaresCatalogoTab() {
       setEditDraft({});
       toast({ title: "Actualizado", description: "Los cambios se guardaron correctamente." });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const delMut = useMutation({
@@ -92,7 +92,7 @@ export default function LugaresCatalogoTab() {
       qc.invalidateQueries({ queryKey: ["catalogos", "lugares"] });
       toast({ title: "Eliminado", description: "El lugar se eliminó correctamente." });
     },
-    onError: (e: any) => {
+    onError: (e) => {
       const msg = e.message?.includes("violates foreign key")
         ? "No se puede eliminar: este lugar está en uso en cotizaciones o eventos existentes."
         : e.message;

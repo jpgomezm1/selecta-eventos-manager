@@ -146,7 +146,7 @@ export async function generateSelectaPremiumPDF(
   };
 
   // Sección de versión profesional
-  const addVersionSection = (version: any, yPos: number) => {
+  const addVersionSection = (version, yPos: number) => {
     const sectionMinHeight = 80;
 
     // Verificar espacio en página
@@ -205,25 +205,25 @@ export async function generateSelectaPremiumPDF(
       title: string;
       items: any[];
       color: readonly [number, number, number];
-      getValue: (item: any) => { name: string; price: number; qty: number };
+      getValue: (item) => { name: string; price: number; qty: number };
     }> = [
       {
         title: 'EXPERIENCIA GASTRONÓMICA',
         items: version.items.platos,
         color: selectaColors.secondary,
-        getValue: (item: any) => ({ name: item.nombre, price: item.precio_unitario, qty: item.cantidad })
+        getValue: (item) => ({ name: item.nombre, price: item.precio_unitario, qty: item.cantidad })
       },
       {
         title: 'EQUIPO PROFESIONAL',
         items: version.items.personal,
         color: selectaColors.primary,
-        getValue: (item: any) => ({ name: item.rol, price: item.tarifa_estimada_por_persona, qty: item.cantidad })
+        getValue: (item) => ({ name: item.rol, price: item.tarifa_estimada_por_persona, qty: item.cantidad })
       },
       {
         title: 'LOGÍSTICA Y TRANSPORTE',
         items: version.items.transportes,
         color: [255, 146, 43] as const, // Naranja
-        getValue: (item: any) => ({ name: `Transporte a ${item.lugar}`, price: item.tarifa_unitaria, qty: item.cantidad })
+        getValue: (item) => ({ name: `Transporte a ${item.lugar}`, price: item.tarifa_unitaria, qty: item.cantidad })
       }
     ];
 
@@ -248,7 +248,7 @@ export async function generateSelectaPremiumPDF(
         yPos += 20;
 
         // Lista de servicios
-        category.items.forEach((item: any, index: number) => {
+        category.items.forEach((item, index: number) => {
           const itemData = category.getValue(item);
           const subtotal = itemData.price * itemData.qty;
           const itemY = yPos + (index * 7);
@@ -299,11 +299,11 @@ export async function generateSelectaPremiumPDF(
   };
 
   // Función auxiliar para calcular totales
-  const calculateVersionTotal = (version: any) => {
+  const calculateVersionTotal = (version) => {
     return (
-      version.items.platos.reduce((sum: number, p: any) => sum + (p.precio_unitario * p.cantidad), 0) +
-      version.items.personal.reduce((sum: number, p: any) => sum + (p.tarifa_estimada_por_persona * p.cantidad), 0) +
-      version.items.transportes.reduce((sum: number, t: any) => sum + (t.tarifa_unitaria * t.cantidad), 0)
+      version.items.platos.reduce((sum: number, p) => sum + (p.precio_unitario * p.cantidad), 0) +
+      version.items.personal.reduce((sum: number, p) => sum + (p.tarifa_estimada_por_persona * p.cantidad), 0) +
+      version.items.transportes.reduce((sum: number, t) => sum + (t.tarifa_unitaria * t.cantidad), 0)
     );
   };
 

@@ -68,7 +68,7 @@ export default function InventarioTable() {
         description: "El nuevo elemento se agregó al inventario correctamente."
       });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const startEditing = (item: MenajeCatalogo) => {
@@ -96,7 +96,7 @@ export default function InventarioTable() {
       setEditValues({});
       toast({ title: "Actualizado", description: "Los cambios se guardaron correctamente." });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const saveEditing = (id: string) => {
@@ -112,7 +112,7 @@ export default function InventarioTable() {
         description: "El elemento se removió del inventario."
       });
     },
-    onError: (e: any) => {
+    onError: (e) => {
       const msg = e.message?.includes("violates foreign key")
         ? "No se puede eliminar: este elemento está en uso en reservas o movimientos existentes."
         : e.message;

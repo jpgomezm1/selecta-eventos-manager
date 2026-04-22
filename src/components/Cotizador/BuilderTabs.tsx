@@ -153,7 +153,7 @@ export default function BuilderTabs({
 
       // Ordenamiento
       filtered.sort((a, b) => {
-        let aVal: any, bVal: any;
+        let aVal, bVal: any;
         
         switch (sortBy) {
           case "nombre":

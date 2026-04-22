@@ -98,7 +98,7 @@ export function ProximosEventos() {
       // Transformar datos para que coincidan con EventoConPersonal
       const eventosTransformados = eventosData?.map(evento => ({
         ...evento,
-        personal: evento.evento_personal?.map((ep: any) => ({
+        personal: evento.evento_personal?.map((ep) => ({
           ...ep.personal,
           ...ep,
           evento_personal_id: ep.id
@@ -142,7 +142,7 @@ export function ProximosEventos() {
 
       const eventosTransformados = data?.map(evento => ({
         ...evento,
-        personal: evento.evento_personal?.map((ep: any) => ({
+        personal: evento.evento_personal?.map((ep) => ({
           ...ep.personal,
           ...ep,
           evento_personal_id: ep.id

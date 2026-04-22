@@ -76,7 +76,7 @@ export async function listAllTransporteOrdenes(): Promise<
     .order("created_at", { ascending: false });
   if (error) throw error;
 
-  return (data || []).map((row: any) => {
+  return (data || []).map((row) => {
     const { eventos, ...orden } = row;
     return {
       ...orden,

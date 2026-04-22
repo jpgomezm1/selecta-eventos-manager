@@ -121,7 +121,7 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
         toast({ title: "Plato creado" });
       }
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const updateMut = useMutation({
@@ -132,7 +132,7 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
       queryClient.invalidateQueries({ queryKey: ["plato-detail", effectiveId] });
       toast({ title: "Plato actualizado" });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const upsertIngMut = useMutation({
@@ -143,7 +143,7 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
       queryClient.invalidateQueries({ queryKey: ["plato-ingredientes-all"] });
       toast({ title: "Ingredientes guardados" });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   // Compute ingredient costs (must be before precioCalculado)

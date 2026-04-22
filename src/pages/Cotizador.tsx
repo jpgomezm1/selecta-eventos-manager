@@ -412,7 +412,7 @@ export default function Cotizador() {
       setLugares([{ nombre: "", es_seleccionado: true }]);
       nav(`/cotizaciones/${res.id}`);
     },
-    onError: (e: any) => {
+    onError: (e) => {
       toast({
         title: "Error al crear cotización",
         description: e.message ?? "Ocurrió un error inesperado.",

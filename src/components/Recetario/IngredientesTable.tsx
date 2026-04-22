@@ -95,7 +95,7 @@ export default function IngredientesTable() {
       setEditingId(null);
       toast({ title: "Ingrediente actualizado" });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const deleteMut = useMutation({
@@ -104,7 +104,7 @@ export default function IngredientesTable() {
       queryClient.invalidateQueries({ queryKey: ["ingredientes-catalogo"] });
       toast({ title: "Ingrediente eliminado" });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const filtered = ingredientes.filter(
@@ -479,19 +479,19 @@ function ProveedoresSubtable({ ingrediente }: { ingrediente: IngredienteCatalogo
       setNewCantidad("");
       setNewPrecio("");
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const deleteMut = useMutation({
     mutationFn: deleteProveedor,
     onSuccess: () => { invalidate(); toast({ title: "Proveedor eliminado" }); },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const principalMut = useMutation({
     mutationFn: (provId: string) => setProveedorPrincipal(ingrediente.id, provId),
     onSuccess: () => { invalidate(); toast({ title: "Proveedor principal actualizado" }); },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const handleAdd = () => {

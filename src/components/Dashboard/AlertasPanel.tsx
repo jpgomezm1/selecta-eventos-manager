@@ -36,6 +36,8 @@ export function AlertasPanel() {
           *,
           evento_personal(
             personal_id,
+            hora_inicio,
+            hora_fin,
             personal(nombre_completo, rol)
           )
         `)
@@ -48,7 +50,7 @@ export function AlertasPanel() {
         .select(`
           *,
           personal(nombre_completo),
-          evento(nombre_evento, fecha_evento)
+          eventos(nombre_evento, fecha_evento)
         `)
         .eq("estado_pago", "pendiente");
 
@@ -105,7 +107,7 @@ export function AlertasPanel() {
           }
 
           // Eventos sin horarios definidos
-          const sinHorarios = evento.evento_personal.filter((ep: any) => !ep.hora_inicio || !ep.hora_fin);
+          const sinHorarios = evento.evento_personal.filter((ep) => !ep.hora_inicio || !ep.hora_fin);
           if (sinHorarios.length > 0 && diasRestantes <= 5) {
             alertasGeneradas.push({
               id: `sin-horarios-${evento.id}`,
@@ -120,8 +122,8 @@ export function AlertasPanel() {
 
       // Alertas de pagos pendientes > 30 días
       if (pagosPendientes) {
-        const pagosVencidos = pagosPendientes.filter((pago: any) => {
-          const fechaEvento = parseLocalDate(pago.evento.fecha_evento) ?? new Date();
+        const pagosVencidos = pagosPendientes.filter((pago) => {
+          const fechaEvento = parseLocalDate(pago.eventos?.fecha_evento ?? null) ?? new Date();
           const hoy = new Date();
           const diasVencido = Math.floor((hoy.getTime() - fechaEvento.getTime()) / (1000 * 60 * 60 * 24));
           return diasVencido > 30;

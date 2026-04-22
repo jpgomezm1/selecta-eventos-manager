@@ -66,7 +66,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
         .in("estado", ["confirmado", "borrador"])
         .not("evento_id", "is", null);
       if (error) throw error;
-      return (data ?? []).map((r: any) => ({
+      return (data ?? []).map((r) => ({
         evento_id: r.evento_id,
         nombre_evento: r.eventos?.nombre_evento ?? "",
         fecha_evento: r.eventos?.fecha_evento ?? "",

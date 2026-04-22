@@ -77,7 +77,7 @@ export default function ReservasCalendar() {
     return { totalReservas, totalItems, eventosActivos };
   }, [reservas]);
 
-  const onRangeChange = (r: any) => {
+  const onRangeChange = (r) => {
     if (Array.isArray(r)) {
       const from = r[0];
       const to = r[r.length - 1];

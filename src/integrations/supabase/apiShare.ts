@@ -127,7 +127,7 @@ export async function getCotizacionByShareToken(token: string): Promise<{
 
   // 5. Fetch items for each version (same logic as getCotizacionDetalle)
   const versiones = await Promise.all(
-    (vers ?? []).map(async (v: any) => {
+    (vers ?? []).map(async (v) => {
       const [{ data: p }, { data: t }, { data: pe }, { data: me }] = await Promise.all([
         supabase
           .from("cotizacion_platos")
@@ -148,25 +148,25 @@ export async function getCotizacionByShareToken(token: string): Promise<{
       ]);
 
       const items: CotizacionItemsState = {
-        platos: (p ?? []).map((x: any) => ({
+        platos: (p ?? []).map((x) => ({
           plato_id: x.plato_id,
           nombre: x.platos_catalogo?.nombre || "Plato sin nombre",
           precio_unitario: Number(x.precio_unitario) || 0,
           cantidad: x.cantidad,
         })),
-        transportes: (t ?? []).map((x: any) => ({
+        transportes: (t ?? []).map((x) => ({
           transporte_id: x.transporte_id,
           lugar: x.transporte_tarifas?.lugar || "Lugar sin especificar",
           tarifa_unitaria: Number(x.tarifa_unitaria) || 0,
           cantidad: x.cantidad,
         })),
-        personal: (pe ?? []).map((x: any) => ({
+        personal: (pe ?? []).map((x) => ({
           personal_costo_id: x.personal_costo_id,
           rol: x.personal_costos_catalogo?.rol || "Rol sin especificar",
           tarifa_estimada_por_persona: Number(x.tarifa_estimada_por_persona) || 0,
           cantidad: x.cantidad,
         })),
-        menaje: (me ?? []).map((x: any) => ({
+        menaje: (me ?? []).map((x) => ({
           menaje_id: x.menaje_id,
           nombre: x.menaje_catalogo?.nombre || "Menaje sin nombre",
           precio_alquiler: Number(x.precio_alquiler) || 0,
@@ -190,7 +190,7 @@ export async function getCotizacionByShareToken(token: string): Promise<{
       contacto: cot.cliente_contactos ?? null,
     } as Cotizacion,
     versiones,
-    lugares: (lugares ?? []).map((l: any) => ({
+    lugares: (lugares ?? []).map((l) => ({
       id: l.id,
       nombre: l.nombre,
       direccion: l.direccion,

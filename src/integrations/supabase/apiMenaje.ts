@@ -21,7 +21,7 @@ export async function menajeCatalogoList(): Promise<MenajeCatalogo[]> {
     .order("categoria")
     .order("nombre");
   if (error) throw error;
-  return (data ?? []).map((d: any) => ({ ...d, stock_total: Number(d.stock_total), precio_alquiler: Number(d.precio_alquiler ?? 0) }));
+  return (data ?? []).map((d) => ({ ...d, stock_total: Number(d.stock_total), precio_alquiler: Number(d.precio_alquiler ?? 0) }));
 }
 
 export async function menajeCatalogoCreate(
@@ -65,7 +65,7 @@ export async function menajeDisponiblePorRango(
     _fin: fin,
   });
   if (error) throw error;
-  return (data ?? []).map((d: any) => ({
+  return (data ?? []).map((d) => ({
     ...d,
     stock_total: Number(d.stock_total),
     reservado: Number(d.reservado),
@@ -314,10 +314,10 @@ export async function getSalidasConfirmadas(): Promise<SalidaConEvento[]> {
   if (e2) throw e2;
 
   const ingresadoSet = new Set(
-    (ingresos ?? []).map((i: any) => `${i.evento_id}|${i.reserva_id ?? ""}`)
+    (ingresos ?? []).map((i) => `${i.evento_id}|${i.reserva_id ?? ""}`)
   );
 
-  const pendientes = (salidas ?? []).filter((s: any) =>
+  const pendientes = (salidas ?? []).filter((s) =>
     !ingresadoSet.has(`${s.evento_id}|${s.reserva_id ?? ""}`)
   );
 
@@ -336,7 +336,7 @@ export async function getSalidasConfirmadas(): Promise<SalidaConEvento[]> {
       nombre_evento: (s as any).eventos?.nombre_evento ?? "",
       fecha: (s as any).fecha,
       reserva_id: (s as any).reserva_id ?? null,
-      items: (items ?? []).map((it: any) => ({
+      items: (items ?? []).map((it) => ({
         menaje_id: it.menaje_id,
         cantidad: Number(it.cantidad) || 0,
         nombre: it.menaje?.nombre ?? "",
@@ -397,7 +397,7 @@ export async function getSalidaItemsForReserva(
     .eq("movimiento_id", mov.id);
   if (error) throw error;
 
-  return (items ?? []).map((i: any) => ({
+  return (items ?? []).map((i) => ({
     menaje_id: i.menaje_id,
     nombre: i.menaje?.nombre ?? "",
     unidad: i.menaje?.unidad ?? "und",
@@ -457,7 +457,7 @@ export async function getOrdenMenaje(
     .eq("evento_id", eventoId);
 
   const reqMap = new Map(
-    (reqs ?? []).map((r: any) => [r.menaje_id, r])
+    (reqs ?? []).map((r) => [r.menaje_id, r])
   );
 
   // Get availability
@@ -514,7 +514,7 @@ export async function generateOrdenMenaje(
   const dispMap = new Map(disponibles.map((d) => [d.id, d]));
 
   // Build items
-  const itemRows: OrdenMenajeItem[] = reqMenaje.map((req: any) => {
+  const itemRows: OrdenMenajeItem[] = reqMenaje.map((req) => {
     const disp = dispMap.get(req.menaje_id);
     const cantRequerida = Number(req.cantidad) || 0;
     const cantDisponible = Number(disp?.disponible) || 0;

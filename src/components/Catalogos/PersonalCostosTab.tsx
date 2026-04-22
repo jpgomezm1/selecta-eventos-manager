@@ -81,7 +81,7 @@ export default function PersonalCostosTab() {
       setNewItem({ rol: ROLES[0], modalidad_cobro: MODALIDADES[0].value, tarifa: 0 });
       toast({ title: "Costo creado", description: "El costo de personal se agregó correctamente." });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const updateMut = useMutation({
@@ -93,7 +93,7 @@ export default function PersonalCostosTab() {
       setEditDraft({});
       toast({ title: "Actualizado", description: "Los cambios se guardaron correctamente." });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const delMut = useMutation({
@@ -102,7 +102,7 @@ export default function PersonalCostosTab() {
       qc.invalidateQueries({ queryKey: ["catalogos", "personal-costos"] });
       toast({ title: "Eliminado", description: "El costo se eliminó correctamente." });
     },
-    onError: (e: any) => {
+    onError: (e) => {
       const msg = e.message?.includes("violates foreign key")
         ? "No se puede eliminar: este registro está en uso en cotizaciones existentes."
         : e.message;

@@ -35,7 +35,7 @@ export async function listEventoPersonal(eventoId: string): Promise<PersonalAsig
     .eq("evento_id", eventoId);
   if (error) throw error;
 
-  return (data ?? []).map((ep: any) => ({
+  return (data ?? []).map((ep) => ({
     ...ep.personal,
     hora_inicio: ep.hora_inicio,
     hora_fin: ep.hora_fin,

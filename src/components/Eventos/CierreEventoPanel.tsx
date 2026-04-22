@@ -54,9 +54,9 @@ export default function CierreEventoPanel({ eventoId, totalRequerimiento, estado
             .eq("evento_id", eventoId),
         ]);
 
-        const costoPersonal = (personal ?? []).reduce((a: number, r: any) => a + (Number(r.pago_calculado) || 0), 0);
+        const costoPersonal = (personal ?? []).reduce((a: number, r) => a + (Number(r.pago_calculado) || 0), 0);
         const costoCompras = orden ? Number(orden.total_estimado) : 0;
-        const costoMenaje = (reqMenaje ?? []).reduce((a: number, r: any) => a + (Number(r.subtotal) || 0), 0);
+        const costoMenaje = (reqMenaje ?? []).reduce((a: number, r) => a + (Number(r.subtotal) || 0), 0);
 
         setData({
           costoPersonal,

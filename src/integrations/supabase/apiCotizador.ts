@@ -26,7 +26,7 @@ export async function getPlatosCatalogo(): Promise<PlatoCatalogo[]> {
     .select("*")
     .order("nombre", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((d: any) => ({ ...d, precio: Number(d.precio) }));
+  return (data ?? []).map((d) => ({ ...d, precio: Number(d.precio) })) as PlatoCatalogo[];
 }
 
 export async function getTransporteTarifas(): Promise<TransporteTarifa[]> {
@@ -35,7 +35,7 @@ export async function getTransporteTarifas(): Promise<TransporteTarifa[]> {
     .select("*")
     .order("lugar", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((d: any) => ({ ...d, tarifa: Number(d.tarifa) }));
+  return (data ?? []).map((d) => ({ ...d, tarifa: Number(d.tarifa) })) as TransporteTarifa[];
 }
 
 export async function getPersonalCostosCatalogo(): Promise<PersonalCosto[]> {
@@ -44,7 +44,7 @@ export async function getPersonalCostosCatalogo(): Promise<PersonalCosto[]> {
     .select("*")
     .order("rol", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((d: any) => ({ ...d, tarifa: Number(d.tarifa) || 0 }));
+  return (data ?? []).map((d) => ({ ...d, tarifa: Number(d.tarifa) || 0 })) as PersonalCosto[];
 }
 
 /** =====================
@@ -100,12 +100,16 @@ export async function listCotizaciones(): Promise<Cotizacion[]> {
     .order("created_at", { ascending: false });
   if (error) throw error;
 
-  return (data ?? []).map((d: any) => ({
+  // El selectQuery es dinámico (depende de checkMigration), así que
+  // supabase no infiere el row; lo tratamos como Record permisivo y
+  // casteamos al tipo Cotizacion al final.
+  type Row = Record<string, unknown>;
+  return ((data ?? []) as unknown as Row[]).map((d) => ({
     ...d,
     total_cotizado: Number(d.total_cotizado),
     cliente: d.clientes ?? null,
     contacto: d.cliente_contactos ?? null,
-  }));
+  })) as unknown as Cotizacion[];
 }
 
 export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
@@ -146,7 +150,7 @@ export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
   if (e2) throw e2;
 
   const versiones = await Promise.all(
-    (vers ?? []).map(async (v: any) => {
+    (vers ?? []).map(async (v) => {
       const [{ data: p }, { data: t }, { data: pe }, { data: me }] = await Promise.all([
         supabase
           .from("cotizacion_platos")
@@ -187,25 +191,25 @@ export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
       ]);
 
       const items: CotizacionItemsState = {
-        platos: (p ?? []).map((x: any) => ({
+        platos: (p ?? []).map((x) => ({
           plato_id: x.plato_id,
           nombre: x.platos_catalogo?.nombre || "Plato sin nombre",
           precio_unitario: Number(x.precio_unitario) || 0,
           cantidad: x.cantidad,
         })),
-        transportes: (t ?? []).map((x: any) => ({
+        transportes: (t ?? []).map((x) => ({
           transporte_id: x.transporte_id,
           lugar: x.transporte_tarifas?.lugar || "Lugar sin especificar",
           tarifa_unitaria: Number(x.tarifa_unitaria) || 0,
           cantidad: x.cantidad,
         })),
-        personal: (pe ?? []).map((x: any) => ({
+        personal: (pe ?? []).map((x) => ({
           personal_costo_id: x.personal_costo_id,
           rol: x.personal_costos_catalogo?.rol || "Rol sin especificar",
           tarifa_estimada_por_persona: Number(x.tarifa_estimada_por_persona) || 0,
           cantidad: x.cantidad,
         })),
-        menaje: (me ?? []).map((x: any) => ({
+        menaje: (me ?? []).map((x) => ({
           menaje_id: x.menaje_id,
           nombre: x.menaje_catalogo?.nombre || "Menaje sin nombre",
           precio_alquiler: Number(x.precio_alquiler) || 0,
@@ -229,7 +233,7 @@ export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
       contacto: (cot as any).cliente_contactos ?? null,
     } as Cotizacion,
     versiones,
-    lugares: (lugares ?? []).map((l: any) => ({
+    lugares: (lugares ?? []).map((l) => ({
       id: l.id,
       nombre: l.nombre,
       direccion: l.direccion,
@@ -360,7 +364,7 @@ export async function updateVersionCotizacion(
     .eq("cotizacion_id", cotizacion_id)
     .order("orden", { ascending: true });
   const lugarSel =
-    (lugares ?? []).find((l: any) => l.es_seleccionado) ?? (lugares ?? [])[0];
+    (lugares ?? []).find((l) => l.es_seleccionado) ?? (lugares ?? [])[0];
   const lugarPrecio = Number((lugarSel as any)?.precio_referencia ?? 0);
 
   // Calcular nuevo total (items + lugar)
@@ -469,7 +473,7 @@ export async function getEventoRequerimiento(evento_id: string): Promise<EventoR
       }
     : null;
 
-  const mapMenaje = (data: any[]) => (data ?? []).map((x: any) => ({
+  const mapMenaje = (data: any[]) => (data ?? []).map((x) => ({
     menaje_id: x.menaje_id,
     nombre: x.nombre ?? "",
     precio_alquiler: Number(x.precio_alquiler) || 0,
@@ -479,9 +483,9 @@ export async function getEventoRequerimiento(evento_id: string): Promise<EventoR
 
   // Si detectamos snapshot antiguo con nombres vacíos, enriquecemos en caliente y devolvemos ya enriquecido
   const needsEnrich =
-    (p.data ?? []).some((x: any) => !x.nombre) ||
-    (t.data ?? []).some((x: any) => !x.lugar) ||
-    (pe.data ?? []).some((x: any) => !x.rol);
+    (p.data ?? []).some((x) => !x.nombre) ||
+    (t.data ?? []).some((x) => !x.lugar) ||
+    (pe.data ?? []).some((x) => !x.rol);
 
   if (needsEnrich) {
     await enrichEventoRequerimiento(evento_id);
@@ -496,21 +500,21 @@ export async function getEventoRequerimiento(evento_id: string): Promise<EventoR
     if (pe2.error) throw pe2.error;
 
     return {
-      platos: (p2.data ?? []).map((x: any) => ({
+      platos: (p2.data ?? []).map((x) => ({
         plato_id: x.plato_id,
         nombre: x.nombre ?? "",
         precio_unitario: Number(x.precio_unitario) || 0,
         cantidad: x.cantidad,
         subtotal: Number(x.subtotal),
       })),
-      transportes: (t2.data ?? []).map((x: any) => ({
+      transportes: (t2.data ?? []).map((x) => ({
         transporte_id: x.transporte_id,
         lugar: x.lugar ?? "",
         tarifa_unitaria: Number(x.tarifa_unitaria) || 0,
         cantidad: x.cantidad,
         subtotal: Number(x.subtotal),
       })),
-      personal: (pe2.data ?? []).map((x: any) => ({
+      personal: (pe2.data ?? []).map((x) => ({
         personal_costo_id: x.personal_costo_id,
         rol: x.rol ?? "",
         tarifa_estimada_por_persona: Number(x.tarifa_estimada_por_persona) || 0,
@@ -525,21 +529,21 @@ export async function getEventoRequerimiento(evento_id: string): Promise<EventoR
 
   // Caso normal (ya está enriquecido)
   return {
-    platos: (p.data ?? []).map((x: any) => ({
+    platos: (p.data ?? []).map((x) => ({
       plato_id: x.plato_id,
       nombre: x.nombre ?? "",
       precio_unitario: Number(x.precio_unitario) || 0,
       cantidad: x.cantidad,
       subtotal: Number(x.subtotal),
     })),
-    transportes: (t.data ?? []).map((x: any) => ({
+    transportes: (t.data ?? []).map((x) => ({
       transporte_id: x.transporte_id,
       lugar: x.lugar ?? "",
       tarifa_unitaria: Number(x.tarifa_unitaria) || 0,
       cantidad: x.cantidad,
       subtotal: Number(x.subtotal),
     })),
-    personal: (pe.data ?? []).map((x: any) => ({
+    personal: (pe.data ?? []).map((x) => ({
       personal_costo_id: x.personal_costo_id,
       rol: x.rol ?? "",
       tarifa_estimada_por_persona: Number(x.tarifa_estimada_por_persona) || 0,
@@ -564,14 +568,14 @@ async function enrichEventoRequerimiento(evento_id: string) {
   if (t.error) throw t.error;
   if (pe.error) throw pe.error;
 
-  const missingPlatos = (p.data ?? []).filter((x: any) => !x.nombre);
-  const missingTrans  = (t.data ?? []).filter((x: any) => !x.lugar);
-  const missingPers   = (pe.data ?? []).filter((x: any) => !x.rol);
+  const missingPlatos = (p.data ?? []).filter((x) => !x.nombre);
+  const missingTrans  = (t.data ?? []).filter((x) => !x.lugar);
+  const missingPers   = (pe.data ?? []).filter((x) => !x.rol);
 
   if (missingPlatos.length) {
-    const ids = missingPlatos.map((x: any) => x.plato_id);
+    const ids = missingPlatos.map((x) => x.plato_id);
     const { data } = await supabase.from("platos_catalogo").select("id,nombre").in("id", ids);
-    const m = new Map((data ?? []).map((r: any) => [r.id, r.nombre]));
+    const m = new Map((data ?? []).map((r) => [r.id, r.nombre]));
     for (const row of missingPlatos) {
       await supabase
         .from("evento_requerimiento_platos")
@@ -580,9 +584,9 @@ async function enrichEventoRequerimiento(evento_id: string) {
     }
   }
   if (missingTrans.length) {
-    const ids = missingTrans.map((x: any) => x.transporte_id);
+    const ids = missingTrans.map((x) => x.transporte_id);
     const { data } = await supabase.from("transporte_tarifas").select("id,lugar").in("id", ids);
-    const m = new Map((data ?? []).map((r: any) => [r.id, r.lugar]));
+    const m = new Map((data ?? []).map((r) => [r.id, r.lugar]));
     for (const row of missingTrans) {
       await supabase
         .from("evento_requerimiento_transporte")
@@ -591,9 +595,9 @@ async function enrichEventoRequerimiento(evento_id: string) {
     }
   }
   if (missingPers.length) {
-    const ids = missingPers.map((x: any) => x.personal_costo_id);
+    const ids = missingPers.map((x) => x.personal_costo_id);
     const { data } = await supabase.from("personal_costos_catalogo").select("id,rol").in("id", ids);
-    const m = new Map((data ?? []).map((r: any) => [r.id, r.rol]));
+    const m = new Map((data ?? []).map((r) => [r.id, r.rol]));
     for (const row of missingPers) {
       await supabase
         .from("evento_requerimiento_personal")
@@ -731,7 +735,7 @@ export async function getIngredientesCatalogo(): Promise<IngredienteCatalogo[]> 
     .select("*")
     .order("nombre", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((d: any) => ({ ...d, costo_por_unidad: Number(d.costo_por_unidad) }));
+  return (data ?? []).map((d) => ({ ...d, costo_por_unidad: Number(d.costo_por_unidad) }));
 }
 
 export async function createIngrediente(
@@ -783,7 +787,7 @@ export async function getPlatoConIngredientes(platoId: string): Promise<PlatoCat
     .eq("plato_id", platoId);
   if (e2) throw e2;
 
-  const ingredientes: PlatoIngrediente[] = (items ?? []).map((row: any) => ({
+  const ingredientes: PlatoIngrediente[] = (items ?? []).map((row) => ({
     id: row.id,
     plato_id: row.plato_id,
     ingrediente_id: row.ingrediente_id,
@@ -844,7 +848,7 @@ export async function getAllPlatoIngredientes(): Promise<PlatoIngrediente[]> {
     .from("plato_ingredientes")
     .select("*, ingredientes_catalogo(*)");
   if (error) throw error;
-  return (data ?? []).map((row: any) => ({
+  return (data ?? []).map((row) => ({
     id: row.id,
     plato_id: row.plato_id,
     ingrediente_id: row.ingrediente_id,
@@ -908,7 +912,7 @@ export async function getProveedoresByIngrediente(ingredienteId: string): Promis
     .eq("ingrediente_id", ingredienteId)
     .order("created_at", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((d: any) => ({
+  return (data ?? []).map((d) => ({
     ...d,
     presentacion_cantidad: Number(d.presentacion_cantidad),
     precio_presentacion: Number(d.precio_presentacion),
@@ -1045,7 +1049,7 @@ export async function getCotizacionLugares(cotizacion_id: string): Promise<Lugar
     .eq("cotizacion_id", cotizacion_id)
     .order("orden", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((l: any) => ({
+  return (data ?? []).map((l) => ({
     id: l.id,
     nombre: l.nombre,
     direccion: l.direccion,

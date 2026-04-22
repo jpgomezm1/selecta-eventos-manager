@@ -75,7 +75,7 @@ export default function CotizacionEditorPage() {
       setApprovalVersionId(null);
       qc.invalidateQueries({ queryKey: ["cotizacion", id] });
     },
-    onError: (e: any) =>
+    onError: (e) =>
       toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
@@ -99,7 +99,7 @@ export default function CotizacionEditorPage() {
       setRenamingValue("");
       qc.invalidateQueries({ queryKey: ["cotizacion", id] });
     },
-    onError: (e: any) =>
+    onError: (e) =>
       toast({ title: "Error al renombrar", description: e.message, variant: "destructive" }),
   });
 
@@ -137,7 +137,7 @@ export default function CotizacionEditorPage() {
       qc.invalidateQueries({ queryKey: ["cotizacion", id] });
       nav(`/cotizaciones/${id}/editar/${result.id}`);
     },
-    onError: (e: any) =>
+    onError: (e) =>
       toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
@@ -188,7 +188,7 @@ export default function CotizacionEditorPage() {
       qc.invalidateQueries({ queryKey: ["cotizacion", id] });
       nav(`/cotizaciones/${id}/editar/${result.id}`);
     },
-    onError: (e: any) =>
+    onError: (e) =>
       toast({ title: "Error al duplicar", description: e.message, variant: "destructive" }),
   });
 
@@ -201,7 +201,7 @@ export default function CotizacionEditorPage() {
       });
       qc.invalidateQueries({ queryKey: ["cotizacion", id] });
     },
-    onError: (e: any) =>
+    onError: (e) =>
       toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 

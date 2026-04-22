@@ -56,7 +56,7 @@ export async function fetchChecklistData(eventoId: string): Promise<ChecklistDat
   ]);
 
   const personalRequeridoCount = (reqPersonal ?? []).reduce(
-    (acc: number, r: any) => acc + (r.cantidad ?? 0),
+    (acc: number, r) => acc + (r.cantidad ?? 0),
     0
   );
 
@@ -122,14 +122,14 @@ export async function fetchChecklistDataBatch(
   const result: Record<string, ChecklistData> = {};
 
   for (const eid of eventoIds) {
-    const pCount = (personalCounts ?? []).filter((r: any) => r.evento_id === eid).length;
+    const pCount = (personalCounts ?? []).filter((r) => r.evento_id === eid).length;
     const reqP = (reqPersonal ?? [])
-      .filter((r: any) => r.evento_id === eid)
-      .reduce((acc: number, r: any) => acc + (r.cantidad ?? 0), 0);
-    const orden = (ordenes ?? []).find((r: any) => r.evento_id === eid) ?? null;
-    const reserva = (reservas ?? []).find((r: any) => r.evento_id === eid) ?? null;
-    const transporte = (transportes ?? []).find((r: any) => r.evento_id === eid) ?? null;
-    const ev = (eventos ?? []).find((r: any) => r.id === eid);
+      .filter((r) => r.evento_id === eid)
+      .reduce((acc: number, r) => acc + (r.cantidad ?? 0), 0);
+    const orden = (ordenes ?? []).find((r) => r.evento_id === eid) ?? null;
+    const reserva = (reservas ?? []).find((r) => r.evento_id === eid) ?? null;
+    const transporte = (transportes ?? []).find((r) => r.evento_id === eid) ?? null;
+    const ev = (eventos ?? []).find((r) => r.id === eid);
 
     result[eid] = {
       personalAsignadoCount: pCount,
@@ -139,7 +139,7 @@ export async function fetchChecklistDataBatch(
       transporteOrden: transporte ? { estado: transporte.estado } : null,
       fechaEvento: ev?.fecha_evento ?? "",
       estadoLiquidacion: ev?.estado_liquidacion ?? "pendiente",
-      menajeDespachado: (movsSalida ?? []).some((m: any) => m.evento_id === eid),
+      menajeDespachado: (movsSalida ?? []).some((m) => m.evento_id === eid),
     };
   }
 

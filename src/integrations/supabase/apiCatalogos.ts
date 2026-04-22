@@ -11,7 +11,7 @@ export async function transporteTarifasList(): Promise<TransporteTarifa[]> {
     .order("tipo_evento")
     .order("lugar");
   if (error) throw error;
-  return (data ?? []).map((d: any) => ({ ...d, tarifa: Number(d.tarifa) }));
+  return (data ?? []).map((d) => ({ ...d, tarifa: Number(d.tarifa) })) as TransporteTarifa[];
 }
 
 export async function transporteTarifasCreate(
@@ -53,7 +53,7 @@ export async function personalCostosList(): Promise<PersonalCosto[]> {
     .order("rol")
     .order("modalidad_cobro");
   if (error) throw error;
-  return (data ?? []).map((d: any) => ({ ...d, tarifa: Number(d.tarifa) || 0 }));
+  return (data ?? []).map((d) => ({ ...d, tarifa: Number(d.tarifa) || 0 })) as PersonalCosto[];
 }
 
 export async function personalCostosCreate(
@@ -95,7 +95,7 @@ export async function lugaresCatalogoList(): Promise<LugarCatalogo[]> {
     .order("ciudad")
     .order("nombre");
   if (error) throw error;
-  return (data ?? []).map((d: any) => ({
+  return (data ?? []).map((d) => ({
     ...d,
     capacidad_estimada: d.capacidad_estimada ? Number(d.capacidad_estimada) : null,
     precio_referencia: Number(d.precio_referencia ?? 0),

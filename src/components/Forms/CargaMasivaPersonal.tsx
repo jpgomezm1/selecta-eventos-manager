@@ -57,7 +57,7 @@ export function CargaMasivaPersonal({ isOpen, onClose, onSuccess }: CargaMasivaP
       // Procesar cada fila
       const datosProcesados: PersonalExcelProcesado[] = [];
 
-      jsonData.forEach((fila: any, index: number) => {
+      jsonData.forEach((fila, index: number) => {
         const resultado = procesarFilaExcel(fila, index + 2); // +2 porque Excel empieza en 1 y hay header
         if (resultado) {
           datosProcesados.push(resultado);
@@ -98,7 +98,7 @@ export function CargaMasivaPersonal({ isOpen, onClose, onSuccess }: CargaMasivaP
           console.warn("No se pudo consultar cédulas existentes:", checkError);
         } else {
           const mapaExistentes = new Map<string, string>(
-            (existentes ?? []).map((e: any) => [String(e.numero_cedula).trim(), e.nombre_completo])
+            (existentes ?? []).map((e) => [String(e.numero_cedula).trim(), e.nombre_completo])
           );
           datosProcesados.forEach((d) => {
             if (d.errores && d.errores.length > 0) return; // ya inválida
