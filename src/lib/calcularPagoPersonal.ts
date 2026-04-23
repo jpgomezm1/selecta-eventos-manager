@@ -28,19 +28,18 @@ export function calcularPagoPersonal(
       // Jornada fija de 10 horas: siempre cobra la tarifa completa
       return tarifa;
 
-    case 'jornada_hasta_10h':
-      // Jornada hasta 10 horas con horas extras
-      if (!horas_trabajadas) return tarifa;
-
-      if (horas_trabajadas <= 10) {
-        // Si trabajó 10h o menos, cobra la tarifa fija
-        return tarifa;
-      } else {
-        // Si trabajó más de 10h, cobra tarifa + horas extras
-        const horasExtras = horas_trabajadas - 10;
-        const pagoExtra = horasExtras * (tarifa_hora_extra || 0);
-        return tarifa + pagoExtra;
+    case 'jornada_hasta_10h': {
+      if (horas_trabajadas == null) return tarifa;
+      if (horas_trabajadas <= 0) return 0;
+      if (horas_trabajadas <= 10) return tarifa;
+      const horasExtras = horas_trabajadas - 10;
+      if (!tarifa_hora_extra || tarifa_hora_extra <= 0) {
+        throw new Error(
+          `Se registraron ${horas_trabajadas}h (${horasExtras}h extras) en modalidad "jornada hasta 10h" pero el empleado no tiene tarifa_hora_extra configurada.`
+        );
       }
+      return tarifa + horasExtras * tarifa_hora_extra;
+    }
 
     case 'jornada_nocturna':
       // Jornada nocturna: tarifa fija independiente de horas

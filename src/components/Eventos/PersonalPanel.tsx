@@ -121,12 +121,20 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
     setAsignados(prev => prev.map(p => (p.evento_personal_id === id ? { ...p, ...patch } : p)));
   };
 
-  /** When hours change, auto-recalculate pago based on modalidad */
   const handleHorasChange = (epId: string, horas: number, person: PersonalAsignado) => {
     const tarifa = Number(person.tarifa) || 0;
     const tarifaExtra = Number(person.tarifa_hora_extra) || 0;
-    const pago = calcularPagoPersonal(person.modalidad_cobro, tarifa, horas, tarifaExtra);
-    handleUpdateRow(epId, { horas_trabajadas: horas, pago_calculado: pago });
+    try {
+      const pago = calcularPagoPersonal(person.modalidad_cobro, tarifa, horas, tarifaExtra);
+      handleUpdateRow(epId, { horas_trabajadas: horas, pago_calculado: pago });
+    } catch (err) {
+      toast({
+        title: "No se pudo calcular el pago",
+        description: err instanceof Error ? err.message : "Error desconocido",
+        variant: "destructive",
+      });
+      handleUpdateRow(epId, { horas_trabajadas: horas });
+    }
   };
 
   const handleSaveRow = async (row: PersonalAsignado) => {

@@ -81,13 +81,7 @@ export default function NuevoMovimientoDialog({ open, onOpenChange }: Props) {
       );
 
       if (confirmar) {
-        await inventarioMovimientoConfirmar(mov.id, tipo, items.map((i) => ({
-          id: "",
-          movimiento_id: mov.id,
-          ingrediente_id: i.ingrediente_id,
-          cantidad: i.cantidad,
-          costo_unitario: i.costo_unitario,
-        })));
+        await inventarioMovimientoConfirmar(mov.id);
       }
 
       return mov;

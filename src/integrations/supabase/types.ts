@@ -556,6 +556,27 @@ export type Database = {
           },
         ]
       }
+      edge_function_calls: {
+        Row: {
+          called_at: string
+          function_name: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          called_at?: string
+          function_name: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          called_at?: string
+          function_name?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       evento_orden_compra: {
         Row: {
           created_at: string | null
@@ -1725,6 +1746,30 @@ export type Database = {
           p_ubicacion: string
         }
         Returns: string
+      }
+      fn_inventario_movimiento_confirmar: {
+        Args: { p_movimiento_id: string }
+        Returns: {
+          created_at: string
+          estado: string
+          evento_id: string | null
+          factura_url: string | null
+          fecha: string
+          id: string
+          notas: string | null
+          proveedor: string | null
+          tipo: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "inventario_movimientos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      fn_inventario_movimiento_delete_con_reversa: {
+        Args: { p_movimiento_id: string }
+        Returns: undefined
       }
       fn_menaje_disponible: {
         Args: { _fin: string; _inicio: string }
