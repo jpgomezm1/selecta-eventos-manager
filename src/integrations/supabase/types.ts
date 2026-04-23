@@ -1783,6 +1783,10 @@ export type Database = {
           unidad: string
         }[]
       }
+      fn_set_proveedor_principal: {
+        Args: { p_ingrediente_id: string; p_proveedor_id: string }
+        Returns: undefined
+      }
       generate_comprobante_number: { Args: never; Returns: string }
       registrar_compra_en_inventario: {
         Args: { p_evento_id: string; p_orden_id: string }
