@@ -117,7 +117,9 @@ export function ClienteSelector({ value, onChange, selectedCliente }: Props) {
   };
 
   const displayLabel = selectedCliente
-    ? `${selectedCliente.nombre}${selectedCliente.empresa ? ` (${selectedCliente.empresa})` : ""}`
+    ? selectedCliente.tipo === 'empresa' || !selectedCliente.empresa
+      ? selectedCliente.nombre
+      : `${selectedCliente.nombre} (${selectedCliente.empresa})`
     : "Seleccionar cliente...";
 
   const displayIcon = selectedCliente?.tipo === 'empresa'
