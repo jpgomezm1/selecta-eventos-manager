@@ -1700,6 +1700,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       v_menaje_reservas_cal: {
@@ -1788,6 +1809,10 @@ export type Database = {
         Returns: undefined
       }
       generate_comprobante_number: { Args: never; Returns: string }
+      has_role: {
+        Args: { _role: Database["public"]["Enums"]["user_role"] }
+        Returns: boolean
+      }
       registrar_compra_en_inventario: {
         Args: { p_evento_id: string; p_orden_id: string }
         Returns: string
@@ -1802,7 +1827,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "admin" | "comercial" | "operaciones" | "cocina"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1929,6 +1954,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["admin", "comercial", "operaciones", "cocina"],
+    },
   },
 } as const

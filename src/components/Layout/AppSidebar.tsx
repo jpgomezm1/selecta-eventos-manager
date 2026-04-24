@@ -7,7 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSidebar } from "@/hooks/useSidebar";
 import { cn } from "@/lib/utils";
-import { navSections, type NavItem } from "./navigation";
+import { filterNavSectionsByRoles, type NavItem } from "./navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 function isItemActive(pathname: string, item: NavItem): boolean {
   if (item.match) return item.match.test(pathname);
@@ -19,6 +20,8 @@ export function AppSidebar() {
   const location = useLocation();
   const { toast } = useToast();
   const { isCollapsed, toggle } = useSidebar();
+  const { roles } = useAuth();
+  const visibleSections = filterNavSectionsByRoles(roles);
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -154,7 +157,7 @@ export function AppSidebar() {
             isCollapsed ? "px-3 py-5 space-y-6" : "px-3 py-5 space-y-5"
           )}
         >
-          {navSections.map((section, idx) => (
+          {visibleSections.map((section, idx) => (
             <div key={section.label} className="space-y-1">
               {!isCollapsed && (
                 <div className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/40">
