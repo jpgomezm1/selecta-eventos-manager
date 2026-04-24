@@ -6,7 +6,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { navSections, type NavItem } from "./navigation";
+import { filterNavSectionsByRoles, type NavItem } from "./navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 function isItemActive(pathname: string, item: NavItem): boolean {
   if (item.match) return item.match.test(pathname);
@@ -18,6 +19,8 @@ export function MobileSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { roles } = useAuth();
+  const visibleSections = filterNavSectionsByRoles(roles);
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -68,7 +71,7 @@ export function MobileSidebar() {
             </SheetHeader>
 
             <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-5">
-              {navSections.map((section) => (
+              {visibleSections.map((section) => (
                 <div key={section.label} className="space-y-1">
                   <div className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/40">
                     {section.label}
