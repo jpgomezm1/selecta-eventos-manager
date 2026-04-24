@@ -55,7 +55,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/compartido/:token" element={<CotizacionPublica />} />
-            <Route path="/" element={<Navigate to="/personal" replace />} />
+            <Route path="/" element={<Navigate to="/panorama" replace />} />
 
             <Route
               path="/panorama"
