@@ -5,8 +5,6 @@ import type { InventarioMovimiento, InventarioMovItem, IngredienteCatalogo } fro
 type MovRow = Database["public"]["Tables"]["inventario_movimientos"]["Row"];
 type MovInsert = Database["public"]["Tables"]["inventario_movimientos"]["Insert"];
 type MovUpdate = Database["public"]["Tables"]["inventario_movimientos"]["Update"];
-type IngRow = Database["public"]["Tables"]["ingredientes_catalogo"]["Row"];
-type IngUpdate = Database["public"]["Tables"]["ingredientes_catalogo"]["Update"];
 
 /* =========================
  *   STOCK DE INGREDIENTES
@@ -69,65 +67,12 @@ export async function inventarioMovimientoCreate(
   return mov as InventarioMovimiento;
 }
 
-export async function inventarioMovimientoConfirmar(
-  id: string,
-  tipo: InventarioMovimiento["tipo"],
-  items: InventarioMovItem[]
-) {
-  // Update stock for each item based on movement type.
-  // NOTA: este loop NO es atómico. Si una fila falla a mitad de camino,
-  // las anteriores quedan aplicadas (TODO.md describe el RPC necesario).
-  for (const item of items) {
-    const { data: ing, error: eRead } = await supabase
-      .from("ingredientes_catalogo")
-      .select("nombre, stock_actual")
-      .eq("id", item.ingrediente_id)
-      .single();
-    if (eRead) throw eRead;
-
-    const currentStock = Number((ing as IngRow).stock_actual) || 0;
-    const cantidad = Number(item.cantidad);
-    let newStock: number;
-
-    switch (tipo) {
-      case "compra":
-        newStock = currentStock + cantidad;
-        break;
-      case "uso":
-      case "devolucion":
-        // Antes usaba Math.max(0, currentStock - cantidad), que silenciaba
-        // consumos mayores al stock y dejaba el stock en 0 sin rastro.
-        if (currentStock < cantidad) {
-          const nombre = (ing as IngRow)?.nombre ?? item.ingrediente_id;
-          throw new Error(
-            `Stock insuficiente para "${nombre}": hay ${currentStock}, se intenta descontar ${cantidad}.`
-          );
-        }
-        newStock = currentStock - cantidad;
-        break;
-      case "ajuste":
-        newStock = cantidad;
-        break;
-      default:
-        newStock = currentStock;
-    }
-
-    const { error: eUp } = await supabase
-      .from("ingredientes_catalogo")
-      .update({ stock_actual: newStock } as IngUpdate)
-      .eq("id", item.ingrediente_id);
-    if (eUp) throw eUp;
-  }
-
-  // Mark movement as confirmed
-  const { data, error } = await supabase
-    .from("inventario_movimientos")
-    .update({ estado: "confirmado" } as MovUpdate)
-    .eq("id", id)
-    .select("*")
-    .single();
+export async function inventarioMovimientoConfirmar(id: string) {
+  const { data, error } = await supabase.rpc("fn_inventario_movimiento_confirmar", {
+    p_movimiento_id: id,
+  });
   if (error) throw error;
-  return data as InventarioMovimiento;
+  return data as unknown as InventarioMovimiento;
 }
 
 export async function inventarioMovimientoUpdateFacturaUrl(id: string, facturaUrl: string) {
@@ -146,51 +91,10 @@ export async function inventarioMovimientoDelete(id: string) {
   return { ok: true };
 }
 
-export async function inventarioMovimientoDeleteConReversa(
-  id: string,
-  tipo: InventarioMovimiento["tipo"],
-  items: InventarioMovItem[]
-) {
-  // Reverse stock for each item (mirror of inventarioMovimientoConfirmar)
-  for (const item of items) {
-    const { data: ing, error: eRead } = await supabase
-      .from("ingredientes_catalogo")
-      .select("stock_actual")
-      .eq("id", item.ingrediente_id)
-      .single();
-    if (eRead) throw eRead;
-
-    const currentStock = Number((ing as IngRow).stock_actual) || 0;
-    let newStock: number;
-
-    switch (tipo) {
-      case "compra":
-        // Compra added stock → subtract to reverse
-        newStock = Math.max(0, currentStock - Number(item.cantidad));
-        break;
-      case "uso":
-      case "devolucion":
-        // Uso/devolucion subtracted stock → add back to reverse
-        newStock = currentStock + Number(item.cantidad);
-        break;
-      case "ajuste":
-        // Cannot reverse absolute adjustment — leave stock as-is
-        newStock = currentStock;
-        break;
-      default:
-        newStock = currentStock;
-    }
-
-    const { error: eUp } = await supabase
-      .from("ingredientes_catalogo")
-      .update({ stock_actual: newStock } as IngUpdate)
-      .eq("id", item.ingrediente_id);
-    if (eUp) throw eUp;
-  }
-
-  // Delete items first, then the movement
-  await supabase.from("inventario_mov_items").delete().eq("movimiento_id", id);
-  const { error } = await supabase.from("inventario_movimientos").delete().eq("id", id);
+export async function inventarioMovimientoDeleteConReversa(id: string) {
+  const { error } = await supabase.rpc("fn_inventario_movimiento_delete_con_reversa", {
+    p_movimiento_id: id,
+  });
   if (error) throw error;
   return { ok: true };
 }

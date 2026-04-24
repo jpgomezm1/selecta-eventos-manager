@@ -56,7 +56,7 @@ export default function MovimientosPanel() {
 
   const confirmarMut = useMutation({
     mutationFn: (mov: (typeof movimientos)[0]) =>
-      inventarioMovimientoConfirmar(mov.id, mov.tipo, mov.items),
+      inventarioMovimientoConfirmar(mov.id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["inventario-movimientos"] });
       qc.invalidateQueries({ queryKey: ["ingredientes-stock"] });
@@ -70,7 +70,7 @@ export default function MovimientosPanel() {
   const deleteMut = useMutation({
     mutationFn: async (mov: (typeof movimientos)[0]) => {
       if (mov.estado === "confirmado") {
-        return inventarioMovimientoDeleteConReversa(mov.id, mov.tipo, mov.items);
+        return inventarioMovimientoDeleteConReversa(mov.id);
       }
       return inventarioMovimientoDelete(mov.id);
     },

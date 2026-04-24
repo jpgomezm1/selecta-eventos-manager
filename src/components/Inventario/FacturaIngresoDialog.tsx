@@ -260,17 +260,7 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
       }
 
       if (confirmar) {
-        await inventarioMovimientoConfirmar(
-          mov.id,
-          "compra",
-          convertedItems.map((it) => ({
-            id: "",
-            movimiento_id: mov.id,
-            ingrediente_id: it.ingrediente_id,
-            cantidad: it.cantidad,
-            costo_unitario: it.costo_unitario,
-          }))
-        );
+        await inventarioMovimientoConfirmar(mov.id);
       }
 
       return { mov, confirmar };

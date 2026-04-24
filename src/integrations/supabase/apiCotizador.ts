@@ -360,16 +360,16 @@ export async function updateVersionCotizacion(
   // Carga el precio del lugar seleccionado de la cotización para incluirlo en el
   // total. El lugar vive a nivel cotización (no versión), así que aplica a todas
   // las versiones por igual.
-  const { data: lugares } = await supabase
+  const { data: lugares, error: lugaresError } = await supabase
     .from("cotizacion_lugares")
     .select("precio_referencia, es_seleccionado, orden")
     .eq("cotizacion_id", cotizacion_id)
     .order("orden", { ascending: true });
+  if (lugaresError) throw lugaresError;
   const lugarSel =
     (lugares ?? []).find((l) => l.es_seleccionado) ?? (lugares ?? [])[0];
   const lugarPrecio = Number((lugarSel as { precio_referencia?: number } | undefined)?.precio_referencia ?? 0);
 
-  // Calcular nuevo total (items + lugar)
   const total =
     items.platos.reduce((a, p) => a + p.precio_unitario * p.cantidad, 0) +
     items.personal.reduce((a, p) => a + p.tarifa_estimada_por_persona * p.cantidad, 0) +
@@ -377,7 +377,6 @@ export async function updateVersionCotizacion(
     (items.menaje ?? []).reduce((a, m) => a + m.precio_alquiler * m.cantidad, 0) +
     lugarPrecio;
 
-  // Actualizar total (y nombre si se proporcionó) de la versión
   const updateData: Record<string, unknown> = { total };
   if (nombre_opcion !== undefined) updateData.nombre_opcion = nombre_opcion;
 
@@ -387,15 +386,18 @@ export async function updateVersionCotizacion(
     .eq("id", version_id);
   if (updateError) throw updateError;
 
-  // Eliminar items existentes
-  await Promise.all([
+  // Supabase no lanza: resuelve con { error } poblado. Sin destructurar, los
+  // fallos en estos deletes quedan invisibles y la re-inserción los oculta.
+  const deleteResults = await Promise.all([
     supabase.from("cotizacion_platos").delete().eq("cotizacion_version_id", version_id),
     supabase.from("cotizacion_personal_items").delete().eq("cotizacion_version_id", version_id),
     supabase.from("cotizacion_transporte_items").delete().eq("cotizacion_version_id", version_id),
     supabase.from("cotizacion_menaje_items").delete().eq("cotizacion_version_id", version_id),
   ]);
+  for (const r of deleteResults) {
+    if (r.error) throw r.error;
+  }
 
-  // Insertar nuevos items
   await insertItemsForVersion(cotizacion_id, version_id, items);
 
   return { success: true };
@@ -599,36 +601,48 @@ async function enrichEventoRequerimiento(evento_id: string) {
 
   if (missingPlatos.length) {
     const ids = missingPlatos.map((x) => x.plato_id);
-    const { data } = await supabase.from("platos_catalogo").select("id,nombre").in("id", ids);
+    const { data, error } = await supabase.from("platos_catalogo").select("id,nombre").in("id", ids);
+    if (error) throw error;
     const m = new Map((data ?? []).map((r) => [r.id, r.nombre]));
-    for (const row of missingPlatos) {
-      await supabase
-        .from("evento_requerimiento_platos")
-        .update({ nombre: m.get(row.plato_id) ?? "" })
-        .eq("id", row.id);
-    }
+    const updates = await Promise.all(
+      missingPlatos.map((row) =>
+        supabase
+          .from("evento_requerimiento_platos")
+          .update({ nombre: m.get(row.plato_id) ?? "" })
+          .eq("id", row.id)
+      )
+    );
+    for (const r of updates) if (r.error) throw r.error;
   }
   if (missingTrans.length) {
     const ids = missingTrans.map((x) => x.transporte_id);
-    const { data } = await supabase.from("transporte_tarifas").select("id,lugar").in("id", ids);
+    const { data, error } = await supabase.from("transporte_tarifas").select("id,lugar").in("id", ids);
+    if (error) throw error;
     const m = new Map((data ?? []).map((r) => [r.id, r.lugar]));
-    for (const row of missingTrans) {
-      await supabase
-        .from("evento_requerimiento_transporte")
-        .update({ lugar: m.get(row.transporte_id) ?? "" })
-        .eq("id", row.id);
-    }
+    const updates = await Promise.all(
+      missingTrans.map((row) =>
+        supabase
+          .from("evento_requerimiento_transporte")
+          .update({ lugar: m.get(row.transporte_id) ?? "" })
+          .eq("id", row.id)
+      )
+    );
+    for (const r of updates) if (r.error) throw r.error;
   }
   if (missingPers.length) {
     const ids = missingPers.map((x) => x.personal_costo_id);
-    const { data } = await supabase.from("personal_costos_catalogo").select("id,rol").in("id", ids);
+    const { data, error } = await supabase.from("personal_costos_catalogo").select("id,rol").in("id", ids);
+    if (error) throw error;
     const m = new Map((data ?? []).map((r) => [r.id, r.rol]));
-    for (const row of missingPers) {
-      await supabase
-        .from("evento_requerimiento_personal")
-        .update({ rol: m.get(row.personal_costo_id) ?? "" })
-        .eq("id", row.id);
-    }
+    const updates = await Promise.all(
+      missingPers.map((row) =>
+        supabase
+          .from("evento_requerimiento_personal")
+          .update({ rol: m.get(row.personal_costo_id) ?? "" })
+          .eq("id", row.id)
+      )
+    );
+    for (const r of updates) if (r.error) throw r.error;
   }
 }
 
@@ -994,28 +1008,11 @@ export async function setProveedorPrincipal(
   ingredienteId: string,
   proveedorId: string
 ): Promise<void> {
-  // Desmarcar todos
-  const { error: e1 } = await supabase
-    .from("ingrediente_proveedores")
-    .update({ es_principal: false })
-    .eq("ingrediente_id", ingredienteId);
-  if (e1) throw e1;
-
-  // Marcar el seleccionado
-  const { data: prov, error: e2 } = await supabase
-    .from("ingrediente_proveedores")
-    .update({ es_principal: true })
-    .eq("id", proveedorId)
-    .select("costo_por_unidad_base")
-    .single();
-  if (e2) throw e2;
-
-  // Actualizar costo del ingrediente
-  const { error: e3 } = await supabase
-    .from("ingredientes_catalogo")
-    .update({ costo_por_unidad: Number(prov.costo_por_unidad_base) })
-    .eq("id", ingredienteId);
-  if (e3) throw e3;
+  const { error } = await supabase.rpc("fn_set_proveedor_principal", {
+    p_ingrediente_id: ingredienteId,
+    p_proveedor_id: proveedorId,
+  });
+  if (error) throw error;
 }
 
 /** =====================
