@@ -33,6 +33,16 @@ import { TransporteSelector } from "@/components/Cotizador/TransporteSelector";
 import { MenajeSelector } from "@/components/Cotizador/MenajeSelector";
 import { ResumenCotizacion } from "@/components/Cotizador/ResumenCotizacion";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import {
   ArrowLeft,
@@ -63,9 +73,20 @@ export default function VersionEditorWizard() {
   const [editingName, setEditingName] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [totalOverride, setTotalOverride] = useState<number | null>(null);
+  const [zeroConfirmOpen, setZeroConfirmOpen] = useState(false);
 
   const { roles } = useAuth();
   const isAdmin = roles.includes("admin");
+
+  // Si admin guarda con override=0, primero pedir confirmación explícita.
+  // Cualquier otro valor (incluido NULL) guarda directo.
+  const handleGuardar = () => {
+    if (totalOverride === 0) {
+      setZeroConfirmOpen(true);
+      return;
+    }
+    guardar();
+  };
 
   // Load cotizacion data
   const { data, isLoading, error } = useQuery({
@@ -489,7 +510,7 @@ export default function VersionEditorWizard() {
             onRemove={(tipo, itemId) => removeItem(tipo, itemId)}
             totalOverride={totalOverride}
             onTotalOverrideChange={isAdmin ? setTotalOverride : undefined}
-            onGuardar={() => guardar()}
+            onGuardar={handleGuardar}
             guardando={guardando}
             fullWidth
           />
@@ -563,6 +584,31 @@ export default function VersionEditorWizard() {
           </div>
         </div>
       )}
+
+      <AlertDialog open={zeroConfirmOpen} onOpenChange={setZeroConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar total $0</AlertDialogTitle>
+            <AlertDialogDescription>
+              El total de esta opción quedó en <strong>$0</strong>. El cliente
+              verá una propuesta sin costo y la cotización se guardará así.
+              Esta acción se puede revertir desde el editor pero queda
+              registrada en el historial de cambios.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setZeroConfirmOpen(false);
+                guardar();
+              }}
+            >
+              Confirmar y guardar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
