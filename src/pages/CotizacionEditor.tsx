@@ -44,6 +44,7 @@ import { LugaresSelector } from "@/components/Cotizador/LugaresSelector";
 import { ApprovalDialog } from "@/components/Cotizador/ApprovalDialog";
 import { CotizacionChecklist } from "@/components/Cotizador/CotizacionChecklist";
 import { ShareDialog } from "@/components/Cotizador/ShareDialog";
+import { AuditTimeline } from "@/components/Cotizador/AuditTimeline";
 import { formatLocalDate } from "@/lib/dateLocal";
 
 export default function CotizacionEditorPage() {
@@ -549,6 +550,8 @@ export default function CotizacionEditorPage() {
               </Tabs>
             </CardContent>
           </Card>
+
+          {id && <AuditTimeline cotizacionId={id} />}
         </div>
 
         {/* Sidebar - 1 column */}

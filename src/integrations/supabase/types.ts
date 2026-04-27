@@ -97,6 +97,57 @@ export type Database = {
         }
         Relationships: []
       }
+      cotizacion_audit_log: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          cotizacion_id: string | null
+          cotizacion_version_id: string | null
+          field: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          table_name: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          cotizacion_id?: string | null
+          cotizacion_version_id?: string | null
+          field: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          table_name: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          cotizacion_id?: string | null
+          cotizacion_version_id?: string | null
+          field?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          table_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cotizacion_audit_log_cotizacion_id_fkey"
+            columns: ["cotizacion_id"]
+            isOneToOne: false
+            referencedRelation: "cotizaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cotizacion_audit_log_cotizacion_version_id_fkey"
+            columns: ["cotizacion_version_id"]
+            isOneToOne: false
+            referencedRelation: "cotizacion_versiones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cotizacion_lugares: {
         Row: {
           capacidad_estimada: number | null
@@ -1823,6 +1874,21 @@ export type Database = {
         Args: { _role: Database["public"]["Enums"]["user_role"] }
         Returns: boolean
       }
+      list_cotizacion_audit: {
+        Args: { p_cotizacion_id: string }
+        Returns: {
+          changed_at: string
+          changed_by: string
+          changed_by_email: string
+          cotizacion_id: string
+          cotizacion_version_id: string
+          field: string
+          id: string
+          new_value: Json
+          old_value: Json
+          table_name: string
+        }[]
+      }
       list_users_with_roles: {
         Args: never
         Returns: {
@@ -1832,6 +1898,17 @@ export type Database = {
           roles: Database["public"]["Enums"]["user_role"][]
           user_id: string
         }[]
+      }
+      log_cotizacion_change: {
+        Args: {
+          p_cotizacion_id: string
+          p_field: string
+          p_new: Json
+          p_old: Json
+          p_table: string
+          p_version_id: string
+        }
+        Returns: undefined
       }
       registrar_compra_en_inventario: {
         Args: { p_evento_id: string; p_orden_id: string }
