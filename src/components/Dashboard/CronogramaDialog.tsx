@@ -49,29 +49,57 @@ export function CronogramaDialog({ isOpen, onClose }: CronogramaDialogProps) {
   
   const { toast } = useToast();
 
-  const cargarEmpleados = useCallback(async () => {
+  // Trae solo empleados que tienen al menos un evento programado en el rango
+  // de fechas actual. Al cambiar el rango la lista se recalcula automáticamente.
+  const cargarEmpleadosConEventos = useCallback(async () => {
     try {
       const { data, error } = await supabase
-        .from("personal")
-        .select("id, nombre_completo")
-        .order("nombre_completo");
+        .from("eventos")
+        .select(`
+          evento_personal!inner(
+            personal!inner(id, nombre_completo)
+          )
+        `)
+        .gte("fecha_evento", fechaDesde.toISOString().split('T')[0])
+        .lte("fecha_evento", fechaHasta.toISOString().split('T')[0]);
 
       if (error) throw error;
-      setEmpleados(data || []);
-      
-      // Seleccionar el primer empleado por defecto
-      if (data && data.length > 0) {
-        setEmpleadoSeleccionado(data[0].id);
+
+      // Dedupe por id; un empleado con varios eventos aparece una sola vez.
+      const map = new Map<string, Empleado>();
+      for (const evt of data ?? []) {
+        for (const ep of evt.evento_personal ?? []) {
+          const p = ep.personal;
+          if (p && !map.has(p.id)) {
+            map.set(p.id, { id: p.id, nombre_completo: p.nombre_completo });
+          }
+        }
+      }
+      const lista = [...map.values()].sort((a, b) =>
+        a.nombre_completo.localeCompare(b.nombre_completo)
+      );
+      setEmpleados(lista);
+
+      // Si el empleado actualmente seleccionado ya no aparece en el rango
+      // nuevo, caer al primero disponible (o limpiar si la lista quedó vacía).
+      if (lista.length === 0) {
+        setEmpleadoSeleccionado("");
+        setEventos([]);
+        setMensajeCronograma("");
+      } else {
+        setEmpleadoSeleccionado((prev) =>
+          lista.some((e) => e.id === prev) ? prev : lista[0].id
+        );
       }
     } catch (error) {
-      console.error("Error cargando empleados:", error);
+      console.error("Error cargando empleados con eventos:", error);
       toast({
         title: "Error",
         description: (error as Error)?.message ?? "Error al cargar lista de empleados",
         variant: "destructive"
       });
     }
-  }, [toast]);
+  }, [fechaDesde, fechaHasta, toast]);
 
   const cargarEventosEmpleado = useCallback(async () => {
     if (!empleadoSeleccionado) return;
@@ -153,9 +181,9 @@ Si el problema persiste, contacta al administrador.`;
 
   useEffect(() => {
     if (isOpen) {
-      cargarEmpleados();
+      cargarEmpleadosConEventos();
     }
-  }, [isOpen, cargarEmpleados]);
+  }, [isOpen, cargarEmpleadosConEventos]);
 
   useEffect(() => {
     if (empleadoSeleccionado) {
@@ -337,12 +365,25 @@ No tienes eventos programados del ${fechaDesdeFormateada} al ${fechaHastaFormate
         <div className="space-y-4 flex-1 overflow-hidden">
           {/* Selector de empleado */}
           <div>
-            <label className="text-sm font-medium mb-2 block">
-              Seleccionar empleado:
-            </label>
-            <Select value={empleadoSeleccionado} onValueChange={setEmpleadoSeleccionado}>
+            <div className="flex items-baseline justify-between mb-2">
+              <label className="text-sm font-medium">Seleccionar empleado:</label>
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                {empleados.length} con eventos en el rango
+              </span>
+            </div>
+            <Select
+              value={empleadoSeleccionado}
+              onValueChange={setEmpleadoSeleccionado}
+              disabled={empleados.length === 0}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Selecciona un empleado" />
+                <SelectValue
+                  placeholder={
+                    empleados.length === 0
+                      ? "Sin empleados con eventos en este rango"
+                      : "Selecciona un empleado"
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
                 {empleados.map(empleado => (
