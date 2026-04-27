@@ -21,8 +21,8 @@ export default function SinAcceso() {
           Tu cuenta no tiene <span className="italic text-primary">acceso asignado</span> todavía.
         </h1>
         <p className="mt-6 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
-          Cuando el equipo de Selecta active tu cuenta vas a poder entrar al panel.
-          Si crees que esto es un error, contactá a un administrador y pedile que te asigne un rol.
+          El acceso al panel se habilita cuando un administrador asigna un rol a la cuenta.
+          Si esto parece un error, contactar al equipo de Selecta para que active los permisos.
         </p>
 
         {user?.email && (
