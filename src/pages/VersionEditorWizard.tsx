@@ -32,6 +32,7 @@ import { PersonalSelector } from "@/components/Cotizador/PersonalSelector";
 import { TransporteSelector } from "@/components/Cotizador/TransporteSelector";
 import { MenajeSelector } from "@/components/Cotizador/MenajeSelector";
 import { ResumenCotizacion } from "@/components/Cotizador/ResumenCotizacion";
+import { useAuth } from "@/hooks/useAuth";
 
 import {
   ArrowLeft,
@@ -61,6 +62,10 @@ export default function VersionEditorWizard() {
   const [versionName, setVersionName] = useState("");
   const [editingName, setEditingName] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [totalOverride, setTotalOverride] = useState<number | null>(null);
+
+  const { roles } = useAuth();
+  const isAdmin = roles.includes("admin");
 
   // Load cotizacion data
   const { data, isLoading, error } = useQuery({
@@ -95,6 +100,7 @@ export default function VersionEditorWizard() {
 
     const init = async () => {
       setVersionName(version.nombre_opcion);
+      setTotalOverride(version.total_override ?? null);
       try {
         const asignaciones = await loadPersonalAsignaciones(versionId);
         const personalWithAsig = version.items.personal.map((p) => ({
@@ -113,6 +119,15 @@ export default function VersionEditorWizard() {
   const version = data?.versiones.find((v) => v.id === versionId);
   const invitados = data?.cotizacion.numero_invitados ?? 0;
 
+  // El lugar vive a nivel cotización (no versión); aplica a todas. El total
+  // sugerido del Resumen DEBE incluirlo para que el override del admin sea
+  // contra el monto que el cliente ve, no contra "items sin lugar".
+  const lugarCosto = useMemo(() => {
+    const lugares = data?.lugares ?? [];
+    const sel = lugares.find((l) => l.es_seleccionado) ?? lugares[0];
+    return Number(sel?.precio_referencia ?? 0);
+  }, [data?.lugares]);
+
   // Subtotals
   const calcSubtotales = (it: CotizacionItemsState) => {
     const platosTotal = it.platos.reduce((a, p) => a + p.precio_unitario * p.cantidad, 0);
@@ -124,7 +139,7 @@ export default function VersionEditorWizard() {
       personal,
       transportes: transportesTotal,
       menaje,
-      total: platosTotal + personal + transportesTotal + menaje,
+      total: platosTotal + personal + transportesTotal + menaje + lugarCosto,
     };
   };
 
@@ -249,7 +264,13 @@ export default function VersionEditorWizard() {
   // Save mutation
   const { mutate: guardar, isPending: guardando } = useMutation({
     mutationFn: async () => {
-      await updateVersionCotizacion(id!, versionId!, editingItems, versionName.trim() || undefined);
+      await updateVersionCotizacion(
+        id!,
+        versionId!,
+        editingItems,
+        versionName.trim() || undefined,
+        { totalOverride }
+      );
       await savePersonalAsignaciones(versionId!, editingItems.personal);
     },
     onSuccess: () => {
@@ -463,8 +484,11 @@ export default function VersionEditorWizard() {
               transportes: subt.transportes,
               menaje: subt.menaje,
             }}
+            lugarCosto={lugarCosto}
             onQtyChange={(tipo, itemId, qty) => updateQty(tipo, itemId, qty)}
             onRemove={(tipo, itemId) => removeItem(tipo, itemId)}
+            totalOverride={totalOverride}
+            onTotalOverrideChange={isAdmin ? setTotalOverride : undefined}
             onGuardar={() => guardar()}
             guardando={guardando}
             fullWidth

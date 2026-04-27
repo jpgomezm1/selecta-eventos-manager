@@ -177,6 +177,7 @@ export async function getCotizacionByShareToken(token: string): Promise<{
       return {
         ...(v as CotizacionVersion),
         total: Number(v.total),
+        total_override: v.total_override != null ? Number(v.total_override) : null,
         items,
       };
     })

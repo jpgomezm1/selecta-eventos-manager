@@ -40,6 +40,7 @@ import { ContactoSelector } from "@/components/Cotizador/ContactoSelector";
 import { LugaresSelector } from "@/components/Cotizador/LugaresSelector";
 import type { Cliente, ContactoCliente } from "@/integrations/supabase/apiClientes";
 import type { LugarOption } from "@/types/cotizador";
+import { useAuth } from "@/hooks/useAuth";
 
 import {
   Users,
@@ -81,11 +82,15 @@ type OpcionState = {
   key: string;
   nombre_opcion: string;
   items: CotizacionItemsState;
+  /** Total manual asignado por admin para esta opción. NULL = usar total calculado. */
+  total_override?: number | null;
 };
 
 export default function Cotizador() {
   const nav = useNavigate();
   const { toast } = useToast();
+  const { roles } = useAuth();
+  const isAdmin = roles.includes("admin");
 
   const { register, handleSubmit, watch, reset } = useForm<FormValues>({
     defaultValues: {
@@ -226,6 +231,12 @@ export default function Cotizador() {
   const cancelEditingOption = () => {
     setEditingOption(null);
     setEditingName("");
+  };
+
+  const setOptionTotalOverride = (key: string, value: number | null) => {
+    setOpciones((prev) =>
+      prev.map((o) => (o.key === key ? { ...o, total_override: value } : o))
+    );
   };
 
   const removeOpcion = (key: string) => {
@@ -446,6 +457,7 @@ export default function Cotizador() {
         nombre_opcion: o.nombre_opcion,
         version_index: i + 1,
         total: tot.total,
+        total_override: o.total_override ?? null,
         estado: "Pendiente por Aprobación" as const,
         is_definitiva: false,
         items: o.items,
@@ -1017,6 +1029,10 @@ export default function Cotizador() {
               lugarCosto={lugarCosto}
               onQtyChange={(tipo, id, qty) => updateQty(tipo, id, qty)}
               onRemove={(tipo, id) => removeItem(tipo, id)}
+              totalOverride={current.total_override ?? null}
+              onTotalOverrideChange={
+                isAdmin ? (value) => setOptionTotalOverride(current.key, value) : undefined
+              }
               onGuardar={handleSubmit(onSubmit)}
               guardando={isPending}
               fullWidth

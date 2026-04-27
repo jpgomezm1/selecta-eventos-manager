@@ -8,6 +8,8 @@ interface CotizacionDetalle {
     id: string;
     nombre_opcion: string;
     is_definitiva: boolean;
+    /** Override manual del total. Si está presente, se muestra en lugar del calculado. */
+    total_override?: number | null;
     items: {
       platos: Array<{ nombre: string; precio_unitario: number; cantidad: number }>;
       personal: Array<{ rol: string; tarifa_estimada_por_persona: number; cantidad: number }>;
@@ -302,8 +304,11 @@ export async function generateSelectaPremiumPDF(
     return yPos;
   };
 
-  // Función auxiliar para calcular totales
+  // Función auxiliar para calcular totales. Si la versión tiene total_override
+  // asignado por admin, ese es el monto que se muestra al cliente; sino se usa
+  // la suma natural de los items.
   const calculateVersionTotal = (version) => {
+    if (version.total_override != null) return Number(version.total_override);
     return (
       version.items.platos.reduce((sum: number, p) => sum + (p.precio_unitario * p.cantidad), 0) +
       version.items.personal.reduce((sum: number, p) => sum + (p.tarifa_estimada_por_persona * p.cantidad), 0) +

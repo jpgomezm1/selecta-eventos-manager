@@ -158,7 +158,10 @@ export interface IngredienteCatalogo {
     cotizacion_id: string;
     nombre_opcion: string; // "Opción A"
     version_index: number; // 1,2,3...
+    /** Total calculado a partir de los items (suma natural). */
     total: number;
+    /** Total manual asignado por admin. NULL = usar `total`. */
+    total_override?: number | null;
     estado: EstadoCotizacion;
     is_definitiva: boolean;
     created_at?: string | null;
@@ -231,6 +234,7 @@ export interface IngredienteCatalogo {
     nombre_opcion: string;
     version_index: number;
     total: number;
+    total_override?: number | null;
     estado: EstadoCotizacion;
     is_definitiva?: boolean;
     items: CotizacionItemsState;

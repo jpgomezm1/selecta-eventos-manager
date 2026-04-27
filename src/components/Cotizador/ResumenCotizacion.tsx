@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,8 @@ import {
   AlertCircle,
   Sparkles,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  RotateCcw,
 } from "lucide-react";
 import type { CotizacionItemsState } from "@/types/cotizador";
 import { cn } from "@/lib/utils";
@@ -33,6 +35,10 @@ type Props = {
   lugarCosto?: number;
   onQtyChange: (tipo: keyof CotizacionItemsState, id: string, qty: number) => void;
   onRemove: (tipo: keyof CotizacionItemsState, id: string) => void;
+  /** Override manual del total. NULL/undefined = usar `total` calculado. */
+  totalOverride?: number | null;
+  /** Si está presente, el admin puede asignar/quitar el override desde la UI. */
+  onTotalOverrideChange?: (value: number | null) => void;
   onGuardar: () => void;
   guardando: boolean;
   fullWidth?: boolean;
@@ -62,6 +68,8 @@ export function ResumenCotizacion({
   lugarCosto = 0,
   onQtyChange,
   onRemove,
+  totalOverride,
+  onTotalOverrideChange,
   onGuardar,
   guardando,
   fullWidth = false,
@@ -74,7 +82,14 @@ export function ResumenCotizacion({
     ...(items.menaje ?? []).map(m => m.cantidad)
   ].reduce((sum, qty) => sum + qty, 0);
 
-  const costPerGuest = invitados > 0 ? total / invitados : 0;
+  // El total efectivo es el override (si admin lo asignó) o el calculado.
+  // La distribución de costos sigue mostrando los porcentajes contra el
+  // calculado para que el desglose interno tenga sentido.
+  const totalEfectivo = totalOverride != null ? totalOverride : total;
+  const totalAjustado = totalOverride != null && totalOverride !== total;
+  const canEditTotal = !!onTotalOverrideChange;
+
+  const costPerGuest = invitados > 0 ? totalEfectivo / invitados : 0;
   const hasItems = totalItems > 0;
 
   const platosPercentage = total > 0 ? (subtotales.platos / total) * 100 : 0;
@@ -337,17 +352,72 @@ export function ResumenCotizacion({
             {/* Total final */}
             <div className="space-y-4">
               <div className="rounded-md p-6 border border-border">
-                <div className="kicker text-muted-foreground mb-2">Total de la cotización</div>
-
-                <div className={cn(
-                  "font-serif font-semibold text-primary tabular-nums mb-2",
-                  fullWidth ? "text-4xl" : "text-3xl"
-                )}>
-                  ${total.toLocaleString()}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="kicker text-muted-foreground">Total de la cotización</div>
+                  {totalAjustado && (
+                    <Badge
+                      variant="outline"
+                      className="border-[hsl(30_40%_70%)] bg-[hsl(30_50%_94%)] text-[10px] font-medium uppercase tracking-[0.12em] text-[hsl(30_55%_30%)]"
+                    >
+                      Total ajustado
+                    </Badge>
+                  )}
                 </div>
 
+                {canEditTotal ? (
+                  <div className="mb-2 flex items-baseline gap-2">
+                    <span
+                      className={cn(
+                        "font-serif font-semibold text-primary tabular-nums",
+                        fullWidth ? "text-4xl" : "text-3xl"
+                      )}
+                    >
+                      $
+                    </span>
+                    <TotalInput
+                      value={totalEfectivo}
+                      sugerido={total}
+                      onCommit={(next) => {
+                        // Si el admin escribe el mismo valor que el calculado,
+                        // limpiamos el override (vuelve al automático).
+                        onTotalOverrideChange?.(next === total ? null : next);
+                      }}
+                      bigText={fullWidth}
+                    />
+                    {totalAjustado && (
+                      <button
+                        type="button"
+                        onClick={() => onTotalOverrideChange?.(null)}
+                        className="ml-1 inline-flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground"
+                        title={`Restaurar al total calculado $${total.toLocaleString()}`}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        <span className="line-through tabular-nums">
+                          ${total.toLocaleString()}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div
+                    className={cn(
+                      "font-serif font-semibold text-primary tabular-nums mb-2",
+                      fullWidth ? "text-4xl" : "text-3xl"
+                    )}
+                  >
+                    ${totalEfectivo.toLocaleString()}
+                    {totalAjustado && (
+                      <span className="ml-3 text-[12px] font-normal text-muted-foreground">
+                        sugerido <span className="line-through">${total.toLocaleString()}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>Cálculo en tiempo real</span>
+                  <span>
+                    {totalAjustado ? "Total manual" : "Cálculo en tiempo real"}
+                  </span>
                   <span className="tabular-nums">
                     {invitados > 0 && `$${costPerGuest.toLocaleString()} por invitado`}
                   </span>
@@ -409,5 +479,82 @@ export function ResumenCotizacion({
 
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Input controlado para el total override. Mantiene su propia copia editable
+ * y solo propaga al padre en blur o Enter — evita re-renders mientras el
+ * admin está escribiendo (que perderían el foco). El draft se reformatea con
+ * separadores de miles colombianos (`.`) en cada keystroke para que sea
+ * legible mientras se escribe (ej. al tipear "8000000" se ve "8.000.000").
+ */
+function formatMiles(n: number): string {
+  // es-CO usa `.` como separador de miles. Sin decimales para totales en COP.
+  return new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 }).format(n);
+}
+
+function parseMiles(s: string): number | null {
+  // Limpiamos cualquier caracter no numérico (puntos, comas, espacios) y
+  // parseamos. Si quedan dígitos válidos devolvemos el número, sino null.
+  const digits = s.replace(/[^\d]/g, "");
+  if (!digits) return null;
+  const n = Number(digits);
+  return Number.isFinite(n) ? n : null;
+}
+
+function TotalInput({
+  value,
+  sugerido,
+  onCommit,
+  bigText,
+}: {
+  value: number;
+  sugerido: number;
+  onCommit: (next: number) => void;
+  bigText: boolean;
+}) {
+  const [draft, setDraft] = useState(formatMiles(value));
+
+  useEffect(() => {
+    setDraft(formatMiles(value));
+  }, [value]);
+
+  const commit = () => {
+    const parsed = parseMiles(draft);
+    if (parsed != null && parsed >= 0 && parsed !== value) {
+      onCommit(parsed);
+    } else {
+      setDraft(formatMiles(value));
+    }
+  };
+
+  return (
+    <Input
+      type="text"
+      inputMode="numeric"
+      value={draft}
+      onChange={(e) => {
+        // Reformateamos en tiempo real para mostrar separadores de miles
+        // mientras el admin escribe. Si el campo quedó vacío permitimos el
+        // string vacío para que pueda borrar todo y empezar de cero.
+        const parsed = parseMiles(e.target.value);
+        setDraft(parsed == null ? "" : formatMiles(parsed));
+      }}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        if (e.key === "Escape") {
+          setDraft(formatMiles(value));
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      placeholder={formatMiles(sugerido)}
+      className={cn(
+        "h-auto w-auto min-w-[180px] flex-1 border-0 bg-transparent p-0 font-serif font-semibold tracking-tight text-primary tabular-nums focus-visible:ring-1 focus-visible:ring-primary/40",
+        bigText ? "text-4xl" : "text-3xl"
+      )}
+      aria-label="Total de la cotización"
+    />
   );
 }

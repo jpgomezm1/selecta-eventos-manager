@@ -167,7 +167,10 @@ export default function CotizacionPublica() {
   });
 
   const itemsTotal = current ? computeTotal(current.items) : 0;
-  const total = itemsTotal + lugarPrecio;
+  const totalCalculado = itemsTotal + lugarPrecio;
+  // El cliente ve siempre el override si el admin lo asignó.
+  const total =
+    current?.total_override != null ? Number(current.total_override) : totalCalculado;
   const subtotales = current
     ? computeSubtotales(current.items)
     : { platos: 0, personal: 0, transportes: 0, menaje: 0 };
