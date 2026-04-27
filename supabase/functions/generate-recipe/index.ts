@@ -72,6 +72,35 @@ Deno.serve(async (req) => {
     );
   }
 
+  // 1.b) Validar que el usuario tenga rol que justifique el costo de Anthropic.
+  //      Solo admin y cocina pueden gastar tokens. Validamos con service_role
+  //      contra public.user_roles (la fn has_role() está gateada por auth.uid()
+  //      y no la podemos usar acá porque corremos con service_role).
+  const adminClient = createClient(supabaseUrl, serviceRoleKey);
+  const { data: rolesRows, error: rolesError } = await adminClient
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .in("role", ["admin", "cocina"]);
+
+  if (rolesError) {
+    console.error("[role-check] failed:", rolesError.message);
+    return new Response(
+      JSON.stringify({ error: "No se pudo validar permisos" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  if (!rolesRows || rolesRows.length === 0) {
+    return new Response(
+      JSON.stringify({
+        error: "Forbidden",
+        message: "Esta función requiere rol Cocina o Administración.",
+      }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
   // 2) Parsear body para decidir el umbral.
   let body: unknown;
   try {
@@ -86,9 +115,8 @@ Deno.serve(async (req) => {
   const heavy = hasAttachment(body);
   const limit = heavy ? LIMIT_ATTACHMENT : LIMIT_TEXT;
 
-  // 3) Rate-limit check. Cliente con service_role para bypasear RLS de
-  //    edge_function_calls.
-  const admin = createClient(supabaseUrl, serviceRoleKey);
+  // 3) Rate-limit check. Reusamos adminClient (creado arriba para el rol-check).
+  const admin = adminClient;
   const cutoff = new Date(Date.now() - WINDOW_SECONDS * 1000).toISOString();
 
   const { count, error: countError } = await admin
