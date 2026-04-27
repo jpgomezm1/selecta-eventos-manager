@@ -119,6 +119,15 @@ export default function VersionEditorWizard() {
   const version = data?.versiones.find((v) => v.id === versionId);
   const invitados = data?.cotizacion.numero_invitados ?? 0;
 
+  // El lugar vive a nivel cotización (no versión); aplica a todas. El total
+  // sugerido del Resumen DEBE incluirlo para que el override del admin sea
+  // contra el monto que el cliente ve, no contra "items sin lugar".
+  const lugarCosto = useMemo(() => {
+    const lugares = data?.lugares ?? [];
+    const sel = lugares.find((l) => l.es_seleccionado) ?? lugares[0];
+    return Number(sel?.precio_referencia ?? 0);
+  }, [data?.lugares]);
+
   // Subtotals
   const calcSubtotales = (it: CotizacionItemsState) => {
     const platosTotal = it.platos.reduce((a, p) => a + p.precio_unitario * p.cantidad, 0);
@@ -130,7 +139,7 @@ export default function VersionEditorWizard() {
       personal,
       transportes: transportesTotal,
       menaje,
-      total: platosTotal + personal + transportesTotal + menaje,
+      total: platosTotal + personal + transportesTotal + menaje + lugarCosto,
     };
   };
 
@@ -475,6 +484,7 @@ export default function VersionEditorWizard() {
               transportes: subt.transportes,
               menaje: subt.menaje,
             }}
+            lugarCosto={lugarCosto}
             onQtyChange={(tipo, itemId, qty) => updateQty(tipo, itemId, qty)}
             onRemove={(tipo, itemId) => removeItem(tipo, itemId)}
             totalOverride={totalOverride}

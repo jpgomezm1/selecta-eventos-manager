@@ -485,8 +485,24 @@ export function ResumenCotizacion({
 /**
  * Input controlado para el total override. Mantiene su propia copia editable
  * y solo propaga al padre en blur o Enter — evita re-renders mientras el
- * admin está escribiendo (que perderían el foco).
+ * admin está escribiendo (que perderían el foco). El draft se reformatea con
+ * separadores de miles colombianos (`.`) en cada keystroke para que sea
+ * legible mientras se escribe (ej. al tipear "8000000" se ve "8.000.000").
  */
+function formatMiles(n: number): string {
+  // es-CO usa `.` como separador de miles. Sin decimales para totales en COP.
+  return new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 }).format(n);
+}
+
+function parseMiles(s: string): number | null {
+  // Limpiamos cualquier caracter no numérico (puntos, comas, espacios) y
+  // parseamos. Si quedan dígitos válidos devolvemos el número, sino null.
+  const digits = s.replace(/[^\d]/g, "");
+  if (!digits) return null;
+  const n = Number(digits);
+  return Number.isFinite(n) ? n : null;
+}
+
 function TotalInput({
   value,
   sugerido,
@@ -498,18 +514,18 @@ function TotalInput({
   onCommit: (next: number) => void;
   bigText: boolean;
 }) {
-  const [draft, setDraft] = useState(String(value));
+  const [draft, setDraft] = useState(formatMiles(value));
 
   useEffect(() => {
-    setDraft(String(value));
+    setDraft(formatMiles(value));
   }, [value]);
 
   const commit = () => {
-    const parsed = Number(draft.replace(/[^\d.]/g, ""));
-    if (Number.isFinite(parsed) && parsed >= 0 && parsed !== value) {
+    const parsed = parseMiles(draft);
+    if (parsed != null && parsed >= 0 && parsed !== value) {
       onCommit(parsed);
     } else {
-      setDraft(String(value));
+      setDraft(formatMiles(value));
     }
   };
 
@@ -518,16 +534,22 @@ function TotalInput({
       type="text"
       inputMode="numeric"
       value={draft}
-      onChange={(e) => setDraft(e.target.value)}
+      onChange={(e) => {
+        // Reformateamos en tiempo real para mostrar separadores de miles
+        // mientras el admin escribe. Si el campo quedó vacío permitimos el
+        // string vacío para que pueda borrar todo y empezar de cero.
+        const parsed = parseMiles(e.target.value);
+        setDraft(parsed == null ? "" : formatMiles(parsed));
+      }}
       onBlur={commit}
       onKeyDown={(e) => {
         if (e.key === "Enter") (e.target as HTMLInputElement).blur();
         if (e.key === "Escape") {
-          setDraft(String(value));
+          setDraft(formatMiles(value));
           (e.target as HTMLInputElement).blur();
         }
       }}
-      placeholder={String(sugerido)}
+      placeholder={formatMiles(sugerido)}
       className={cn(
         "h-auto w-auto min-w-[180px] flex-1 border-0 bg-transparent p-0 font-serif font-semibold tracking-tight text-primary tabular-nums focus-visible:ring-1 focus-visible:ring-primary/40",
         bigText ? "text-4xl" : "text-3xl"
