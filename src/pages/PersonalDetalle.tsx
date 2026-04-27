@@ -19,6 +19,7 @@ import { RegistroPagos } from "@/components/Forms/RegistroPagos";
 import { getModalidadCobroLabel } from "@/lib/calcularPagoPersonal";
 import { parseLocalDate, formatLocalDate } from "@/lib/dateLocal";
 import { KPI } from "@/components/Layout/PageHeader";
+import { PageSkeleton } from "@/components/ui/skeletons";
 import * as XLSX from "xlsx";
 
 interface TrabajoConEvento extends EventoPersonal {
@@ -392,12 +393,7 @@ export default function PersonalDetalle() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-slate-200 border-t-selecta-green rounded-full animate-spin"></div>
-          <p className="text-sm text-slate-500">Cargando información...</p>
-        </div>
-      </div>
+      <PageSkeleton label="Cargando información..." />
     );
   }
 

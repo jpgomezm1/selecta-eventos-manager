@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Truck,
   LayoutDashboard,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/types/roles";
@@ -59,6 +60,7 @@ export const navSections: NavSection[] = [
     label: "Ajustes",
     items: [
       { title: "Catálogos", url: "/catalogos", icon: SlidersHorizontal, match: /^\/catalogos/ },
+      { title: "Usuarios", url: "/usuarios", icon: ShieldCheck, match: /^\/usuarios/, roles: ["admin"] },
     ],
   },
 ];

@@ -9,6 +9,7 @@ import { useSidebar } from "@/hooks/useSidebar";
 import { cn } from "@/lib/utils";
 import { filterNavSectionsByRoles, type NavItem } from "./navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { ROLE_LABELS } from "@/types/roles";
 
 function isItemActive(pathname: string, item: NavItem): boolean {
   if (item.match) return item.match.test(pathname);
@@ -20,8 +21,9 @@ export function AppSidebar() {
   const location = useLocation();
   const { toast } = useToast();
   const { isCollapsed, toggle } = useSidebar();
-  const { roles } = useAuth();
+  const { user, roles } = useAuth();
   const visibleSections = filterNavSectionsByRoles(roles);
+  const primaryRole = roles[0];
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -202,6 +204,49 @@ export function AppSidebar() {
                 className="border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground"
               >
                 Expandir menú
+              </TooltipContent>
+            </Tooltip>
+          )}
+
+          {!isCollapsed && user?.email && (
+            <div className="px-3 pb-2">
+              <div className="truncate text-[12px] font-medium text-sidebar-foreground">
+                {user.email}
+              </div>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {roles.length === 0 ? (
+                  <span className="text-[10.5px] uppercase tracking-[0.14em] text-sidebar-foreground/40">
+                    Sin rol asignado
+                  </span>
+                ) : (
+                  roles.map((r) => (
+                    <span
+                      key={r}
+                      className="inline-flex items-center rounded-full border border-sidebar-foreground/20 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-sidebar-foreground/70"
+                    >
+                      {ROLE_LABELS[r]}
+                    </span>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+          {isCollapsed && primaryRole && (
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <span
+                  className="flex h-7 w-7 items-center justify-center rounded-full border border-sidebar-foreground/25 text-[10px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/70"
+                  aria-label={`Rol: ${ROLE_LABELS[primaryRole]}`}
+                >
+                  {ROLE_LABELS[primaryRole].slice(0, 2)}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent
+                side="right"
+                sideOffset={12}
+                className="border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground"
+              >
+                {user?.email ? `${user.email} · ${ROLE_LABELS[primaryRole]}` : ROLE_LABELS[primaryRole]}
               </TooltipContent>
             </Tooltip>
           )}

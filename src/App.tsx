@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppLayout } from "@/components/Layout/AppLayout";
 import type { UserRole } from "@/types/roles";
@@ -25,16 +25,19 @@ import CotizacionPublica from "./pages/CotizacionPublica";
 import CatalogosPage from "./pages/Catalogos";
 import PipelinePage from "./pages/Pipeline";
 import TransportePage from "./pages/Transporte";
+import UsuariosPage from "./pages/Usuarios";
+import SinAcceso from "./pages/SinAcceso";
 
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: UserRole[] }) {
   const { user, loading, roles, rolesLoaded } = useAuth();
+  const location = useLocation();
 
   if (loading || (user && !rolesLoaded)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="h-10 w-10 rounded-full bg-muted/70 animate-pulse" />
       </div>
     );
   }
@@ -43,11 +46,30 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
     return <Navigate to="/auth" replace />;
   }
 
+  if (rolesLoaded && roles.length === 0 && location.pathname !== "/sin-acceso") {
+    return <Navigate to="/sin-acceso" replace />;
+  }
+
   if (allowedRoles && !roles.some((r) => allowedRoles.includes(r))) {
     return <Navigate to="/panorama" replace />;
   }
 
   return <AppLayout>{children}</AppLayout>;
+}
+
+function AuthOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="h-10 w-10 rounded-full bg-muted/70 animate-pulse" />
+      </div>
+    );
+  }
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+  return <>{children}</>;
 }
 
 const App = () => (
@@ -61,6 +83,16 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/compartido/:token" element={<CotizacionPublica />} />
             <Route path="/" element={<Navigate to="/panorama" replace />} />
+
+            {/* Pantalla cuando el usuario está logueado pero no tiene rol asignado */}
+            <Route
+              path="/sin-acceso"
+              element={
+                <AuthOnlyRoute>
+                  <SinAcceso />
+                </AuthOnlyRoute>
+              }
+            />
 
             <Route
               path="/panorama"
@@ -210,6 +242,16 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["admin", "cocina"]}>
                   <RecetarioPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Gestión de usuarios — solo admin */}
+            <Route
+              path="/usuarios"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <UsuariosPage />
                 </ProtectedRoute>
               }
             />

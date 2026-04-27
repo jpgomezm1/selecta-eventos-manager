@@ -28,6 +28,7 @@ import {
   User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageSkeleton } from "@/components/ui/skeletons";
 import { PageHeader, KPI } from "@/components/Layout/PageHeader";
 
 export default function CotizacionesListPage() {
@@ -202,12 +203,7 @@ export default function CotizacionesListPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-8 h-8 border-2 border-slate-200 border-t-selecta-green rounded-full animate-spin" />
-          <p className="text-slate-500">Cargando cotizaciones...</p>
-        </div>
-      </div>
+      <PageSkeleton label="Cargando cotizaciones..." />
     );
   }
 

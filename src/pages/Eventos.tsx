@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import { parseLocalDate } from "@/lib/dateLocal";
 import { PageHeader } from "@/components/Layout/PageHeader";
 import { requiereRegistroHoras } from "@/lib/calcularPagoPersonal";
+import { PageSkeleton } from "@/components/ui/skeletons";
 
 const localizer = dateFnsLocalizer({
   format,
@@ -284,12 +285,7 @@ export default function EventosPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-slate-200 border-t-selecta-green rounded-full animate-spin"></div>
-          <p className="text-sm text-slate-500">Cargando eventos...</p>
-        </div>
-      </div>
+      <PageSkeleton label="Cargando eventos..." />
     );
   }
 

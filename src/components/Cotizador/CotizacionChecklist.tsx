@@ -107,7 +107,7 @@ export function CotizacionChecklist({ cotizacionVersionId }: Props) {
     return (
       <Card>
         <CardContent className="p-6 flex justify-center">
-          <div className="w-5 h-5 border-2 border-slate-200 border-t-selecta-green rounded-full animate-spin" />
+          <div className="w-5 h-5 rounded-full bg-muted/70 animate-pulse" />
         </CardContent>
       </Card>
     );
