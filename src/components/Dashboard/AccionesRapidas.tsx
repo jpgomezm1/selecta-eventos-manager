@@ -36,7 +36,7 @@ type QuickAction = {
 };
 
 const ADMIN_OR_OPERACIONES: UserRole[] = ["admin", "operaciones"];
-const ADMIN_OR_COMERCIAL_OPS: UserRole[] = ["admin", "comercial", "operaciones"];
+const ADMIN_OR_COMERCIAL: UserRole[] = ["admin", "comercial"];
 const ADMIN_OR_COCINA: UserRole[] = ["admin", "cocina"];
 
 function userHasAny(roles: UserRole[], allowed: UserRole[]): boolean {
@@ -139,11 +139,11 @@ export function AccionesRapidas() {
   const allActions: QuickAction[] = useMemo(
     () => [
       {
-        label: "Crear evento",
-        description: "Programar un nuevo servicio",
+        label: "Nueva cotización",
+        description: "Iniciar el flujo de un servicio nuevo",
         icon: Plus,
-        onClick: () => navigate("/eventos"),
-        roles: ADMIN_OR_COMERCIAL_OPS,
+        onClick: () => navigate("/cotizaciones/nueva"),
+        roles: ADMIN_OR_COMERCIAL,
       },
       {
         label: "Agregar empleado",
