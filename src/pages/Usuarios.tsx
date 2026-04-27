@@ -2,12 +2,21 @@ import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Mail, ShieldCheck, Check, AlertCircle } from "lucide-react";
+import { Mail, ShieldCheck, Check, AlertCircle, UserPlus, Eye, EyeOff } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +33,7 @@ import {
   listUsersWithRoles,
   assignRole,
   revokeRole,
+  createUserWithRole,
   type UsuarioConRoles,
 } from "@/integrations/supabase/apiUsuarios";
 
@@ -33,6 +43,7 @@ export default function UsuariosPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [filtro, setFiltro] = useState("");
+  const [crearOpen, setCrearOpen] = useState(false);
 
   const usuariosQuery = useQuery({
     queryKey: ["usuarios"],
@@ -100,6 +111,12 @@ export default function UsuariosPage() {
         description={`${usuarios.length} ${
           usuarios.length === 1 ? "cuenta" : "cuentas"
         } registradas · gestión de roles para acceso por área`}
+        actions={
+          <Button size="sm" className="gap-2" onClick={() => setCrearOpen(true)}>
+            <UserPlus className="h-4 w-4" strokeWidth={1.75} />
+            Nuevo usuario
+          </Button>
+        }
       />
 
       <div className="grid grid-cols-2 gap-6 md:grid-cols-5">
@@ -237,7 +254,144 @@ export default function UsuariosPage() {
           </Table>
         )}
       </Card>
+
+      <NuevoUsuarioDialog open={crearOpen} onOpenChange={setCrearOpen} />
     </div>
+  );
+}
+
+function NuevoUsuarioDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<UserRole>("comercial");
+  const [showPassword, setShowPassword] = useState(false);
+
+  const reset = () => {
+    setEmail("");
+    setPassword("");
+    setRole("comercial");
+    setShowPassword(false);
+  };
+
+  const crearMut = useMutation({
+    mutationFn: createUserWithRole,
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["usuarios"] });
+      toast({
+        title: "Usuario creado",
+        description: result.warning
+          ? result.warning
+          : "El usuario ya puede iniciar sesión con la contraseña asignada.",
+      });
+      reset();
+      onOpenChange(false);
+    },
+    onError: (err: Error) =>
+      toast({ title: "No se pudo crear", description: err.message, variant: "destructive" }),
+  });
+
+  const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const passwordValida = password.length >= 6;
+  const puedeCrear = emailValido && passwordValida && !crearMut.isPending;
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) reset();
+        onOpenChange(next);
+      }}
+    >
+      <DialogContent className="sm:max-w-[460px]">
+        <DialogHeader>
+          <DialogTitle>Crear nuevo usuario</DialogTitle>
+          <DialogDescription>
+            La cuenta queda activa de inmediato. Comparte la contraseña por un canal interno.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <label className="text-[12px] font-medium text-foreground">Correo electrónico</label>
+            <Input
+              type="email"
+              placeholder="persona@selecta.co"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="off"
+              autoFocus
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[12px] font-medium text-foreground">Contraseña</label>
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="Mínimo 6 caracteres"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[12px] font-medium text-foreground">Rol inicial</label>
+            <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ROLE_KEYS.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {ROLE_LABELS[r]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11.5px] text-muted-foreground">
+              Después puedes asignarle más roles desde la fila correspondiente.
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={crearMut.isPending}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={() =>
+              crearMut.mutate({
+                email: email.trim().toLowerCase(),
+                password,
+                role,
+              })
+            }
+            disabled={!puedeCrear}
+          >
+            {crearMut.isPending ? "Creando..." : "Crear usuario"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

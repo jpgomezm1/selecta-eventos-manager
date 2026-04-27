@@ -36,3 +36,44 @@ export async function revokeRole(targetUserId: string, role: UserRole): Promise<
   });
   if (error) throw error;
 }
+
+export type CreateUserInput = {
+  email: string;
+  password: string;
+  role: UserRole;
+};
+
+export type CreateUserResult = {
+  user_id: string;
+  /** Presente si el user se creó pero la asignación de rol falló. */
+  warning?: string;
+};
+
+export async function createUserWithRole(input: CreateUserInput): Promise<CreateUserResult> {
+  const { data, error } = await supabase.functions.invoke<{
+    ok?: boolean;
+    user_id?: string;
+    warning?: string;
+    error?: string;
+  }>("admin-create-user", {
+    body: input,
+  });
+  if (error) {
+    // Supabase wrappea el HTTP error; intentamos extraer el mensaje del body.
+    type FnError = Error & { context?: { json?: () => Promise<{ error?: string }> } };
+    const ctx = (error as FnError).context;
+    if (ctx?.json) {
+      try {
+        const payload = await ctx.json();
+        if (payload?.error) throw new Error(payload.error);
+      } catch (parseErr) {
+        if (parseErr instanceof Error && parseErr.message) throw parseErr;
+      }
+    }
+    throw error;
+  }
+  if (!data?.user_id) {
+    throw new Error(data?.error ?? "No se pudo crear el usuario");
+  }
+  return { user_id: data.user_id, warning: data.warning };
+}
