@@ -176,14 +176,14 @@ export function ResumenCotizacion({
         </Button>
       </div>
 
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-baseline gap-1 text-sm text-muted-foreground tabular-nums">
-          <span>${item.precio.toLocaleString()}</span>
+      <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+        <div className="flex items-baseline gap-1 text-sm text-muted-foreground tabular-nums min-w-0">
+          <span className="truncate">${item.precio.toLocaleString()}</span>
           <span>×</span>
           <span>{item.cantidad}</span>
         </div>
 
-        <div className="flex items-center space-x-1 bg-muted/40 rounded-md p-1">
+        <div className="flex items-center space-x-1 bg-muted/40 rounded-md p-1 shrink-0">
           <Button
             variant="ghost"
             size="sm"
@@ -211,7 +211,7 @@ export function ResumenCotizacion({
           </Button>
         </div>
 
-        <div className="font-semibold text-right text-primary tabular-nums">
+        <div className="font-semibold text-right text-primary tabular-nums shrink-0">
           ${item.subtotal.toLocaleString()}
         </div>
       </div>

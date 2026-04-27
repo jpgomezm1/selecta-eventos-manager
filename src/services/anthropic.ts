@@ -60,7 +60,9 @@ Reglas:
 
   const { data, error } = await supabase.functions.invoke("generate-recipe", {
     body: {
-      model: "claude-sonnet-4-20250514",
+      // Haiku 4.5 — texto corto (~2k tokens), rápido y barato. Si la calidad
+      // de las recetas baja, subir a claude-sonnet-4-6.
+      model: "claude-haiku-4-5-20251001",
       max_tokens: 2048,
       system: systemPrompt,
       messages: [

@@ -307,12 +307,15 @@ export default function CotizacionEditorPage() {
             <Share2 className="h-4 w-4 mr-1.5" strokeWidth={1.75} />
             Compartir
           </Button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="font-serif text-2xl text-foreground">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 min-w-0">
+              <h1
+                className="font-serif text-2xl text-foreground truncate min-w-0 flex-1 sm:flex-initial"
+                title={cotizacion.nombre_cotizacion}
+              >
                 {cotizacion.nombre_cotizacion}
               </h1>
-              <Badge variant="outline" className={cn("font-normal", statusConfig.cls)}>
+              <Badge variant="outline" className={cn("font-normal shrink-0", statusConfig.cls)}>
                 {statusConfig.label}
               </Badge>
             </div>

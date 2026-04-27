@@ -125,7 +125,10 @@ Reglas CRÍTICAS de cantidades y unidades:
 
   const { data, error } = await supabase.functions.invoke("generate-recipe", {
     body: {
-      model: "claude-sonnet-4-20250514",
+      // Sonnet 4.6 — visión + extracción precisa de datos numéricos en PDFs/
+      // imágenes de facturas (50k-100k tokens según resolución). Haiku no tiene
+      // suficiente precisión para esto.
+      model: "claude-sonnet-4-6",
       max_tokens: 4096,
       system: systemPrompt,
       messages: [
