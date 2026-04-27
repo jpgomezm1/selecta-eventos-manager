@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { filterNavSectionsByRoles, type NavItem } from "./navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { ROLE_LABELS } from "@/types/roles";
 
 function isItemActive(pathname: string, item: NavItem): boolean {
   if (item.match) return item.match.test(pathname);
@@ -19,7 +20,7 @@ export function MobileSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { roles } = useAuth();
+  const { user, roles } = useAuth();
   const visibleSections = filterNavSectionsByRoles(roles);
 
   const handleLogout = async () => {
@@ -101,7 +102,30 @@ export function MobileSidebar() {
               ))}
             </nav>
 
-            <div className="border-t border-sidebar-border/60 px-3 py-4">
+            <div className="border-t border-sidebar-border/60 px-3 py-4 space-y-2">
+              {user?.email && (
+                <div className="px-3 pb-1">
+                  <div className="truncate text-[12px] font-medium text-sidebar-foreground">
+                    {user.email}
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {roles.length === 0 ? (
+                      <span className="text-[10.5px] uppercase tracking-[0.14em] text-sidebar-foreground/40">
+                        Sin rol asignado
+                      </span>
+                    ) : (
+                      roles.map((r) => (
+                        <span
+                          key={r}
+                          className="inline-flex items-center rounded-full border border-sidebar-foreground/20 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-sidebar-foreground/70"
+                        >
+                          {ROLE_LABELS[r]}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
               <Button
                 variant="ghost"
                 onClick={handleLogout}

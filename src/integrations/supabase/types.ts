@@ -1745,6 +1745,13 @@ export type Database = {
       }
     }
     Functions: {
+      assign_role: {
+        Args: {
+          target_role: Database["public"]["Enums"]["user_role"]
+          target_user_id: string
+        }
+        Returns: undefined
+      }
       cotizacion_has_active_share: {
         Args: { cot_id: string }
         Returns: boolean
@@ -1813,6 +1820,16 @@ export type Database = {
         Args: { _role: Database["public"]["Enums"]["user_role"] }
         Returns: boolean
       }
+      list_users_with_roles: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          last_sign_in_at: string
+          roles: Database["public"]["Enums"]["user_role"][]
+          user_id: string
+        }[]
+      }
       registrar_compra_en_inventario: {
         Args: { p_evento_id: string; p_orden_id: string }
         Returns: string
@@ -1820,6 +1837,13 @@ export type Database = {
       registrar_devolucion_menaje: {
         Args: { p_evento_id: string; p_items: Json; p_reserva_id: string }
         Returns: string
+      }
+      revoke_role: {
+        Args: {
+          target_role: Database["public"]["Enums"]["user_role"]
+          target_user_id: string
+        }
+        Returns: undefined
       }
       set_version_definitiva: {
         Args: { p_cotizacion_id: string; p_version_id: string }

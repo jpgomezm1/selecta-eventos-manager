@@ -9,6 +9,7 @@ import { FunnelStats } from "@/components/Pipeline/FunnelStats";
 import { PipelineBoard } from "@/components/Pipeline/PipelineBoard";
 import { RechazoDialog } from "@/components/Pipeline/RechazoDialog";
 import { PageHeader } from "@/components/Layout/PageHeader";
+import { PageSkeleton } from "@/components/ui/skeletons";
 
 export default function PipelinePage() {
   const nav = useNavigate();
@@ -63,12 +64,7 @@ export default function PipelinePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-8 h-8 border-2 border-slate-200 border-t-selecta-green rounded-full animate-spin" />
-          <p className="text-slate-500">Cargando pipeline...</p>
-        </div>
-      </div>
+      <PageSkeleton label="Cargando pipeline..." />
     );
   }
 

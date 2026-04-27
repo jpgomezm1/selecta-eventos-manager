@@ -36,7 +36,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<UserRole[]>([]);
-  const [rolesLoaded, setRolesLoaded] = useState(false);
+  // Trackeamos para qué user.id ya cargamos los roles. Si el user actual
+  // todavía no tiene su carga registrada (o falló), rolesLoaded queda false
+  // y los guards muestran spinner en vez de redirigir prematuramente.
+  const [rolesUserId, setRolesUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -59,24 +62,32 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     if (!user) {
       setRoles([]);
-      setRolesLoaded(true);
+      setRolesUserId(null);
       return;
     }
-    setRolesLoaded(false);
+    let cancelled = false;
     supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
       .then(({ data, error }) => {
+        if (cancelled) return;
         if (error) {
           console.error('No se pudieron cargar los roles:', error);
           setRoles([]);
         } else {
           setRoles((data ?? []).map((r) => r.role as UserRole));
         }
-        setRolesLoaded(true);
+        setRolesUserId(user.id);
       });
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
+
+  // Roles "cargados" significa: o bien no hay user (estado limpio), o bien
+  // los roles que tenemos en memoria corresponden al user actualmente logueado.
+  const rolesLoaded = !user || rolesUserId === user.id;
 
   return (
     <AuthContext.Provider value={{ user, session, loading, roles, rolesLoaded }}>
