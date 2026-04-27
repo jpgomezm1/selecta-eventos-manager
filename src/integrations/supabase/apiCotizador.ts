@@ -220,6 +220,7 @@ export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
       return {
         ...(v as CotizacionVersion),
         total: Number(v.total),
+        total_override: v.total_override != null ? Number(v.total_override) : null,
         items,
       };
     })
@@ -292,6 +293,7 @@ export async function createCotizacionWithVersions(
       nombre_opcion: v.nombre_opcion,
       version_index: v.version_index,
       total: v.total,
+      total_override: v.total_override ?? null,
       estado: v.estado,
       is_definitiva: v.is_definitiva ?? false,
       items: {
@@ -350,12 +352,20 @@ export async function addVersionToCotizacion(
   return { id: ver!.id as string };
 }
 
-/** Actualizar una versión existente */
+/** Actualizar una versión existente.
+ *
+ * `opts.totalOverride` permite a un admin asignar un total manual para esta
+ * versión, distinto del total calculado a partir de los items. NULL/undefined
+ * limpia el override (vuelve al cálculo automático). Si no se pasa, el campo
+ * total_override de la fila NO se toca — útil cuando comercial/operaciones
+ * editan items sin tener permiso de ajustar el total.
+ */
 export async function updateVersionCotizacion(
   cotizacion_id: string,
   version_id: string,
   items: CotizacionItemsState,
-  nombre_opcion?: string
+  nombre_opcion?: string,
+  opts?: { totalOverride?: number | null }
 ) {
   // Carga el precio del lugar seleccionado de la cotización para incluirlo en el
   // total. El lugar vive a nivel cotización (no versión), así que aplica a todas
@@ -379,6 +389,11 @@ export async function updateVersionCotizacion(
 
   const updateData: Record<string, unknown> = { total };
   if (nombre_opcion !== undefined) updateData.nombre_opcion = nombre_opcion;
+  // Si el caller pasó `opts.totalOverride` (incluso null) lo persistimos.
+  // Si es undefined (caller sin permiso de override), no tocamos el campo.
+  if (opts && Object.prototype.hasOwnProperty.call(opts, "totalOverride")) {
+    updateData.total_override = opts.totalOverride ?? null;
+  }
 
   const { error: updateError } = await supabase
     .from("cotizacion_versiones")

@@ -428,6 +428,7 @@ export type Database = {
           is_definitiva: boolean
           nombre_opcion: string
           total: number
+          total_override: number | null
           updated_at: string
           version_index: number
         }
@@ -439,6 +440,7 @@ export type Database = {
           is_definitiva?: boolean
           nombre_opcion: string
           total?: number
+          total_override?: number | null
           updated_at?: string
           version_index: number
         }
@@ -450,6 +452,7 @@ export type Database = {
           is_definitiva?: boolean
           nombre_opcion?: string
           total?: number
+          total_override?: number | null
           updated_at?: string
           version_index?: number
         }

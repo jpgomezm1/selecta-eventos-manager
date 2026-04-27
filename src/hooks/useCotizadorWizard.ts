@@ -15,6 +15,8 @@ export type OpcionState = {
   key: string;
   nombre_opcion: string;
   items: CotizacionItemsState;
+  /** Total manual asignado por admin para esta opción. NULL = usar total calculado. */
+  total_override?: number | null;
 };
 
 export function useCotizadorWizard() {

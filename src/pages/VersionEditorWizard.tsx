@@ -32,6 +32,7 @@ import { PersonalSelector } from "@/components/Cotizador/PersonalSelector";
 import { TransporteSelector } from "@/components/Cotizador/TransporteSelector";
 import { MenajeSelector } from "@/components/Cotizador/MenajeSelector";
 import { ResumenCotizacion } from "@/components/Cotizador/ResumenCotizacion";
+import { useAuth } from "@/hooks/useAuth";
 
 import {
   ArrowLeft,
@@ -61,6 +62,10 @@ export default function VersionEditorWizard() {
   const [versionName, setVersionName] = useState("");
   const [editingName, setEditingName] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [totalOverride, setTotalOverride] = useState<number | null>(null);
+
+  const { roles } = useAuth();
+  const isAdmin = roles.includes("admin");
 
   // Load cotizacion data
   const { data, isLoading, error } = useQuery({
@@ -95,6 +100,7 @@ export default function VersionEditorWizard() {
 
     const init = async () => {
       setVersionName(version.nombre_opcion);
+      setTotalOverride(version.total_override ?? null);
       try {
         const asignaciones = await loadPersonalAsignaciones(versionId);
         const personalWithAsig = version.items.personal.map((p) => ({
@@ -249,7 +255,13 @@ export default function VersionEditorWizard() {
   // Save mutation
   const { mutate: guardar, isPending: guardando } = useMutation({
     mutationFn: async () => {
-      await updateVersionCotizacion(id!, versionId!, editingItems, versionName.trim() || undefined);
+      await updateVersionCotizacion(
+        id!,
+        versionId!,
+        editingItems,
+        versionName.trim() || undefined,
+        { totalOverride }
+      );
       await savePersonalAsignaciones(versionId!, editingItems.personal);
     },
     onSuccess: () => {
@@ -465,6 +477,8 @@ export default function VersionEditorWizard() {
             }}
             onQtyChange={(tipo, itemId, qty) => updateQty(tipo, itemId, qty)}
             onRemove={(tipo, itemId) => removeItem(tipo, itemId)}
+            totalOverride={totalOverride}
+            onTotalOverrideChange={isAdmin ? setTotalOverride : undefined}
             onGuardar={() => guardar()}
             guardando={guardando}
             fullWidth
