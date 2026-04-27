@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { parseLocalDate } from "@/lib/dateLocal";
 import { PanelHeader } from "@/components/Layout/PageHeader";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 type Severidad = "urgente" | "atencion" | "informacion";
 
@@ -26,13 +27,20 @@ const SEV_LABEL: Record<Severidad, string> = {
 };
 
 export function AlertasPanel() {
+  const { roles } = useAuth();
+  const canSeeOpsAlerts = roles.includes("admin") || roles.includes("operaciones");
   const [alertas, setAlertas] = useState<Alerta[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
+    if (!canSeeOpsAlerts) {
+      setAlertas([]);
+      setLoading(false);
+      return;
+    }
     generarAlertas();
-  }, []);
+  }, [canSeeOpsAlerts]);
 
   const generarAlertas = async () => {
     try {
