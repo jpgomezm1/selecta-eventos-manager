@@ -226,11 +226,11 @@ const App = () => (
               }
             />
 
-            {/* Catálogos */}
+            {/* Catálogos — master data, solo admin */}
             <Route
               path="/catalogos"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={["admin"]}>
                   <CatalogosPage />
                 </ProtectedRoute>
               }

@@ -59,7 +59,7 @@ export const navSections: NavSection[] = [
   {
     label: "Ajustes",
     items: [
-      { title: "Catálogos", url: "/catalogos", icon: SlidersHorizontal, match: /^\/catalogos/ },
+      { title: "Catálogos", url: "/catalogos", icon: SlidersHorizontal, match: /^\/catalogos/, roles: ["admin"] },
       { title: "Usuarios", url: "/usuarios", icon: ShieldCheck, match: /^\/usuarios/, roles: ["admin"] },
     ],
   },
