@@ -419,9 +419,18 @@ export function ResumenCotizacion({
                     {totalAjustado ? "Total manual" : "Cálculo en tiempo real"}
                   </span>
                   <span className="tabular-nums">
-                    {invitados > 0 && `$${costPerGuest.toLocaleString()} por invitado`}
+                    {invitados > 0 && `$${formatMiles(Math.round(costPerGuest))} por invitado`}
                   </span>
                 </div>
+
+                {totalAjustado && totalEfectivo === 0 && (
+                  <div className="mt-3 flex items-start gap-2 rounded-md border border-[hsl(30_40%_70%)] bg-[hsl(30_50%_94%)] px-3 py-2">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(30_55%_42%)]" strokeWidth={1.75} />
+                    <span className="text-[12.5px] leading-snug text-[hsl(30_55%_30%)]">
+                      El total quedó en $0. Confirma que es intencional antes de guardar — el cliente verá $0 en la propuesta.
+                    </span>
+                  </div>
+                )}
               </div>
 
               {total > 0 && (
