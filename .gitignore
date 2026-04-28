@@ -27,3 +27,16 @@ dist-ssr
 # Local Netlify folder
 .netlify
 .claude/agent-memory/
+
+# Playwright MCP outputs y screenshots de pruebas (no se commitean al repo).
+.playwright-mcp/
+*.png
+*.jpg
+*.jpeg
+# Excepciones: assets reales del proyecto (íconos, logos en public/, etc.).
+!public/**/*.png
+!public/**/*.jpg
+!public/**/*.jpeg
+!src/**/*.png
+!src/**/*.jpg
+!src/**/*.jpeg
