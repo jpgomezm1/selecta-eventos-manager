@@ -423,11 +423,13 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
                             <Input
                               type="number"
                               min={0}
-                              max={di.cantidad_despachada}
+                              max={di.cantidad_despachada - di.merma}
                               className="w-16 text-center h-7 mx-auto text-sm"
                               value={di.cantidad_devuelta}
                               onChange={(e) => {
-                                const val = Math.max(0, Math.min(di.cantidad_despachada, Number(e.target.value) || 0));
+                                // Cap: devuelto + merma <= despachado.
+                                const limite = di.cantidad_despachada - di.merma;
+                                const val = Math.max(0, Math.min(limite, Number(e.target.value) || 0));
                                 setDevolucionItems((prev) =>
                                   prev.map((p, i) => i === idx ? { ...p, cantidad_devuelta: val } : p)
                                 );
@@ -438,10 +440,13 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
                             <Input
                               type="number"
                               min={0}
+                              max={di.cantidad_despachada - di.cantidad_devuelta}
                               className="w-16 text-center h-7 mx-auto text-sm"
                               value={di.merma}
                               onChange={(e) => {
-                                const val = Math.max(0, Number(e.target.value) || 0);
+                                // Cap: devuelto + merma <= despachado. Si excede, recorta merma.
+                                const limite = di.cantidad_despachada - di.cantidad_devuelta;
+                                const val = Math.max(0, Math.min(limite, Number(e.target.value) || 0));
                                 setDevolucionItems((prev) =>
                                   prev.map((p, i) => i === idx ? { ...p, merma: val } : p)
                                 );
