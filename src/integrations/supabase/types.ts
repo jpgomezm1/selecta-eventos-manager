@@ -1814,6 +1814,10 @@ export type Database = {
         Args: { p_payload: Json }
         Returns: string
       }
+      create_ingrediente_with_proveedor: {
+        Args: { p_payload: Json }
+        Returns: string
+      }
       despachar_menaje_desde_reserva: {
         Args: { p_evento_id: string; p_items: Json; p_reserva_id: string }
         Returns: string
