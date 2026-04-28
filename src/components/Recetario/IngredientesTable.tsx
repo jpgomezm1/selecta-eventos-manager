@@ -2,7 +2,6 @@ import { useState, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getIngredientesCatalogo,
-  createIngrediente,
   updateIngrediente,
   deleteIngrediente,
   getProveedoresByIngrediente,
@@ -10,6 +9,7 @@ import {
   deleteProveedor,
   setProveedorPrincipal,
   convertirAUnidadBase,
+  createIngredienteWithProveedor,
 } from "@/integrations/supabase/apiCotizador";
 import type { IngredienteCatalogo, IngredienteProveedor } from "@/types/cotizador";
 import { Input } from "@/components/ui/input";
@@ -304,42 +304,35 @@ function NuevoIngredienteDialog({ open, onOpenChange }: { open: boolean; onOpenC
     }
     setSaving(true);
     try {
-      const ing = await createIngrediente({
-        nombre: nombre.trim(),
-        unidad,
-        costo_por_unidad: 0,
-        proveedor: null,
-      });
-
+      // RPC atómico: ingrediente + (opcional) primer proveedor en una
+      // sola transacción. Si el proveedor falla, no queda ingrediente
+      // huérfano con costo=0.
+      let proveedorPayload: Parameters<typeof createIngredienteWithProveedor>[0]["proveedor"] = null;
       if (hasProveedor) {
         const cantNum = Number(cantidad);
         const precioNum = Number(precio);
         const cantEnBase = convertirAUnidadBase(cantNum, unidadPres, unidad);
-        const costoBase = precioNum / cantEnBase;
-
-        await createProveedor({
-          ingrediente_id: ing.id,
+        proveedorPayload = {
           proveedor: proveedor.trim(),
           presentacion_cantidad: cantNum,
           presentacion_unidad: unidadPres,
           precio_presentacion: precioNum,
-          costo_por_unidad_base: costoBase,
-          es_principal: true,
-        });
-
-        await updateIngrediente(ing.id, {
-          costo_por_unidad: costoBase,
-          proveedor: proveedor.trim(),
-        });
+          costo_por_unidad_base: precioNum / cantEnBase,
+        };
       }
 
+      const ingId = await createIngredienteWithProveedor({
+        ingrediente: { nombre: nombre.trim(), unidad },
+        proveedor: proveedorPayload,
+      });
+
       queryClient.invalidateQueries({ queryKey: ["ingredientes-catalogo"] });
-      queryClient.invalidateQueries({ queryKey: ["ingrediente-proveedores", ing.id] });
+      queryClient.invalidateQueries({ queryKey: ["ingrediente-proveedores", ingId] });
       toast({ title: "Ingrediente creado" });
       resetForm();
       onOpenChange(false);
     } catch (e) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      toast({ title: "Error", description: (e as Error).message, variant: "destructive" });
     } finally {
       setSaving(false);
     }

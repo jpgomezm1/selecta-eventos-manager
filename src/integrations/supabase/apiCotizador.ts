@@ -975,6 +975,32 @@ export async function getProveedoresByIngrediente(ingredienteId: string): Promis
   }));
 }
 
+/**
+ * Crea ingrediente + (opcionalmente) su primer proveedor en una sola
+ * transacción atómica vía RPC `create_ingrediente_with_proveedor`.
+ * Reemplaza el patrón viejo de 3 llamadas sueltas que dejaba ingredientes
+ * huérfanos cuando alguna fallaba a mitad de camino.
+ *
+ * Si `proveedor` es null, solo se crea el ingrediente con costo_por_unidad=0.
+ */
+export async function createIngredienteWithProveedor(input: {
+  ingrediente: { nombre: string; unidad: string };
+  proveedor: {
+    proveedor: string;
+    presentacion_cantidad: number;
+    presentacion_unidad: string;
+    precio_presentacion: number;
+    costo_por_unidad_base: number;
+  } | null;
+}): Promise<string> {
+  const { data, error } = await supabase.rpc("create_ingrediente_with_proveedor", {
+    p_payload: input,
+  });
+  if (error) throw error;
+  if (!data) throw new Error("create_ingrediente_with_proveedor no devolvió id");
+  return data as string;
+}
+
 export async function createProveedor(
   data: Omit<IngredienteProveedor, "id" | "created_at">
 ): Promise<IngredienteProveedor> {
