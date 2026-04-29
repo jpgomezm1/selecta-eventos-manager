@@ -17,15 +17,17 @@ export async function generateOrdenMenajePDF(data: OrdenMenajePDFData): Promise<
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
 
+  // Paleta editorial Selecta — alineada con index.css y selecta-premium-pdf.
   const colors = {
-    primary: [0, 90, 100] as [number, number, number],
-    secondary: [177, 201, 30] as [number, number, number],
-    neutral: [245, 247, 250] as [number, number, number],
+    primary: [76, 91, 51] as [number, number, number],     // Olive profundo
+    deepOlive: [43, 48, 33] as [number, number, number],   // Header / títulos fuertes
+    paper: [248, 246, 242] as [number, number, number],    // Paper warm
+    neutral: [240, 236, 228] as [number, number, number],  // Beige cálido
     white: [255, 255, 255] as [number, number, number],
-    darkText: [45, 55, 72] as [number, number, number],
-    lightText: [107, 114, 128] as [number, number, number],
-    border: [229, 231, 235] as [number, number, number],
-    altRow: [248, 250, 252] as [number, number, number],
+    darkText: [43, 48, 33] as [number, number, number],
+    lightText: [122, 116, 105] as [number, number, number],
+    border: [224, 220, 214] as [number, number, number],
+    altRow: [240, 236, 228] as [number, number, number],
   };
 
   const formatCurrency = (value: number) =>
@@ -47,12 +49,13 @@ export async function generateOrdenMenajePDF(data: OrdenMenajePDFData): Promise<
     }
   } catch { /* ignore */ }
 
-  // ── Header ──
+  // ── Header editorial ──
   const createHeader = () => {
-    pdf.setFillColor(...colors.primary);
+    pdf.setFillColor(...colors.deepOlive);
     pdf.rect(0, 0, pageWidth, 42, 'F');
-    pdf.setFillColor(...colors.secondary);
-    pdf.rect(0, 42, pageWidth, 3, 'F');
+    pdf.setDrawColor(...colors.border);
+    pdf.setLineWidth(0.4);
+    pdf.line(0, 42, pageWidth, 42);
 
     if (logoImg) {
       pdf.setFillColor(...colors.white);
@@ -60,14 +63,15 @@ export async function generateOrdenMenajePDF(data: OrdenMenajePDFData): Promise<
       pdf.addImage(logoImg, 'PNG', 17, 11, 34, 18, undefined, 'FAST');
     }
 
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(20);
-    pdf.setTextColor(...colors.white);
-    pdf.text('ORDEN DE MENAJE', logoImg ? 62 : 20, 24);
+    pdf.setFont('times', 'bold');
+    pdf.setFontSize(22);
+    pdf.setTextColor(...colors.paper);
+    pdf.text('Orden de Menaje', logoImg ? 62 : 20, 24);
 
     // Event name + date on the right
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(9);
+    pdf.setTextColor(...colors.paper);
     const fecha = formatLocalDate(data.evento.fecha_evento, 'es-CO', {
       year: 'numeric', month: 'short', day: 'numeric',
     });
