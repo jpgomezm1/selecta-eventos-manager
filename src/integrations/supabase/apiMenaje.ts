@@ -117,7 +117,7 @@ export async function readReserva(reserva_id: string): Promise<MenajeReservaFull
 
   const { data: items, error: e2 } = await supabase
     .from("menaje_reserva_items")
-    .select("*, menaje:menaje_id(id,nombre,categoria,unidad,stock_total)")
+    .select("*, menaje:menaje_id(id,nombre,categoria,unidad,stock_total,precio_alquiler)")
     .eq("reserva_id", reserva_id);
   if (e2) throw e2;
 
