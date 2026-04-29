@@ -15,6 +15,7 @@ import {
   setReservaEstado,
 } from "@/integrations/supabase/apiMenaje";
 import { generateOrdenMenajePDF } from "@/lib/orden-menaje-pdf";
+import { PanelHeader } from "@/components/Layout/PageHeader";
 import type { MenajeReserva, OrdenMenajeItem } from "@/types/menaje";
 
 type Props = {
@@ -200,21 +201,20 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-600 rounded-full animate-spin" />
+      <div className="flex flex-col items-center justify-center gap-3 py-12">
+        <div className="h-8 w-8 animate-pulse rounded-full bg-muted/70" />
+        <p className="text-sm italic text-muted-foreground">Cargando menaje…</p>
       </div>
     );
   }
 
   if (!reserva) {
     return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-          <UtensilsCrossed className="h-7 w-7 text-slate-400" />
-        </div>
-        <p className="text-slate-900 font-medium mb-1">Sin orden de menaje</p>
-        <p className="text-slate-500 text-sm mb-4">
-          Genera una orden automáticamente desde el requerimiento del evento
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <UtensilsCrossed className="h-9 w-9 mx-auto text-muted-foreground/60 mb-4" strokeWidth={1.5} />
+        <p className="font-serif text-[20px] text-foreground mb-1">Sin orden de menaje</p>
+        <p className="max-w-xs text-sm text-muted-foreground mb-4">
+          Genera una orden automáticamente desde el requerimiento del evento.
         </p>
         <Button onClick={handleGenerate} disabled={generating} size="sm">
           <UtensilsCrossed className="h-4 w-4 mr-2" />
@@ -225,8 +225,13 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
+    <div className="space-y-5">
+      <PanelHeader
+        kicker="Operación"
+        title="Reserva de menaje"
+        description="Items reservados, ajustes y orden para bodega."
+      />
+      {/* Action bar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {estadoBadge(reserva.estado)}
@@ -265,22 +270,22 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
 
       {/* Table */}
       {items.length === 0 ? (
-        <div className="text-center py-8 bg-slate-50 rounded-lg">
-          <Package className="h-8 w-8 text-slate-400 mx-auto mb-2" />
-          <p className="text-sm text-slate-500">No se generaron items (sin menaje en el requerimiento)</p>
+        <div className="text-center py-8 bg-muted/40 rounded-lg">
+          <Package className="h-8 w-8 text-muted-foreground/70 mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">No se generaron items (sin menaje en el requerimiento)</p>
         </div>
       ) : (
-        <div className="border border-slate-200 rounded-lg overflow-hidden">
+        <div className="border border-border rounded-lg overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50 hover:bg-slate-50">
-                <TableHead className="font-medium">Item</TableHead>
-                <TableHead className="font-medium">Unidad</TableHead>
-                <TableHead className="text-right font-medium">Requerido</TableHead>
-                <TableHead className="text-right font-medium">Disponible</TableHead>
-                <TableHead className="text-right font-medium">A Reservar</TableHead>
-                <TableHead className="text-right font-medium">Precio Alq.</TableHead>
-                <TableHead className="text-right font-medium">Subtotal</TableHead>
+              <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="kicker text-muted-foreground">Item</TableHead>
+                <TableHead className="kicker text-muted-foreground">Unidad</TableHead>
+                <TableHead className="kicker text-right text-muted-foreground">Requerido</TableHead>
+                <TableHead className="kicker text-right text-muted-foreground">Disponible</TableHead>
+                <TableHead className="kicker text-right text-muted-foreground">A Reservar</TableHead>
+                <TableHead className="kicker text-right text-muted-foreground">Precio Alq.</TableHead>
+                <TableHead className="kicker text-right text-muted-foreground">Subtotal</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -289,9 +294,9 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
                 const insuficiente = item.disponible < item.cantidad_requerida;
                 return (
                   <TableRow key={item.menaje_id}>
-                    <TableCell className="font-medium text-slate-900">{item.nombre}</TableCell>
-                    <TableCell className="text-slate-600">{item.unidad}</TableCell>
-                    <TableCell className="text-right text-slate-600">
+                    <TableCell className="font-medium text-foreground">{item.nombre}</TableCell>
+                    <TableCell className="text-muted-foreground">{item.unidad}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">
                       {item.cantidad_requerida.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className="text-right">
@@ -310,15 +315,15 @@ export default function MenajePanel({ eventoId, fechaEvento, eventoInfo, onChang
                           onChange={(e) => handleItemUpdate(item.menaje_id, "cantidad_reservar", Number(e.target.value))}
                         />
                       ) : (
-                        <span className="font-medium text-slate-900">
+                        <span className="font-medium text-foreground">
                           {item.cantidad_reservar.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                         </span>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <span className="text-slate-600">${item.precio_alquiler.toLocaleString()}</span>
+                      <span className="text-muted-foreground">${item.precio_alquiler.toLocaleString()}</span>
                     </TableCell>
-                    <TableCell className="text-right font-medium text-slate-900">
+                    <TableCell className="text-right font-medium text-foreground">
                       ${subtotal.toLocaleString()}
                     </TableCell>
                   </TableRow>

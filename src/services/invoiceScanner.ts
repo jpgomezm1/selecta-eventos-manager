@@ -123,7 +123,8 @@ Reglas CRÍTICAS de cantidades y unidades:
 
   const fileBlock = buildFileContentBlock(base64, mediaType);
 
-  const { data, error } = await supabase.functions.invoke("generate-recipe", {
+  const SCAN_TIMEOUT_MS = 90_000;
+  const invocation = supabase.functions.invoke("generate-recipe", {
     body: {
       // Sonnet 4.6 — visión + extracción precisa de datos numéricos en PDFs/
       // imágenes de facturas (50k-100k tokens según resolución). Haiku no tiene
@@ -145,6 +146,13 @@ Reglas CRÍTICAS de cantidades y unidades:
       ],
     },
   });
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(
+      () => reject(new Error("La lectura de la factura tardó más de 90 segundos. Intenta con una imagen más clara o un archivo más pequeño.")),
+      SCAN_TIMEOUT_MS
+    )
+  );
+  const { data, error } = await Promise.race([invocation, timeout]);
 
   if (error) {
     throw new Error(`Error al analizar la factura: ${error.message}`);

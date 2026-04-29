@@ -32,6 +32,7 @@ import { PersonalSelector } from "@/components/Cotizador/PersonalSelector";
 import { TransporteSelector } from "@/components/Cotizador/TransporteSelector";
 import { MenajeSelector } from "@/components/Cotizador/MenajeSelector";
 import { ResumenCotizacion } from "@/components/Cotizador/ResumenCotizacion";
+import { PageHeader } from "@/components/Layout/PageHeader";
 import { useAuth } from "@/hooks/useAuth";
 import {
   AlertDialog,
@@ -396,43 +397,44 @@ export default function VersionEditorWizard() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 pb-28">
+    <div className="pb-28 space-y-6">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <PageHeader
+        kicker={`Editar versión · ${data.cotizacion.nombre_cotizacion}`}
+        title={
+          editingName ? (
+            <Input
+              autoFocus
+              value={versionName}
+              onChange={(e) => setVersionName(e.target.value)}
+              onBlur={() => setEditingName(false)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === "Escape") setEditingName(false);
+              }}
+              className="font-serif text-[28px] md:text-[34px] h-12 max-w-md border-primary"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditingName(true)}
+              aria-label="Editar nombre de versión"
+              className="group inline-flex items-center gap-2 text-left transition-colors hover:text-primary"
+            >
+              {versionName || version.nombre_opcion}
+              <Pencil className="h-4 w-4 text-muted-foreground group-hover:text-primary" strokeWidth={1.75} />
+            </button>
+          )
+        }
+        description={`${invitados} invitados · ajusta los items por categoría`}
+        actions={
           <Button variant="ghost" onClick={() => nav(`/cotizaciones/${id}`)} size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
-            Volver
+            Volver a cotización
           </Button>
-          <div>
-            <div className="flex items-center gap-2">
-              {editingName ? (
-                <Input
-                  autoFocus
-                  value={versionName}
-                  onChange={(e) => setVersionName(e.target.value)}
-                  onBlur={() => setEditingName(false)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === "Escape") setEditingName(false);
-                  }}
-                  className="font-serif text-2xl font-semibold h-10 w-72 border-primary"
-                />
-              ) : (
-                <h1
-                  className="font-serif text-2xl font-semibold text-foreground cursor-pointer hover:text-primary transition-colors group flex items-center gap-2"
-                  onClick={() => setEditingName(true)}
-                >
-                  {versionName || version.nombre_opcion}
-                  <Pencil className="h-4 w-4 text-muted-foreground group-hover:text-primary" strokeWidth={1.75} />
-                </h1>
-              )}
-            </div>
-            <p className="text-slate-500 mt-0.5 text-sm">
-              {data.cotizacion.nombre_cotizacion} &middot; {invitados} invitados
-            </p>
-          </div>
-        </div>
-      </div>
+        }
+        size="md"
+        className="mb-8"
+      />
 
       {/* Stepper */}
       <CotizadorStepper steps={steps} currentStep={currentStep} onStepClick={goToStep} />
@@ -520,7 +522,7 @@ export default function VersionEditorWizard() {
       {/* Floating bottom bar (steps 1-4) */}
       {currentStep < 5 && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-[var(--shadow-elegant)]">
-          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="mx-auto max-w-[1400px] px-5 py-3 lg:px-10 flex flex-wrap items-center justify-between gap-3">
             {/* Left: Back button */}
             <Button
               variant="outline"
@@ -561,7 +563,7 @@ export default function VersionEditorWizard() {
                   </Badge>
                 )}
               </div>
-              <span className="text-lg font-semibold text-primary tabular-nums whitespace-nowrap">
+              <span className="font-mono text-lg font-semibold text-primary tabular-nums whitespace-nowrap">
                 $ {subt.total.toLocaleString()}
               </span>
             </div>

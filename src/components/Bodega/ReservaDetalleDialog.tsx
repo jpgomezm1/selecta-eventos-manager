@@ -5,13 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle, Package, Clock, Truck, RotateCcw, Calendar, AlertTriangle } from "lucide-react";
 import {
   readReserva,
   despacharMenajeDesdeReserva,
   registrarDevolucionMenaje,
   getSalidaItemsForReserva,
+  reservaTieneSalida,
 } from "@/integrations/supabase/apiMenaje";
 import type { MenajeReservaCal, MenajeReservaFull } from "@/types/menaje";
 
@@ -66,14 +66,7 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
       setReservaFull(rf);
 
       // Check if dispatched
-      const { data: salidaMov } = await supabase
-        .from("menaje_movimientos")
-        .select("id")
-        .eq("reserva_id", reservaCal.reserva_id)
-        .eq("tipo", "salida")
-        .limit(1)
-        .maybeSingle();
-      setDespachado(!!salidaMov);
+      setDespachado(await reservaTieneSalida(reservaCal.reserva_id));
     } catch (err) {
       toast({ title: "Error", description: (err as Error)?.message, variant: "destructive" });
     } finally {
@@ -220,7 +213,7 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
 
   const estadoBadge = (est: string) => {
     const map: Record<string, { cls: string; icon: React.ReactNode }> = {
-      borrador: { cls: "bg-slate-100 text-slate-700", icon: <Clock className="h-3 w-3 mr-1" /> },
+      borrador: { cls: "bg-muted text-muted-foreground", icon: <Clock className="h-3 w-3 mr-1" /> },
       confirmado: { cls: "bg-blue-50 text-blue-700", icon: <CheckCircle className="h-3 w-3 mr-1" /> },
       devuelto: { cls: "bg-emerald-50 text-emerald-700", icon: <Package className="h-3 w-3 mr-1" /> },
     };
@@ -264,13 +257,13 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
           {/* Items table (read-only) */}
           {loading ? (
             <div className="flex justify-center py-6">
-              <div className="w-5 h-5 border-2 border-slate-200 border-t-slate-600 rounded-full animate-spin" />
+              <div className="h-5 w-5 animate-pulse rounded-full bg-muted/70" />
             </div>
           ) : reservaFull && reservaFull.items.length > 0 ? (
             <div className="border border-slate-200 rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50 hover:bg-slate-50">
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
                     <TableHead className="font-medium">Item</TableHead>
                     <TableHead className="font-medium">Unidad</TableHead>
                     <TableHead className="text-right font-medium">Cantidad Reservada</TableHead>

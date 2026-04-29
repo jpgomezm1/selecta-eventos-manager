@@ -312,10 +312,8 @@ export default function ClientesPage() {
         </div>
 
         {filteredClientes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 px-4">
-            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-              <UserCircle className="h-6 w-6 text-slate-400" />
-            </div>
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <UserCircle className="h-9 w-9 text-muted-foreground/60 mb-4" strokeWidth={1.5} />
             <p className="text-slate-900 font-medium">
               {clientes.length === 0 ? "No hay clientes registrados" : "Sin resultados"}
             </p>
@@ -330,7 +328,7 @@ export default function ClientesPage() {
           <>
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50 hover:bg-slate-50">
+                <TableRow className="bg-muted/40 hover:bg-muted/40">
                   <TableHead className="font-medium">Nombre</TableHead>
                   <TableHead className="font-medium">Tipo</TableHead>
                   <TableHead className="font-medium">Identificacion</TableHead>
@@ -642,12 +640,12 @@ export default function ClientesPage() {
                 ) : (
                   <div className="space-y-2">
                     {contactos.map((c) => (
-                      <div key={c.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
+                      <div key={c.id} className="flex items-center justify-between p-3 bg-muted/40 rounded-lg border border-slate-200">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-sm text-slate-800">{c.nombre}</span>
                             {c.es_principal && (
-                              <Badge variant="outline" className="text-[10px] font-normal uppercase tracking-wide text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]">
+                              <Badge variant="outline" className="text-[10px] font-normal uppercase tracking-wide text-warning border-warning-soft">
                                 Principal
                               </Badge>
                             )}
@@ -666,7 +664,7 @@ export default function ClientesPage() {
                             onClick={() => handleTogglePrincipal(c)}
                             title={c.es_principal ? "Quitar como principal" : "Marcar como principal"}
                           >
-                            <Star className={cn("h-3.5 w-3.5", c.es_principal ? "text-[hsl(30_55%_42%)] fill-[hsl(30_55%_42%)]" : "text-muted-foreground/60")} />
+                            <Star className={cn("h-3.5 w-3.5", c.es_principal ? "text-warning fill-warning" : "text-muted-foreground/60")} />
                           </Button>
                           <Button
                             variant="ghost"

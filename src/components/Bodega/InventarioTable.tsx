@@ -162,13 +162,13 @@ export default function InventarioTable() {
           />
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0"
+              className="h-10 min-w-0 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0"
             >
               <option value="">Todas las categorías</option>
               {categories.map((cat) => (
@@ -370,7 +370,7 @@ export default function InventarioTable() {
                             className={cn(
                               "font-mono text-sm font-semibold tabular-nums",
                               status.color === "red" && "text-destructive",
-                              status.color === "amber" && "text-[hsl(30_55%_42%)]",
+                              status.color === "amber" && "text-warning",
                               status.color === "green" && "text-foreground"
                             )}
                           >
@@ -404,7 +404,7 @@ export default function InventarioTable() {
                             "mx-auto inline-flex w-fit items-center gap-1 font-normal",
                             status.color === "red" && "border-destructive/30 bg-destructive/10 text-destructive",
                             status.color === "amber" &&
-                              "border-[hsl(30_55%_42%)]/30 bg-[hsl(30_55%_42%)]/10 text-[hsl(30_55%_42%)]",
+                              "border-warning/30 bg-warning/10 text-warning",
                             status.color === "green" && "border-primary/25 bg-primary/10 text-primary"
                           )}
                         >

@@ -22,14 +22,14 @@ const STAGES: Stage[] = [
 const TONE_TEXT: Record<StageTone, string> = {
   neutral: "text-foreground",
   primary: "text-primary",
-  warning: "text-[hsl(30_55%_42%)]",
+  warning: "text-warning",
   destructive: "text-destructive",
 };
 
 const TONE_BAR: Record<StageTone, string> = {
   neutral: "bg-foreground/70",
   primary: "bg-primary",
-  warning: "bg-[hsl(30_55%_42%)]",
+  warning: "bg-warning",
   destructive: "bg-destructive",
 };
 

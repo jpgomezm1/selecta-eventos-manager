@@ -358,7 +358,7 @@ export function PlatosSelector({
         <CardContent className="p-4 space-y-4">
           {/* Búsqueda */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar platos por nombre o categoría..."
               value={q}

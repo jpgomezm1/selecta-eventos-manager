@@ -23,14 +23,14 @@ const COLUMNS: Column[] = [
 const TONE_ACCENT: Record<ColumnTone, string> = {
   neutral: "bg-foreground/30",
   primary: "bg-primary",
-  warning: "bg-[hsl(30_55%_42%)]",
+  warning: "bg-warning",
   destructive: "bg-destructive",
 };
 
 const TONE_TEXT: Record<ColumnTone, string> = {
   neutral: "text-foreground",
   primary: "text-primary",
-  warning: "text-[hsl(30_55%_42%)]",
+  warning: "text-warning",
   destructive: "text-destructive",
 };
 

@@ -123,8 +123,8 @@ export function ClienteSelector({ value, onChange, selectedCliente }: Props) {
     : "Seleccionar cliente...";
 
   const displayIcon = selectedCliente?.tipo === 'empresa'
-    ? <Building2 className="h-4 w-4 shrink-0 text-slate-400" />
-    : <User className="h-4 w-4 shrink-0 text-slate-400" />;
+    ? <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+    : <User className="h-4 w-4 shrink-0 text-muted-foreground" />;
 
   return (
     <>
@@ -155,13 +155,13 @@ export function ClienteSelector({ value, onChange, selectedCliente }: Props) {
             />
             <CommandList>
               {searching && (
-                <div className="p-4 text-sm text-center text-slate-500">Buscando...</div>
+                <div className="p-4 text-sm text-center text-muted-foreground">Buscando...</div>
               )}
               {!searching && searchTerm.length >= 2 && results.length === 0 && (
                 <CommandEmpty>No se encontraron clientes</CommandEmpty>
               )}
               {!searching && searchTerm.length < 2 && !value && (
-                <div className="p-4 text-sm text-center text-slate-500">
+                <div className="p-4 text-sm text-center text-muted-foreground">
                   Escribe al menos 2 caracteres para buscar
                 </div>
               )}
@@ -181,13 +181,13 @@ export function ClienteSelector({ value, onChange, selectedCliente }: Props) {
                         )}
                       />
                       {c.tipo === 'empresa' ? (
-                        <Building2 className="mr-2 h-4 w-4 text-blue-500 shrink-0" />
+                        <Building2 className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />
                       ) : (
-                        <User className="mr-2 h-4 w-4 text-slate-400 shrink-0" />
+                        <User className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm">{c.nombre}</div>
-                        <div className="text-xs text-slate-500 flex items-center gap-2">
+                        <div className="text-xs text-muted-foreground flex items-center gap-2">
                           {c.tipo === 'empresa' && c.nit && (
                             <span className="flex items-center gap-1">
                               NIT: {c.nit}
@@ -234,7 +234,7 @@ export function ClienteSelector({ value, onChange, selectedCliente }: Props) {
                 <>
                   <CommandSeparator />
                   <CommandGroup>
-                    <CommandItem onSelect={handleClear} className="cursor-pointer text-red-500">
+                    <CommandItem onSelect={handleClear} className="cursor-pointer text-destructive">
                       Quitar cliente seleccionado
                     </CommandItem>
                   </CommandGroup>
@@ -256,14 +256,14 @@ export function ClienteSelector({ value, onChange, selectedCliente }: Props) {
           </DialogHeader>
           <div className="space-y-4 py-4">
             {/* Toggle tipo */}
-            <div className="flex rounded-lg border border-slate-200 overflow-hidden">
+            <div className="flex rounded-lg border border-border overflow-hidden">
               <button
                 type="button"
                 className={cn(
                   "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
                   newTipo === 'persona_natural'
                     ? "bg-selecta-green text-white"
-                    : "bg-white text-slate-600 hover:bg-slate-50"
+                    : "bg-card text-muted-foreground hover:bg-muted/40"
                 )}
                 onClick={() => setNewTipo('persona_natural')}
               >
@@ -276,7 +276,7 @@ export function ClienteSelector({ value, onChange, selectedCliente }: Props) {
                   "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
                   newTipo === 'empresa'
                     ? "bg-selecta-green text-white"
-                    : "bg-white text-slate-600 hover:bg-slate-50"
+                    : "bg-card text-muted-foreground hover:bg-muted/40"
                 )}
                 onClick={() => setNewTipo('empresa')}
               >

@@ -17,6 +17,7 @@ import { DollarSign, Plus, Trash2, Users, Clock, AlertTriangle, CheckCircle, Sav
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LiquidacionDialog } from "@/components/Forms/LiquidacionDialog";
 import { calcularPagoPersonal, getModalidadCobroLabel, requiereRegistroHoras } from "@/lib/calcularPagoPersonal";
+import { PanelHeader } from "@/components/Layout/PageHeader";
 import type { Personal, PersonalAsignado, EventoConPersonal } from "@/types/database";
 
 type Props = {
@@ -137,6 +138,54 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
     }
   };
 
+  // Devuelve null si no hay rango completo o si el rango cruza medianoche en
+  // una modalidad distinta de jornada_nocturna (probable typo, no auto-derivar).
+  const derivarHorasDesdeRango = (
+    inicio: string | null | undefined,
+    fin: string | null | undefined,
+    modalidad: string
+  ): number | null => {
+    if (!inicio || !fin) return null;
+    const [hi, mi] = inicio.split(":").map(Number);
+    const [hf, mf] = fin.split(":").map(Number);
+    if ([hi, mi, hf, mf].some((n) => Number.isNaN(n))) return null;
+    let mins = hf * 60 + mf - (hi * 60 + mi);
+    if (mins < 0) {
+      if (modalidad === "jornada_nocturna") {
+        mins += 24 * 60;
+      } else {
+        return null;
+      }
+    }
+    if (mins === 0) return null;
+    return Math.round((mins / 60) * 100) / 100;
+  };
+
+  const handleHoraRangoChange = (
+    p: PersonalAsignado,
+    field: "hora_inicio" | "hora_fin",
+    value: string
+  ) => {
+    const epId = p.evento_personal_id!;
+    const inicio = field === "hora_inicio" ? value : p.hora_inicio;
+    const fin = field === "hora_fin" ? value : p.hora_fin;
+    const horas = derivarHorasDesdeRango(inicio, fin, p.modalidad_cobro);
+
+    if (horas != null && requiereRegistroHoras(p.modalidad_cobro)) {
+      const tarifa = Number(p.tarifa) || 0;
+      const tarifaExtra = Number(p.tarifa_hora_extra) || 0;
+      try {
+        const pago = calcularPagoPersonal(p.modalidad_cobro, tarifa, horas, tarifaExtra);
+        handleUpdateRow(epId, { [field]: value, horas_trabajadas: horas, pago_calculado: pago });
+        return;
+      } catch {
+        handleUpdateRow(epId, { [field]: value, horas_trabajadas: horas });
+        return;
+      }
+    }
+    handleUpdateRow(epId, { [field]: value });
+  };
+
   const handleSaveRow = async (row: PersonalAsignado) => {
     if (!row.evento_personal_id) return;
     try {
@@ -196,16 +245,17 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
 
   return (
     <Card>
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
-            <h2 className="font-semibold text-foreground">Gestión de personal</h2>
-          </div>
-          <Badge variant="outline" className="font-normal">
-            {asignados.length} asignados
-          </Badge>
-        </div>
+      <div className="p-5 border-b border-border">
+        <PanelHeader
+          kicker="Operación"
+          title="Personal asignado"
+          description="Empleados, horas trabajadas y pagos por evento."
+          actions={
+            <Badge variant="outline" className="font-normal">
+              {asignados.length} asignados
+            </Badge>
+          }
+        />
       </div>
 
       <div className="p-4 space-y-4">
@@ -217,7 +267,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
             </SelectTrigger>
             <SelectContent>
               {noAsignadosCatalog.length === 0 ? (
-                <div className="px-4 py-3 text-sm text-slate-500 text-center">Sin candidatos disponibles</div>
+                <div className="px-4 py-3 text-sm text-muted-foreground text-center">Sin candidatos disponibles</div>
               ) : (
                 noAsignadosCatalog.map(p => (
                   <SelectItem key={p.id} value={p.id}>
@@ -234,38 +284,36 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
         </div>
 
         {/* Table */}
-        <div className="border border-slate-200 rounded-lg overflow-hidden">
+        <div className="border border-border rounded-lg overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50 hover:bg-slate-50">
-                <TableHead className="font-medium">Empleado</TableHead>
-                <TableHead className="font-medium">Rol</TableHead>
-                <TableHead className="text-center font-medium">Inicio</TableHead>
-                <TableHead className="text-center font-medium">Fin</TableHead>
-                <TableHead className="text-center font-medium">Horas</TableHead>
-                <TableHead className="text-right font-medium">Pago</TableHead>
-                <TableHead className="text-center font-medium">Estado</TableHead>
-                <TableHead className="text-right font-medium">Acciones</TableHead>
+              <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="kicker text-muted-foreground">Empleado</TableHead>
+                <TableHead className="kicker text-muted-foreground">Rol</TableHead>
+                <TableHead className="text-center kicker text-muted-foreground">Inicio</TableHead>
+                <TableHead className="text-center kicker text-muted-foreground">Fin</TableHead>
+                <TableHead className="text-center kicker text-muted-foreground">Horas</TableHead>
+                <TableHead className="text-right kicker text-muted-foreground">Pago</TableHead>
+                <TableHead className="text-center kicker text-muted-foreground">Estado</TableHead>
+                <TableHead className="text-right kicker text-muted-foreground">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-slate-500">
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-5 h-5 border-2 border-slate-200 border-t-slate-600 rounded-full animate-spin" />
-                      <span>Cargando personal...</span>
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="h-5 w-5 animate-pulse rounded-full bg-muted/70" />
+                      <span className="italic text-muted-foreground">Cargando personal…</span>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : asignados.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-12">
-                    <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Users className="h-6 w-6 text-slate-400" />
-                    </div>
-                    <p className="text-slate-900 font-medium">Sin personal asignado</p>
-                    <p className="text-sm text-slate-500 mt-1">Comienza asignando empleados a este evento</p>
+                    <Users className="h-8 w-8 mx-auto text-muted-foreground/60 mb-3" strokeWidth={1.5} />
+                    <p className="font-serif text-[18px] text-foreground">Sin personal asignado</p>
+                    <p className="mt-1 text-sm text-muted-foreground">Comienza asignando empleados a este evento.</p>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -273,16 +321,16 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
                   <TableRow key={p.evento_personal_id} data-modalidad={p.modalidad_cobro}>
                     <TableCell>
                       <div>
-                        <div className="font-medium text-slate-900">{p.nombre_completo}</div>
+                        <div className="font-medium text-foreground">{p.nombre_completo}</div>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-muted-foreground">
                             {getModalidadCobroLabel(p.modalidad_cobro)} · ${(Number(p.tarifa) || 0).toLocaleString()}{p.modalidad_cobro === 'por_hora' ? '/h' : ''}
                           </span>
                           {p.modalidad_cobro === 'jornada_hasta_10h' && Number(p.tarifa_hora_extra) > 0 && (
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Info className="h-3 w-3 text-slate-400 cursor-help" />
+                                  <Info className="h-3 w-3 text-muted-foreground/70 cursor-help" />
                                 </TooltipTrigger>
                                 <TooltipContent>
                                   <p>Hora extra: ${Number(p.tarifa_hora_extra).toLocaleString()}</p>
@@ -302,7 +350,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
                         className="w-28 text-center h-8"
                         value={p.hora_inicio ?? ""}
                         disabled={p.estado_pago === 'pagado'}
-                        onChange={(e) => handleUpdateRow(p.evento_personal_id!, { hora_inicio: e.target.value })}
+                        onChange={(e) => handleHoraRangoChange(p, "hora_inicio", e.target.value)}
                       />
                     </TableCell>
                     <TableCell className="text-center">
@@ -311,7 +359,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
                         className="w-28 text-center h-8"
                         value={p.hora_fin ?? ""}
                         disabled={p.estado_pago === 'pagado'}
-                        onChange={(e) => handleUpdateRow(p.evento_personal_id!, { hora_fin: e.target.value })}
+                        onChange={(e) => handleHoraRangoChange(p, "hora_fin", e.target.value)}
                       />
                     </TableCell>
                     <TableCell className="text-center">
@@ -376,12 +424,12 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
         </div>
 
         {/* Summary & liquidation */}
-        <div className="bg-slate-50 rounded-lg p-4">
+        <div className="bg-muted/40 rounded-lg p-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-6">
               <div className="text-center">
-                <div className="text-xl font-semibold text-slate-900">{asignados.length}</div>
-                <div className="text-xs text-slate-500">Empleados</div>
+                <div className="text-xl font-semibold text-foreground">{asignados.length}</div>
+                <div className="text-xs text-muted-foreground">Empleados</div>
               </div>
               <div className="w-px h-10 bg-slate-200" />
               {(() => {
@@ -389,7 +437,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
                 const porJornada = asignados.filter(p => ['jornada_9h', 'jornada_10h', 'jornada_hasta_10h', 'jornada_nocturna'].includes(p.modalidad_cobro)).length;
                 const porEvento = asignados.filter(p => p.modalidad_cobro === 'por_evento').length;
                 return (
-                  <div className="flex items-center gap-3 text-xs text-slate-500">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     {porHora > 0 && <span>{porHora} por hora</span>}
                     {porJornada > 0 && <span>{porJornada} por jornada</span>}
                     {porEvento > 0 && <span>{porEvento} por evento</span>}
@@ -424,7 +472,7 @@ export default function PersonalPanel({ eventoId, fechaEvento, estadoLiquidacion
 
           {sinHoras.length > 0 && (
             <div className="mt-3 p-3 bg-muted/40 rounded-md border border-border flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-[hsl(30_55%_42%)] flex-shrink-0 mt-0.5" strokeWidth={1.75} />
+              <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" strokeWidth={1.75} />
               <div>
                 <p className="text-sm font-medium text-foreground">Horas requeridas</p>
                 <p className="text-xs text-muted-foreground">

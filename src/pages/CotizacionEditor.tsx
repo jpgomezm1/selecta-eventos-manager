@@ -13,6 +13,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -109,21 +119,21 @@ export default function CotizacionEditorPage() {
     setRenamingValue("");
   };
 
-  const confirmarEliminarVersion = (versionId: string, versionName: string) => {
-    if (
-      window.confirm(
-        `¿Estás seguro de que quieres eliminar la "${versionName}"? Esta acción no se puede deshacer.`
-      )
-    ) {
-      eliminarVersion(versionId);
-    }
-  };
+  const [versionToDelete, setVersionToDelete] = useState<{ id: string; nombre: string } | null>(null);
 
   const { mutate: agregarVersion, isPending: creandoVersion } = useMutation({
     mutationFn: async () => {
       const nextIndex = (data?.versiones?.length ?? 0) + 1;
+      // Letter sequence: 1→A, 26→Z, 27→AA, 52→AZ, 53→BA, ...
+      let n = nextIndex;
+      let letra = "";
+      while (n > 0) {
+        n--;
+        letra = String.fromCharCode(65 + (n % 26)) + letra;
+        n = Math.floor(n / 26);
+      }
       return addVersionToCotizacion(id!, {
-        nombre_opcion: `Opción ${String.fromCharCode(64 + nextIndex)}`,
+        nombre_opcion: `Opción ${letra}`,
         version_index: nextIndex,
         total: 0,
         estado: "Pendiente por Aprobación",
@@ -243,7 +253,7 @@ export default function CotizacionEditorPage() {
   const getStatusConfig = (estado: string) => {
     const configs: Record<string, { cls: string; label: string }> = {
       "Pendiente por Aprobación": {
-        cls: "text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]",
+        cls: "text-warning border-warning-soft",
         label: "Pendiente",
       },
       "Cotización Aprobada": {
@@ -261,13 +271,13 @@ export default function CotizacionEditorPage() {
   const statusConfig = getStatusConfig(cotizacion.estado);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="space-y-6">
       {/* Approved banner */}
       {isAprobada && versionDefinitiva && (
-        <div className="mb-6 p-4 bg-primary/5 border border-primary/30 rounded-md flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <ShieldCheck className="h-5 w-5 text-primary" strokeWidth={1.75} />
-            <div>
+        <div className="p-4 bg-primary/5 border border-primary/30 rounded-md flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <ShieldCheck className="h-5 w-5 text-primary shrink-0" strokeWidth={1.75} />
+            <div className="min-w-0">
               <span className="font-semibold text-foreground">Cotización aprobada</span>
               <span className="text-muted-foreground text-sm ml-2">
                 ({versionDefinitiva.nombre_opcion})
@@ -293,8 +303,8 @@ export default function CotizacionEditorPage() {
       )}
 
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
           <Button variant="ghost" onClick={() => nav("/cotizaciones")} size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Volver
@@ -307,10 +317,10 @@ export default function CotizacionEditorPage() {
             <Share2 className="h-4 w-4 mr-1.5" strokeWidth={1.75} />
             Compartir
           </Button>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 min-w-0">
               <h1
-                className="font-serif text-2xl text-foreground truncate min-w-0 flex-1 sm:flex-initial"
+                className="font-serif text-2xl text-foreground truncate min-w-0 max-w-full"
                 title={cotizacion.nombre_cotizacion}
               >
                 {cotizacion.nombre_cotizacion}
@@ -319,10 +329,10 @@ export default function CotizacionEditorPage() {
                 {statusConfig.label}
               </Badge>
             </div>
-            <div className="flex items-center space-x-4 mt-1 text-sm text-muted-foreground">
-              {cotizacion.cliente?.nombre && <span>{cotizacion.cliente.nombre}</span>}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-sm text-muted-foreground">
+              {cotizacion.cliente?.nombre && <span className="truncate max-w-full">{cotizacion.cliente.nombre}</span>}
               {!cotizacion.cliente?.nombre && cotizacion.cliente_nombre && (
-                <span>{cotizacion.cliente_nombre}</span>
+                <span className="truncate max-w-full">{cotizacion.cliente_nombre}</span>
               )}
               <span className="tabular-nums">{cotizacion.numero_invitados} invitados</span>
               {cotizacion.fecha_evento_estimada && (
@@ -405,12 +415,12 @@ export default function CotizacionEditorPage() {
                   <TabsContent key={v.id} value={v.id} className="mt-0 space-y-6">
                     {/* Version header with actions */}
                     <div className="p-5 bg-muted/40 rounded-md border border-border">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
                           {v.is_definitiva ? (
-                            <CheckCircle className="h-5 w-5 text-primary" strokeWidth={1.75} />
+                            <CheckCircle className="h-5 w-5 text-primary shrink-0" strokeWidth={1.75} />
                           ) : (
-                            <Clock className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} />
+                            <Clock className="h-5 w-5 text-muted-foreground shrink-0" strokeWidth={1.75} />
                           )}
                           <div>
                             {renamingVersionId === v.id ? (
@@ -475,7 +485,7 @@ export default function CotizacionEditorPage() {
                             {data?.versiones && data.versiones.length > 1 && (
                               <Button
                                 onClick={() =>
-                                  confirmarEliminarVersion(v.id, v.nombre_opcion)
+                                  setVersionToDelete({ id: v.id, nombre: v.nombre_opcion })
                                 }
                                 variant="outline"
                                 size="sm"
@@ -734,6 +744,32 @@ export default function CotizacionEditorPage() {
         cotizacionName={cotizacion.nombre_cotizacion}
         versiones={versiones.map(v => ({ id: v.id, nombre_opcion: v.nombre_opcion }))}
       />
+
+      {/* Confirm delete version */}
+      <AlertDialog open={!!versionToDelete} onOpenChange={(o) => !o && setVersionToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar versión</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminará la versión "{versionToDelete?.nombre}" y todos sus items. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (versionToDelete) {
+                  eliminarVersion(versionToDelete.id);
+                  setVersionToDelete(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

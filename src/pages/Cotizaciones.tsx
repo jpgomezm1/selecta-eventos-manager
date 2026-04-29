@@ -90,12 +90,17 @@ export default function CotizacionesListPage() {
     });
 
     // Ordenamiento
+    const ts = (s: string | null | undefined) => {
+      if (!s) return 0;
+      const t = new Date(s).getTime();
+      return Number.isFinite(t) ? t : 0;
+    };
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'fecha_desc':
-          return new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime();
+          return ts(b.created_at) - ts(a.created_at);
         case 'fecha_asc':
-          return new Date(a.created_at || '').getTime() - new Date(b.created_at || '').getTime();
+          return ts(a.created_at) - ts(b.created_at);
         case 'total_desc':
           return b.total_cotizado - a.total_cotizado;
         case 'total_asc':
@@ -176,7 +181,7 @@ export default function CotizacionesListPage() {
   const getStatusBadge = (estado: string) => {
     const configs = {
       "Pendiente por Aprobación": {
-        class: "border-[hsl(30_55%_42%)]/30 bg-[hsl(30_55%_42%)]/10 text-[hsl(30_55%_42%)]",
+        class: "border-warning/30 bg-warning/10 text-warning",
         label: "Pendiente",
       },
       "Cotización Aprobada": {
@@ -211,9 +216,7 @@ export default function CotizacionesListPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center space-y-4 text-center">
-          <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center">
-            <AlertTriangle className="h-6 w-6 text-red-500" />
-          </div>
+          <AlertTriangle className="h-9 w-9 text-destructive" strokeWidth={1.5} />
           <h3 className="text-lg font-semibold text-slate-800">Error al cargar cotizaciones</h3>
           <p className="text-slate-500">No se pudieron obtener las cotizaciones</p>
           <Button onClick={() => window.location.reload()} variant="outline">
@@ -270,7 +273,7 @@ export default function CotizacionesListPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setSearchTerm("")}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-slate-100 rounded-full"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-muted rounded-full"
                   >
                     <X className="h-4 w-4" />
                   </Button>

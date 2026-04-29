@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { reservasCalendario } from "@/integrations/supabase/apiMenaje";
 import { MenajeReservaCal } from "@/types/menaje";
@@ -10,6 +10,8 @@ import { Card } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import ReservaDetalleDialog from "./ReservaDetalleDialog";
 import { KPI } from "@/components/Layout/PageHeader";
+import { parseLocalDate } from "@/lib/dateLocal";
+import { useToast } from "@/hooks/use-toast";
 
 const localizer = dateFnsLocalizer({
   format,
@@ -31,6 +33,7 @@ type CalEvent = {
 
 export default function ReservasCalendar() {
   const qc = useQueryClient();
+  const { toast } = useToast();
   const [range, setRange] = useState<{ from: Date; to: Date }>(() => {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -44,17 +47,27 @@ export default function ReservasCalendar() {
   const fromStr = format(range.from, "yyyy-MM-dd");
   const toStr = format(range.to, "yyyy-MM-dd");
 
-  const { data: reservas, isLoading } = useQuery({
+  const { data: reservas, isLoading, error } = useQuery({
     queryKey: ["bodega-cal", fromStr, toStr],
     queryFn: () => reservasCalendario(fromStr, toStr),
   });
+
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "No se pudo cargar el calendario de reservas",
+        description: (error as Error).message,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   const events: CalEvent[] = useMemo(() => {
     return (reservas ?? []).map((r) => ({
       id: r.reserva_id,
       title: `${r.nombre_evento} • ${r.items.length} items`,
-      start: new Date(r.fecha_inicio),
-      end: new Date(r.fecha_fin),
+      start: parseLocalDate(r.fecha_inicio) ?? new Date(),
+      end: parseLocalDate(r.fecha_fin) ?? new Date(),
       resource: r,
     }));
   }, [reservas]);
@@ -64,9 +77,11 @@ export default function ReservasCalendar() {
     const totalReservas = reservas?.length ?? 0;
     const totalItems = reservas?.reduce((sum, r) => sum + r.items.length, 0) ?? 0;
     const now = new Date();
-    const eventosActivos = reservas?.filter(r =>
-      new Date(r.fecha_inicio) <= now && new Date(r.fecha_fin) >= now
-    ).length ?? 0;
+    const eventosActivos = reservas?.filter((r) => {
+      const start = parseLocalDate(r.fecha_inicio);
+      const end = parseLocalDate(r.fecha_fin);
+      return start && end && start <= now && end >= now;
+    }).length ?? 0;
 
     return { totalReservas, totalItems, eventosActivos };
   }, [reservas]);

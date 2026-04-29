@@ -1853,6 +1853,26 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      fn_inventario_movimiento_create_atomic: {
+        Args: { p_confirmar?: boolean; p_payload: Json }
+        Returns: {
+          created_at: string
+          estado: string
+          evento_id: string | null
+          factura_url: string | null
+          fecha: string
+          id: string
+          notas: string | null
+          proveedor: string | null
+          tipo: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "inventario_movimientos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       fn_inventario_movimiento_delete_con_reversa: {
         Args: { p_movimiento_id: string }
         Returns: undefined
@@ -1871,6 +1891,14 @@ export type Database = {
       }
       fn_set_proveedor_principal: {
         Args: { p_ingrediente_id: string; p_proveedor_id: string }
+        Returns: undefined
+      }
+      fn_update_version_cotizacion_atomic: {
+        Args: { p_payload: Json }
+        Returns: undefined
+      }
+      fn_upsert_plato_ingredientes_atomic: {
+        Args: { p_items: Json; p_plato_id: string }
         Returns: undefined
       }
       generate_comprobante_number: { Args: never; Returns: string }

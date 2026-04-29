@@ -98,8 +98,9 @@ export default function MovimientosPanel() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="flex flex-col items-center justify-center gap-3 py-12">
+        <div className="h-8 w-8 animate-pulse rounded-full bg-muted/70" />
+        <p className="text-sm italic text-muted-foreground">Cargando movimientos…</p>
       </div>
     );
   }
@@ -145,7 +146,7 @@ export default function MovimientosPanel() {
                   <Collapsible key={mov.id} open={isExpanded} onOpenChange={(o) => setExpanded(o ? mov.id : null)} asChild>
                     <>
                       <CollapsibleTrigger asChild>
-                        <TableRow className="cursor-pointer hover:bg-slate-50">
+                        <TableRow className="cursor-pointer hover:bg-muted/40">
                           <TableCell>
                             <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                           </TableCell>
@@ -257,7 +258,7 @@ export default function MovimientosPanel() {
                       </CollapsibleTrigger>
                       <CollapsibleContent asChild>
                         <TableRow>
-                          <TableCell colSpan={7} className="bg-slate-50 p-4">
+                          <TableCell colSpan={7} className="bg-muted/40 p-4">
                             {mov.notas && <p className="text-sm text-slate-500 mb-3">{mov.notas}</p>}
                             <Table>
                               <TableHeader>

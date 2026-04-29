@@ -161,7 +161,7 @@ export function LugaresSelector({ lugares, onChange, readOnly = false }: Props) 
                 )}
               </button>
 
-              <div className="flex-1 space-y-3">
+              <div className="flex-1 min-w-0 space-y-3">
                 {/* Nombre: combobox que busca en catálogo o permite texto libre */}
                 <div className="flex items-center gap-2">
                   <Popover
@@ -173,12 +173,12 @@ export function LugaresSelector({ lugares, onChange, readOnly = false }: Props) 
                         variant="outline"
                         role="combobox"
                         aria-expanded={openPopoverIdx === idx}
-                        className="h-10 flex-1 justify-between font-normal"
+                        className="h-10 flex-1 min-w-0 justify-between font-normal"
                       >
                         {lugar.nombre ? (
                           <span className="truncate">{lugar.nombre}</span>
                         ) : (
-                          <span className="text-muted-foreground">Buscar en catálogo o escribir...</span>
+                          <span className="truncate text-muted-foreground">Buscar en catálogo o escribir...</span>
                         )}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -302,14 +302,14 @@ export function LugaresSelector({ lugares, onChange, readOnly = false }: Props) 
       ))}
 
       {/* Botones para agregar */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {activeCatalogo.length > 0 && (
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={handleAdd}
-            className="flex-1 border-dashed"
+            className="flex-1 min-w-[200px] border-dashed"
           >
             <MapPin className="h-4 w-4 mr-2" strokeWidth={1.75} />
             Agregar desde catálogo
@@ -320,7 +320,7 @@ export function LugaresSelector({ lugares, onChange, readOnly = false }: Props) 
           variant="outline"
           size="sm"
           onClick={handleAddCustom}
-          className="flex-1 border-dashed"
+          className="flex-1 min-w-[200px] border-dashed"
         >
           <PenLine className="h-4 w-4 mr-2" strokeWidth={1.75} />
           Agregar lugar personalizado

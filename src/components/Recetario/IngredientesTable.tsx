@@ -137,14 +137,19 @@ export default function IngredientesTable() {
   };
 
   if (isLoading) {
-    return <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-12">
+        <div className="h-8 w-8 animate-pulse rounded-full bg-muted/70" />
+        <p className="text-sm italic text-muted-foreground">Cargando ingredientes…</p>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       {/* Search */}
       <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Buscar por nombre..."
           value={search}
@@ -191,7 +196,7 @@ export default function IngredientesTable() {
                           <SelectContent>{UNIDADES_BASE.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell className="text-right text-slate-400">{fmt(ing.costo_por_unidad)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{fmt(ing.costo_por_unidad)}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
                           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={saveEdit}><Check className="h-4 w-4 text-primary" /></Button>
@@ -236,7 +241,7 @@ export default function IngredientesTable() {
                 </TableRow>
                 {expandedId === ing.id && (
                   <TableRow>
-                    <TableCell colSpan={5} className="bg-slate-50 p-0">
+                    <TableCell colSpan={5} className="bg-muted/40 p-0">
                       <ProveedoresSubtable ingrediente={ing} />
                     </TableCell>
                   </TableRow>
@@ -244,20 +249,20 @@ export default function IngredientesTable() {
               </Fragment>
             ))}
             {filtered.length === 0 && (
-              <TableRow><TableCell colSpan={5} className="text-center text-slate-400 py-8">No se encontraron ingredientes</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No se encontraron ingredientes</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
       </div>
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-400">{filtered.length} ingredientes</p>
+        <p className="text-sm text-muted-foreground">{filtered.length} ingredientes</p>
         {totalPages > 1 && (
           <div className="flex items-center gap-2">
             <Button size="icon" variant="outline" className="h-8 w-8" disabled={page === 0} onClick={() => setPage(page - 1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-slate-600">{page + 1} / {totalPages}</span>
+            <span className="text-sm text-muted-foreground">{page + 1} / {totalPages}</span>
             <Button size="icon" variant="outline" className="h-8 w-8" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -349,7 +354,7 @@ function NuevoIngredienteDialog({ open, onOpenChange }: { open: boolean; onOpenC
         <div className="space-y-4 py-2">
           {/* Sección ingrediente */}
           <div className="space-y-3">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ingrediente</p>
+            <p className="kicker">Ingrediente</p>
             <div className="space-y-1">
               <label className="text-sm font-medium">Nombre *</label>
               <Input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej: Harina de trigo" />
@@ -369,7 +374,7 @@ function NuevoIngredienteDialog({ open, onOpenChange }: { open: boolean; onOpenC
 
           {/* Sección proveedor */}
           <div className="space-y-3">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Primer proveedor (opcional)</p>
+            <p className="kicker">Primer proveedor (opcional)</p>
             <div className="space-y-1">
               <label className="text-sm font-medium">Proveedor</label>
               <Input value={proveedor} onChange={(e) => setProveedor(e.target.value)} placeholder="Ej: Makro" />
@@ -417,7 +422,7 @@ function CostoCelda({ ingrediente }: { ingrediente: IngredienteCatalogo }) {
   const fmt = (n: number) => `$ ${n.toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 
   if (proveedores.length === 0) {
-    return <span className="text-slate-400">{fmt(ingrediente.costo_por_unidad)}</span>;
+    return <span className="text-muted-foreground">{fmt(ingrediente.costo_por_unidad)}</span>;
   }
 
   const cheapest = proveedores.reduce((min, p) => p.costo_por_unidad_base < min.costo_por_unidad_base ? p : min, proveedores[0]);
@@ -517,10 +522,10 @@ function ProveedoresSubtable({ ingrediente }: { ingrediente: IngredienteCatalogo
 
   return (
     <div className="p-4 space-y-3">
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Proveedores de {ingrediente.nombre}</p>
+      <p className="kicker">Proveedores de {ingrediente.nombre}</p>
 
       {isLoading ? (
-        <p className="text-sm text-slate-400">Cargando...</p>
+        <p className="text-sm text-muted-foreground">Cargando...</p>
       ) : (
         <>
           {proveedores.length > 0 && (() => {
@@ -547,9 +552,10 @@ function ProveedoresSubtable({ ingrediente }: { ingrediente: IngredienteCatalogo
                           variant="ghost"
                           className="h-7 w-7"
                           onClick={() => principalMut.mutate(p.id)}
+                          disabled={principalMut.isPending || p.es_principal}
                           title="Marcar como principal"
                         >
-                          <Star className={`h-4 w-4 ${p.es_principal ? "fill-[hsl(30_55%_42%)] text-[hsl(30_55%_42%)]" : "text-muted-foreground/50"}`} />
+                          <Star className={`h-4 w-4 ${p.es_principal ? "fill-primary text-primary" : "text-muted-foreground/50"}`} />
                         </Button>
                       </TableCell>
                       <TableCell className="font-medium">{p.proveedor}</TableCell>
@@ -588,15 +594,15 @@ function ProveedoresSubtable({ ingrediente }: { ingrediente: IngredienteCatalogo
           {/* Add proveedor form */}
           <div className="flex flex-wrap items-end gap-2">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-500">Proveedor</label>
+              <label className="text-xs font-medium text-muted-foreground">Proveedor</label>
               <Input value={newProv} onChange={(e) => setNewProv(e.target.value)} placeholder="Nombre" className="w-36 h-8" />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-500">Cantidad</label>
+              <label className="text-xs font-medium text-muted-foreground">Cantidad</label>
               <Input type="number" value={newCantidad} onChange={(e) => setNewCantidad(e.target.value)} placeholder="1" className="w-20 h-8" />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-500">Unidad</label>
+              <label className="text-xs font-medium text-muted-foreground">Unidad</label>
               <Select value={newUnidadPres} onValueChange={setNewUnidadPres}>
                 <SelectTrigger className="w-20 h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -605,7 +611,7 @@ function ProveedoresSubtable({ ingrediente }: { ingrediente: IngredienteCatalogo
               </Select>
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-500">Precio</label>
+              <label className="text-xs font-medium text-muted-foreground">Precio</label>
               <Input type="number" value={newPrecio} onChange={(e) => setNewPrecio(e.target.value)} placeholder="20000" className="w-28 h-8" />
             </div>
             <Button size="sm" onClick={handleAdd} disabled={createMut.isPending || !newProv.trim() || !newCantidad || !newPrecio} className="h-8">

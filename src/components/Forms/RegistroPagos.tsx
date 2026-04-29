@@ -1,16 +1,17 @@
-import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FileText, ClipboardList, Eye, Download, DollarSign, Calendar, CreditCard, TrendingUp, Filter, Receipt, Search } from "lucide-react";
+import { FileText, ClipboardList, Eye, Download, Calendar, CreditCard, Filter, Receipt, Search, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RegistroPagoConEventos } from "@/types/database";
 import { ComprobanteModal } from "./ComprobanteModal";
+import { KPI, PanelHeader } from "@/components/Layout/PageHeader";
+import { formatLocalDate } from "@/lib/dateLocal";
 
 interface RegistroPagosProps {
   empleadoId: string;
@@ -43,7 +44,7 @@ export function RegistroPagos({ empleadoId, empleadoNombre }: RegistroPagosProps
         .order("fecha_pago", { ascending: false });
 
       if (error) throw error;
-      setRegistros(data as RegistroPagoConEventos[] || []);
+      setRegistros((data as RegistroPagoConEventos[]) || []);
     } catch (error) {
       toast({
         title: "Error",
@@ -59,72 +60,65 @@ export function RegistroPagos({ empleadoId, empleadoNombre }: RegistroPagosProps
     fetchRegistrosPagos();
   }, [fetchRegistrosPagos]);
 
-  const registrosFiltrados = registros.filter(registro => {
-    const matchMetodo = filtroMetodo === "todos" || registro.metodo_pago === filtroMetodo;
-    const matchTipo = filtroTipo === "todos" || registro.tipo_liquidacion === filtroTipo;
-    const matchFecha = !filtroFecha || registro.fecha_pago.includes(filtroFecha);
-    const matchComprobante = !busquedaComprobante || 
-      registro.numero_comprobante.toLowerCase().includes(busquedaComprobante.toLowerCase());
-    
-    return matchMetodo && matchTipo && matchFecha && matchComprobante;
-  });
+  const registrosFiltrados = useMemo(
+    () =>
+      registros.filter((registro) => {
+        const matchMetodo = filtroMetodo === "todos" || registro.metodo_pago === filtroMetodo;
+        const matchTipo = filtroTipo === "todos" || registro.tipo_liquidacion === filtroTipo;
+        const matchFecha = !filtroFecha || registro.fecha_pago.includes(filtroFecha);
+        const matchComprobante =
+          !busquedaComprobante ||
+          registro.numero_comprobante.toLowerCase().includes(busquedaComprobante.toLowerCase());
+        return matchMetodo && matchTipo && matchFecha && matchComprobante;
+      }),
+    [registros, filtroMetodo, filtroTipo, filtroFecha, busquedaComprobante]
+  );
 
-  const totalMesActual = registros
-    .filter(r => r.fecha_pago.startsWith(new Date().toISOString().substring(0, 7)))
-    .reduce((sum, r) => sum + r.monto_total, 0);
+  const totalMesActual = useMemo(
+    () =>
+      registros
+        .filter((r) => r.fecha_pago.startsWith(new Date().toISOString().substring(0, 7)))
+        .reduce((sum, r) => sum + r.monto_total, 0),
+    [registros]
+  );
 
-  const totalGeneral = registros.reduce((sum, r) => sum + r.monto_total, 0);
+  const totalGeneral = useMemo(
+    () => registros.reduce((sum, r) => sum + r.monto_total, 0),
+    [registros]
+  );
 
-  const getTipoIcon = (tipo: string) => {
-    return tipo === 'evento' 
-      ? <FileText className="h-4 w-4 text-blue-600" />
-      : <ClipboardList className="h-4 w-4 text-green-600" />;
-  };
+  const totalFiltrado = useMemo(
+    () => registrosFiltrados.reduce((sum, r) => sum + r.monto_total, 0),
+    [registrosFiltrados]
+  );
 
   const getTipoBadge = (tipo: string, cantidadEventos: number) => {
-    if (tipo === 'evento') {
+    if (tipo === "evento") {
       return (
-        <Badge className="bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-200 shadow-sm hover:shadow-md transition-shadow">
-          <FileText className="h-3 w-3 mr-1" />
-          Evento Individual
-        </Badge>
-      );
-    } else {
-      return (
-        <Badge className="bg-gradient-to-r from-green-50 to-green-100 text-green-700 border-green-200 shadow-sm hover:shadow-md transition-shadow">
-          <ClipboardList className="h-3 w-3 mr-1" />
-          Liquidación Múltiple ({cantidadEventos})
+        <Badge variant="outline" className="font-normal">
+          <FileText className="h-3 w-3 mr-1" strokeWidth={1.75} />
+          Evento individual
         </Badge>
       );
     }
+    return (
+      <Badge variant="outline" className="font-normal border-primary/25 bg-primary/10 text-primary">
+        <ClipboardList className="h-3 w-3 mr-1" strokeWidth={1.75} />
+        Liquidación múltiple ({cantidadEventos})
+      </Badge>
+    );
   };
 
   const getMetodoBadge = (metodo: string) => {
-    const configs = {
-      efectivo: {
-        class: "bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 border-orange-200",
-        icon: <DollarSign className="h-3 w-3 mr-1" />
-      },
-      transferencia: {
-        class: "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-200",
-        icon: <CreditCard className="h-3 w-3 mr-1" />
-      },
-      nomina: {
-        class: "bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 border-purple-200",
-        icon: <Receipt className="h-3 w-3 mr-1" />
-      },
-      otro: {
-        class: "bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 border-gray-200",
-        icon: <FileText className="h-3 w-3 mr-1" />
-      }
+    const icons: Record<string, React.ReactNode> = {
+      efectivo: <DollarSign className="h-3 w-3 mr-1" strokeWidth={1.75} />,
+      transferencia: <CreditCard className="h-3 w-3 mr-1" strokeWidth={1.75} />,
+      nomina: <Receipt className="h-3 w-3 mr-1" strokeWidth={1.75} />,
     };
-    
-    const config = configs[metodo as keyof typeof configs] || configs.otro;
-    
     return (
-      <Badge className={`${config.class} shadow-sm hover:shadow-md transition-shadow font-medium`}>
-        {config.icon}
-        {metodo.charAt(0).toUpperCase() + metodo.slice(1)}
+      <Badge variant="outline" className="font-normal capitalize">
+        {icons[metodo] ?? <FileText className="h-3 w-3 mr-1" strokeWidth={1.75} />}
+        {metodo}
       </Badge>
     );
   };
@@ -136,296 +130,216 @@ export function RegistroPagos({ empleadoId, empleadoNombre }: RegistroPagosProps
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="relative mb-6">
-            <div className="w-16 h-16 bg-gradient-to-r from-selecta-green to-primary rounded-3xl flex items-center justify-center mx-auto shadow-xl animate-pulse">
-              <Receipt className="h-8 w-8 text-white" />
-            </div>
-            <div className="absolute inset-0 w-16 h-16 bg-gradient-to-r from-selecta-green/20 to-primary/20 rounded-3xl blur-xl animate-pulse mx-auto"></div>
-          </div>
-          <h3 className="text-xl font-bold bg-gradient-to-r from-selecta-green to-primary bg-clip-text text-transparent mb-2">
-            Cargando Registro de Pagos
-          </h3>
-          <p className="text-slate-600">Preparando información de liquidaciones...</p>
-        </div>
+      <div className="flex flex-col items-center justify-center gap-3 py-16">
+        <div className="h-8 w-8 animate-pulse rounded-full bg-muted/70" />
+        <p className="text-sm italic text-muted-foreground">Cargando registro de pagos…</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      {/* Tarjetas de resumen premium */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-white/70 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl overflow-hidden group hover:scale-105 transition-transform duration-300">
-          <CardHeader className="bg-gradient-to-r from-blue-50/80 to-blue-100/80 border-b border-blue-200/30">
-            <div className="flex items-center justify-between">
-              <Receipt className="h-8 w-8 text-blue-600" />
-              <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-1">
-                {registros.length}
-              </div>
-              <p className="text-sm font-semibold text-blue-600 mb-1">Pagos Totales</p>
-              <p className="text-xs text-slate-500">Registros históricos</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/70 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl overflow-hidden group hover:scale-105 transition-transform duration-300">
-          <CardHeader className="bg-gradient-to-r from-emerald-50/80 to-emerald-100/80 border-b border-emerald-200/30">
-            <div className="flex items-center justify-between">
-              <Calendar className="h-8 w-8 text-emerald-600" />
-              <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent mb-1">
-                ${totalMesActual.toLocaleString()}
-              </div>
-              <p className="text-sm font-semibold text-emerald-600 mb-1">Este Mes</p>
-              <p className="text-xs text-slate-500">
-                {new Date().toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/70 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl overflow-hidden group hover:scale-105 transition-transform duration-300">
-          <CardHeader className="bg-gradient-to-r from-purple-50/80 to-purple-100/80 border-b border-purple-200/30">
-            <div className="flex items-center justify-between">
-              <TrendingUp className="h-8 w-8 text-purple-600" />
-              <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent mb-1">
-                ${totalGeneral.toLocaleString()}
-              </div>
-              <p className="text-sm font-semibold text-purple-600 mb-1">Total Acumulado</p>
-              <p className="text-xs text-slate-500">Todos los pagos</p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* KPIs editoriales */}
+      <div className="grid grid-cols-2 gap-x-8 gap-y-6 border-y border-border py-6 md:grid-cols-3">
+        <KPI kicker="Pagos totales" value={registros.length} hint="Registros históricos" />
+        <KPI
+          kicker="Este mes"
+          value={`$${totalMesActual.toLocaleString("es-CO")}`}
+          tone="primary"
+          hint={new Date().toLocaleDateString("es-CO", { month: "long", year: "numeric" })}
+        />
+        <KPI
+          kicker="Total acumulado"
+          value={`$${totalGeneral.toLocaleString("es-CO")}`}
+          hint="Todos los pagos"
+        />
       </div>
 
-      {/* Tabla de registros premium */}
-      <Card className="bg-white/70 backdrop-blur-xl shadow-2xl border-white/30 rounded-3xl overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-slate-50/50 to-white/50 backdrop-blur-sm border-b border-slate-200/30">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-selecta-green to-primary rounded-2xl flex items-center justify-center shadow-lg">
-                <Receipt className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <CardTitle className="text-xl font-bold text-slate-800">Registro Oficial de Pagos</CardTitle>
-                <CardDescription className="text-slate-600">Constancias y comprobantes de liquidaciones</CardDescription>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="p-6">
-          {/* Filtros premium */}
-          <div className="bg-gradient-to-r from-slate-50/80 to-white/80 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-slate-200/30">
-            <div className="flex items-center space-x-3 mb-4">
-              <Filter className="h-5 w-5 text-slate-600" />
-              <h4 className="text-lg font-semibold text-slate-800">Filtros de Búsqueda</h4>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="filtro-metodo" className="text-slate-700 font-medium">Método de pago</Label>
-                <Select value={filtroMetodo} onValueChange={setFiltroMetodo}>
-                  <SelectTrigger className="bg-white/80 border-slate-200/50 rounded-2xl h-11 shadow-sm hover:shadow-md transition-all">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white/95 backdrop-blur-xl border-white/30 rounded-2xl shadow-2xl">
-                    <SelectItem value="todos">Todos los métodos</SelectItem>
-                    <SelectItem value="efectivo">Efectivo</SelectItem>
-                    <SelectItem value="transferencia">Transferencia</SelectItem>
-                    <SelectItem value="nomina">Nómina</SelectItem>
-                    <SelectItem value="otro">Otro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+      {/* Header de la sección */}
+      <PanelHeader
+        kicker="Liquidaciones"
+        title="Registro oficial de pagos"
+        description="Constancias y comprobantes de las liquidaciones procesadas."
+      />
 
-              <div className="space-y-2">
-                <Label htmlFor="filtro-tipo" className="text-slate-700 font-medium">Tipo de liquidación</Label>
-                <Select value={filtroTipo} onValueChange={setFiltroTipo}>
-                  <SelectTrigger className="bg-white/80 border-slate-200/50 rounded-2xl h-11 shadow-sm hover:shadow-md transition-all">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white/95 backdrop-blur-xl border-white/30 rounded-2xl shadow-2xl">
-                    <SelectItem value="todos">Todos los tipos</SelectItem>
-                    <SelectItem value="evento">Evento individual</SelectItem>
-                    <SelectItem value="multiple">Liquidación múltiple</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="filtro-fecha" className="text-slate-700 font-medium">Período (año-mes)</Label>
-                <Input
-                  id="filtro-fecha"
-                  type="month"
-                  value={filtroFecha}
-                  onChange={(e) => setFiltroFecha(e.target.value)}
-                  placeholder="2025-01"
-                  className="bg-white/80 border-slate-200/50 rounded-2xl h-11 shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-selecta-green/20"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="busqueda-comprobante" className="text-slate-700 font-medium">Buscar comprobante</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
-                    id="busqueda-comprobante"
-                    placeholder="TXN-20250704-001"
-                    value={busquedaComprobante}
-                    onChange={(e) => setBusquedaComprobante(e.target.value)}
-                    className="bg-white/80 border-slate-200/50 rounded-2xl h-11 pl-10 shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-selecta-green/20"
-                  />
-                </div>
-              </div>
-            </div>
+      {/* Filtros */}
+      <div className="space-y-4 rounded-md border border-border bg-card p-5">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+          <span className="kicker text-muted-foreground">Filtros</span>
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="filtro-metodo" className="kicker text-muted-foreground">
+              Método de pago
+            </Label>
+            <Select value={filtroMetodo} onValueChange={setFiltroMetodo}>
+              <SelectTrigger id="filtro-metodo" className="h-10 text-[13px]">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los métodos</SelectItem>
+                <SelectItem value="efectivo">Efectivo</SelectItem>
+                <SelectItem value="transferencia">Transferencia</SelectItem>
+                <SelectItem value="nomina">Nómina</SelectItem>
+                <SelectItem value="otro">Otro</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {registrosFiltrados.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="relative mb-8">
-                <div className="w-24 h-24 bg-gradient-to-r from-slate-100 to-slate-200 rounded-3xl flex items-center justify-center mx-auto shadow-lg">
-                  <Receipt className="h-12 w-12 text-slate-400" />
-                </div>
-                <div className="absolute inset-0 w-24 h-24 bg-gradient-to-r from-slate-100/50 to-slate-200/50 rounded-3xl blur-xl mx-auto"></div>
-              </div>
-              <h3 className="text-2xl font-bold text-slate-800 mb-3">
-                {registros.length === 0 ? "Sin pagos registrados" : "No se encontraron registros"}
-              </h3>
-              <p className="text-slate-600 text-lg max-w-md mx-auto">
-                {registros.length === 0 
-                  ? "Este empleado aún no tiene pagos procesados en el sistema" 
-                  : "Intenta ajustar los filtros para encontrar los registros que buscas"
-                }
-              </p>
+          <div className="space-y-1.5">
+            <Label htmlFor="filtro-tipo" className="kicker text-muted-foreground">
+              Tipo de liquidación
+            </Label>
+            <Select value={filtroTipo} onValueChange={setFiltroTipo}>
+              <SelectTrigger id="filtro-tipo" className="h-10 text-[13px]">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los tipos</SelectItem>
+                <SelectItem value="evento">Evento individual</SelectItem>
+                <SelectItem value="multiple">Liquidación múltiple</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="filtro-fecha" className="kicker text-muted-foreground">
+              Período (año-mes)
+            </Label>
+            <Input
+              id="filtro-fecha"
+              type="month"
+              value={filtroFecha}
+              onChange={(e) => setFiltroFecha(e.target.value)}
+              placeholder="2026-01"
+              className="h-10 text-[13px]"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="busqueda-comprobante" className="kicker text-muted-foreground">
+              Buscar comprobante
+            </Label>
+            <div className="relative">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+                strokeWidth={1.75}
+              />
+              <Input
+                id="busqueda-comprobante"
+                placeholder="TXN-20260101-001"
+                value={busquedaComprobante}
+                onChange={(e) => setBusquedaComprobante(e.target.value)}
+                className="h-10 pl-9 text-[13px]"
+              />
             </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                <p className="text-sm font-medium text-slate-600 bg-slate-50/80 rounded-full px-4 py-2">
-                  Mostrando {registrosFiltrados.length} de {registros.length} registros
-                </p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="bg-white/80 border-slate-200/50 rounded-2xl hover:bg-white hover:shadow-md transition-all"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Exportar PDF
-                </Button>
-              </div>
+          </div>
+        </div>
+      </div>
 
-              <div className="bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden shadow-lg border border-slate-200/30">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-slate-200/40 bg-gradient-to-r from-slate-50/80 to-slate-100/80">
-                      <TableHead className="text-slate-800 font-bold py-4">Fecha Pago</TableHead>
-                      <TableHead className="text-slate-800 font-bold py-4">Tipo</TableHead>
-                      <TableHead className="text-slate-800 font-bold py-4">Monto</TableHead>
-                      <TableHead className="text-slate-800 font-bold py-4">Método</TableHead>
-                      <TableHead className="text-slate-800 font-bold py-4">Comprobante</TableHead>
-                      <TableHead className="text-right text-slate-800 font-bold py-4">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {registrosFiltrados.map((registro, index) => (
-                      <TableRow 
-                        key={registro.id} 
-                        className="border-slate-200/30 hover:bg-gradient-to-r hover:from-selecta-green/5 hover:to-primary/5 transition-all duration-200 group"
-                        style={{ animationDelay: `${index * 50}ms` }}
-                      >
-                        <TableCell className="py-4">
-                          <div className="flex items-center space-x-2">
-                            <Calendar className="h-4 w-4 text-slate-400" />
-                            <span className="font-semibold text-slate-800">
-                              {new Date(registro.fecha_pago).toLocaleDateString('es-CO', {
-                                day: '2-digit',
-                                month: 'short',
-                                year: 'numeric'
-                              })}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-4">
-                          {getTipoBadge(registro.tipo_liquidacion, registro.eventos.length)}
-                        </TableCell>
-                        <TableCell className="py-4">
-                          <div className="flex items-center space-x-1">
-                            <DollarSign className="h-4 w-4 text-selecta-green" />
-                            <span className="font-bold text-slate-800">
-                              ${registro.monto_total.toLocaleString()}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-4">
-                          {getMetodoBadge(registro.metodo_pago)}
-                        </TableCell>
-                        <TableCell className="py-4">
-                          <div className="font-mono text-sm bg-slate-50/80 rounded-lg px-3 py-1 border border-slate-200/50">
-                            {registro.numero_comprobante}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right py-4">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleVerComprobante(registro)}
-                            className="bg-white/80 border-blue-200/60 text-blue-700 hover:bg-blue-50 hover:border-blue-300 rounded-xl opacity-70 group-hover:opacity-100 transition-all duration-200 hover:scale-105"
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            Ver Detalle
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+      {/* Empty state */}
+      {registrosFiltrados.length === 0 ? (
+        <div className="flex flex-col items-center rounded-md border border-dashed border-border py-16 text-center">
+          <Receipt className="mb-4 h-10 w-10 text-muted-foreground/60" strokeWidth={1.5} />
+          <p className="font-serif text-[20px] tracking-tight text-foreground">
+            {registros.length === 0 ? "Sin pagos registrados" : "Sin resultados"}
+          </p>
+          <p className="mt-1 max-w-[44ch] text-[12.5px] text-muted-foreground">
+            {registros.length === 0
+              ? `Aún no hay liquidaciones procesadas para ${empleadoNombre}.`
+              : "Ajustar los filtros o la búsqueda."}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex flex-col items-start justify-between gap-3 lg:flex-row lg:items-center">
+            <p className="font-mono text-xs tabular-nums text-muted-foreground">
+              {registrosFiltrados.length} de {registros.length} registros
+            </p>
+            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-[12px]">
+              <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
+              Exportar PDF
+            </Button>
+          </div>
 
-              {/* Resumen del filtro */}
-              {registrosFiltrados.length > 0 && (
-                <div className="bg-gradient-to-r from-selecta-green/10 to-primary/10 backdrop-blur-sm p-6 rounded-2xl border border-selecta-green/20">
-                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-selecta-green to-primary rounded-2xl flex items-center justify-center shadow-lg">
-                        <TrendingUp className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <span className="font-bold text-slate-800 text-lg">
-                          Resumen del período: {registrosFiltrados.length} pagos
+          <div className="overflow-hidden rounded-md border border-border bg-card">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border bg-muted/40 hover:bg-muted/40">
+                    <TableHead className="kicker text-muted-foreground">Fecha</TableHead>
+                    <TableHead className="kicker text-muted-foreground">Tipo</TableHead>
+                    <TableHead className="kicker text-right text-muted-foreground">Monto</TableHead>
+                    <TableHead className="kicker text-muted-foreground">Método</TableHead>
+                    <TableHead className="kicker text-muted-foreground">Comprobante</TableHead>
+                    <TableHead className="kicker text-right text-muted-foreground">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {registrosFiltrados.map((registro) => (
+                    <TableRow key={registro.id} className="border-border transition-colors hover:bg-muted/30">
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-3.5 w-3.5 text-muted-foreground/60" strokeWidth={1.75} />
+                          <span className="font-mono text-[13px] tabular-nums text-foreground/85">
+                            {formatLocalDate(registro.fecha_pago, "es-CO", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getTipoBadge(registro.tipo_liquidacion, registro.eventos.length)}</TableCell>
+                      <TableCell className="text-right">
+                        <span className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
+                          ${registro.monto_total.toLocaleString("es-CO")}
                         </span>
-                        <p className="text-sm text-slate-600">Liquidaciones procesadas</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-slate-600 mb-1">TOTAL PERÍODO</p>
-                      <span className="text-2xl font-bold bg-gradient-to-r from-selecta-green to-primary bg-clip-text text-transparent">
-                        ${registrosFiltrados.reduce((sum, r) => sum + r.monto_total, 0).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
+                      </TableCell>
+                      <TableCell>{getMetodoBadge(registro.metodo_pago)}</TableCell>
+                      <TableCell>
+                        <span className="rounded border border-border bg-muted/40 px-2 py-0.5 font-mono text-[11.5px] text-foreground/80">
+                          {registro.numero_comprobante}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleVerComprobante(registro)}
+                          className="h-8 gap-1 text-[11.5px] text-muted-foreground hover:text-foreground"
+                        >
+                          <Eye className="h-3.5 w-3.5" strokeWidth={1.75} />
+                          Ver detalle
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          {/* Resumen del período (sólo si hay filtros activos) */}
+          {registrosFiltrados.length > 0 && (
+            <div className="flex flex-col items-start justify-between gap-4 rounded-md border border-border bg-card p-5 sm:flex-row sm:items-center">
+              <div>
+                <span className="kicker text-muted-foreground">Resumen del período</span>
+                <p className="mt-1 text-[13px] text-foreground/85">
+                  {registrosFiltrados.length} pagos procesados.
+                </p>
+              </div>
+              <div className="text-right">
+                <span className="kicker text-muted-foreground">Total período</span>
+                <div className="mt-1 font-serif text-[26px] leading-none tracking-[-0.02em] tabular-nums text-primary">
+                  ${totalFiltrado.toLocaleString("es-CO")}
                 </div>
-              )}
+              </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      )}
 
       <ComprobanteModal
         isOpen={isModalOpen}

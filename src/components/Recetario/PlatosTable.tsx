@@ -79,7 +79,12 @@ export default function PlatosTable() {
   };
 
   if (loadingPlatos) {
-    return <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-12">
+        <div className="h-8 w-8 animate-pulse rounded-full bg-muted/70" />
+        <p className="text-sm italic text-muted-foreground">Cargando platos…</p>
+      </div>
+    );
   }
 
   return (
@@ -127,11 +132,11 @@ export default function PlatosTable() {
             {paged.map((p) => {
               const costo = costByPlato.get(p.id) ?? 0;
               return (
-                <TableRow key={p.id} className="cursor-pointer hover:bg-slate-50" onClick={() => openDetail(p.id)}>
+                <TableRow key={p.id} className="cursor-pointer hover:bg-muted/40" onClick={() => openDetail(p.id)}>
                   <TableCell className="font-medium">{p.nombre}</TableCell>
                   <TableCell>
                     {p.categoria ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">{p.categoria}</span>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">{p.categoria}</span>
                     ) : <span className="text-slate-300">—</span>}
                   </TableCell>
                   <TableCell className="text-right">{p.precio > 0 ? fmt(p.precio) : <span className="text-slate-300">—</span>}</TableCell>

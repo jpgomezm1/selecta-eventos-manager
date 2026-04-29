@@ -17,7 +17,7 @@ export default function Dashboard() {
       {/* Page header — editorial */}
       <header className="animate-rise stagger-1 flex flex-col gap-4 border-b border-border/70 pb-8 md:flex-row md:items-end md:justify-between">
         <div className="space-y-3">
-          <span className="kicker">Selecta Eventos · Volumen XII</span>
+          <span className="kicker">Selecta Eventos</span>
           <h1 className="font-serif text-[44px] leading-[1.02] tracking-[-0.03em] text-foreground md:text-[56px]">
             <span className="italic text-primary">Panorama</span>
             <span className="text-foreground/70"> del día</span>

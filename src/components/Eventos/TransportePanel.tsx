@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Truck, MapPin, Clock, User, Phone, FileText, Save, CheckCircle, AlertTriangle } from "lucide-react";
 import { getOrCreateTransporteOrden, saveTransporteOrden, setTransporteOrdenEstado } from "@/integrations/supabase/apiTransporte";
+import { PanelHeader } from "@/components/Layout/PageHeader";
 import type { TransporteOrden } from "@/types/transporte";
 
 type Props = {
@@ -138,8 +139,9 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
   if (loading) {
     return (
       <Card>
-        <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-600 rounded-full animate-spin" />
+        <div className="flex flex-col items-center justify-center gap-3 py-12">
+          <div className="h-8 w-8 animate-pulse rounded-full bg-muted/70" />
+          <p className="text-sm italic text-muted-foreground">Cargando transporte…</p>
         </div>
       </Card>
     );
@@ -149,14 +151,13 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
 
   return (
     <Card>
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Truck className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
-            <h2 className="font-semibold text-foreground">Logística y transporte</h2>
-          </div>
-          {estadoBadge(orden.estado)}
-        </div>
+      <div className="p-5 border-b border-border">
+        <PanelHeader
+          kicker="Operación"
+          title="Logística y transporte"
+          description="Recepción, recogida, destino y datos del vehículo."
+          actions={estadoBadge(orden.estado)}
+        />
       </div>
 
       <div className="p-4 space-y-6">
@@ -168,7 +169,7 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
           </div>
           <div className="grid grid-cols-1 gap-3">
             <div>
-              <label className="text-sm text-slate-600 mb-1 block">Nombre del lugar</label>
+              <label className="text-sm text-muted-foreground mb-1 block">Nombre del lugar</label>
               <Input
                 placeholder="Ej: Bodega principal"
                 value={orden.pickup_nombre ?? ""}
@@ -176,7 +177,7 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
               />
             </div>
             <div>
-              <label className="text-sm text-slate-600 mb-1 block">Dirección</label>
+              <label className="text-sm text-muted-foreground mb-1 block">Dirección</label>
               <Input
                 placeholder="Dirección completa"
                 value={orden.pickup_direccion ?? ""}
@@ -184,7 +185,7 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
               />
             </div>
             <div>
-              <label className="text-sm text-slate-600 mb-1 block">Descripción de la carga</label>
+              <label className="text-sm text-muted-foreground mb-1 block">Descripción de la carga</label>
               <Textarea
                 placeholder="Ej: menaje, decoración, equipos"
                 value={orden.descripcion_carga ?? ""}
@@ -203,7 +204,7 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
           </div>
           <div className="grid grid-cols-1 gap-3">
             <div>
-              <label className="text-sm text-slate-600 mb-1 block">Dirección del evento</label>
+              <label className="text-sm text-muted-foreground mb-1 block">Dirección del evento</label>
               <Input
                 placeholder="Dirección completa del evento"
                 value={orden.destino_direccion ?? ""}
@@ -213,21 +214,21 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
 
             {/* Ventana de recepción */}
             <div>
-              <label className="text-sm text-slate-600 mb-1 block flex items-center gap-1">
+              <label className="text-sm text-muted-foreground mb-1 block flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" /> Ventana de recepción
               </label>
               <div className="flex items-center gap-2">
                 <div className="flex-1">
-                  <span className="text-xs text-slate-400">Desde</span>
+                  <span className="text-xs text-muted-foreground/70">Desde</span>
                   <Input
                     type="time"
                     value={orden.hora_recepcion_inicio ?? ""}
                     onChange={(e) => onChange({ hora_recepcion_inicio: e.target.value })}
                   />
                 </div>
-                <span className="text-slate-400 mt-4">—</span>
+                <span className="text-muted-foreground/70 mt-4">—</span>
                 <div className="flex-1">
-                  <span className="text-xs text-slate-400">Hasta</span>
+                  <span className="text-xs text-muted-foreground/70">Hasta</span>
                   <Input
                     type="time"
                     value={orden.hora_recepcion_fin ?? ""}
@@ -239,21 +240,21 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
 
             {/* Ventana de recogida */}
             <div>
-              <label className="text-sm text-slate-600 mb-1 block flex items-center gap-1">
+              <label className="text-sm text-muted-foreground mb-1 block flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" /> Ventana de recogida
               </label>
               <div className="flex items-center gap-2">
                 <div className="flex-1">
-                  <span className="text-xs text-slate-400">Desde</span>
+                  <span className="text-xs text-muted-foreground/70">Desde</span>
                   <Input
                     type="time"
                     value={orden.hora_recogida_inicio ?? ""}
                     onChange={(e) => onChange({ hora_recogida_inicio: e.target.value })}
                   />
                 </div>
-                <span className="text-slate-400 mt-4">—</span>
+                <span className="text-muted-foreground/70 mt-4">—</span>
                 <div className="flex-1">
-                  <span className="text-xs text-slate-400">Hasta</span>
+                  <span className="text-xs text-muted-foreground/70">Hasta</span>
                   <Input
                     type="time"
                     value={orden.hora_recogida_fin ?? ""}
@@ -273,7 +274,7 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-sm text-slate-600 mb-1 block">Nombre contacto</label>
+              <label className="text-sm text-muted-foreground mb-1 block">Nombre contacto</label>
               <Input
                 placeholder="Responsable del transporte"
                 value={orden.contacto_nombre ?? ""}
@@ -281,7 +282,7 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
               />
             </div>
             <div>
-              <label className="text-sm text-slate-600 mb-1 block">Teléfono</label>
+              <label className="text-sm text-muted-foreground mb-1 block">Teléfono</label>
               <Input
                 placeholder="Número de contacto"
                 value={orden.contacto_telefono ?? ""}
@@ -290,7 +291,7 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
             </div>
           </div>
           <div>
-            <label className="text-sm text-slate-600 mb-1 block">Vehículo</label>
+            <label className="text-sm text-muted-foreground mb-1 block">Vehículo</label>
             <Input
               placeholder="Tipo, placa, características"
               value={orden.vehiculo ?? ""}
@@ -298,7 +299,7 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
             />
           </div>
           <div>
-            <label className="text-sm text-slate-600 mb-1 block">Notas</label>
+            <label className="text-sm text-muted-foreground mb-1 block">Notas</label>
             <Textarea
               placeholder="Instrucciones especiales"
               value={orden.notas ?? ""}
@@ -309,10 +310,10 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
         </div>
 
         {/* Actions */}
-        <div className="bg-slate-50 rounded-lg p-4">
+        <div className="bg-muted/40 rounded-lg p-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-600">Estado:</span>
+              <span className="text-sm text-muted-foreground">Estado:</span>
               {estadoBadge(orden.estado)}
             </div>
 
@@ -348,7 +349,7 @@ export default function TransportePanel({ eventoId, onChanged }: Props) {
 
           {(!orden.pickup_nombre || !orden.destino_direccion || !orden.contacto_nombre) && (
             <div className="mt-3 p-3 bg-muted/40 rounded-md border border-border flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-[hsl(30_55%_42%)] flex-shrink-0 mt-0.5" strokeWidth={1.75} />
+              <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" strokeWidth={1.75} />
               <div>
                 <p className="text-sm font-medium text-foreground">Información incompleta</p>
                 <p className="text-xs text-muted-foreground">Complete los campos para una mejor coordinación.</p>

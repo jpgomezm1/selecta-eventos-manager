@@ -59,7 +59,14 @@ export function useCotizadorWizard() {
   const addOpcion = useCallback(() => {
     const nextIndex = opciones.length + 1;
     const key = crypto.randomUUID();
-    const letra = String.fromCharCode(64 + nextIndex);
+    // Letter sequence: 1→A, 26→Z, 27→AA, 52→AZ, 53→BA, ...
+    let n = nextIndex;
+    let letra = "";
+    while (n > 0) {
+      n--;
+      letra = String.fromCharCode(65 + (n % 26)) + letra;
+      n = Math.floor(n / 26);
+    }
     setOpciones((prev) => [
       ...prev,
       {
@@ -85,7 +92,7 @@ export function useCotizadorWizard() {
       {
         key,
         nombre_opcion: `${source.nombre_opcion} - Copia`,
-        items: JSON.parse(JSON.stringify(source.items)),
+        items: structuredClone(source.items),
       },
     ]);
     setActiveKey(key);
@@ -323,6 +330,8 @@ export function useCotizadorWizard() {
     setCurrentStep(1);
     setSelectedCliente(null);
     setLugares([{ nombre: "", es_seleccionado: true }]);
+    setEditingOption(null);
+    setEditingName("");
   }, []);
 
   const subt = calcSubtotales(current.items);

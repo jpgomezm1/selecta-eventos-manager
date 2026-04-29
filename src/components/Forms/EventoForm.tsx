@@ -97,7 +97,7 @@ export function EventoForm({ evento, onSubmit, onCancel }: EventoFormProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center pb-4 border-b border-slate-200">
-        <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+        <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center mx-auto mb-3">
           <CalendarIcon className="h-6 w-6 text-slate-600" />
         </div>
         <p className="text-slate-500 text-sm">

@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ingredientesConStock,
   inventarioMovimientoCreate,
-  inventarioMovimientoConfirmar,
   inventarioMovimientoUpdateFacturaUrl,
 } from "@/integrations/supabase/apiInventario";
 import { scanInvoice, type InvoiceExtractedItem, type InvoiceExtraction } from "@/services/invoiceScanner";
@@ -49,8 +48,8 @@ const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pd
 
 const confianzaConfig: Record<string, { label: string; color: string }> = {
   alta: { label: "Alta", color: "bg-primary/10 text-primary border-primary/30" },
-  media: { label: "Media", color: "bg-[hsl(30_55%_42%)]/10 text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]" },
-  baja: { label: "Baja", color: "bg-[hsl(30_55%_42%)]/15 text-[hsl(30_55%_35%)] border-[hsl(30_40%_65%)]" },
+  media: { label: "Media", color: "bg-warning/10 text-warning border-warning-soft" },
+  baja: { label: "Baja", color: "bg-warning/15 text-warning border-warning-soft" },
   sin_match: { label: "Sin match", color: "bg-destructive/10 text-destructive border-destructive/30" },
 };
 
@@ -181,7 +180,7 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
       updateItem(key, {
         ingrediente_id: ing.id,
         nombre_catalogo: ing.nombre,
-        confianza: "alta",
+        confianza: "media",
       });
     }
   }
@@ -241,7 +240,8 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
           ].filter(Boolean).join(" | ") || null,
           factura_url: null,
         },
-        convertedItems
+        convertedItems,
+        confirmar
       );
 
       // Upload invoice file. Es no-bloqueante (el movimiento ya existe)
@@ -253,14 +253,10 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
         } catch (err) {
           toast({
             title: "Movimiento creado, pero la factura no se subió",
-            description: err?.message ?? "Podés reintentar la subida desde el detalle del movimiento.",
+            description: err?.message ?? "Se puede reintentar la subida desde el detalle del movimiento.",
             variant: "destructive",
           });
         }
-      }
-
-      if (confirmar) {
-        await inventarioMovimientoConfirmar(mov.id);
       }
 
       return { mov, confirmar };
@@ -417,7 +413,7 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
 
             {/* Warnings */}
             {sinMatchCount > 0 && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-muted/40 border border-border rounded-md text-sm text-[hsl(30_55%_42%)]">
+              <div className="flex items-center gap-2 px-3 py-2 bg-muted/40 border border-border rounded-md text-sm text-warning">
                 <AlertTriangle className="h-4 w-4 flex-shrink-0" strokeWidth={1.75} />
                 {sinMatchCount} item(s) sin asignar — no se guardarán hasta asignarles un ingrediente
               </div>
@@ -489,7 +485,7 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
                               </p>
                             )}
                           </TableCell>
-                          <TableCell className="text-xs text-slate-500">
+                          <TableCell className="text-xs text-muted-foreground">
                             {item.unidad || "—"}
                           </TableCell>
                           <TableCell>
@@ -522,7 +518,7 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
                 </Table>
               </div>
             ) : (
-              <div className="text-center py-6 text-slate-400 text-sm">
+              <div className="text-center py-6 text-muted-foreground text-sm">
                 No se detectaron items. Agrega manualmente.
               </div>
             )}
@@ -532,7 +528,7 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
                 <Plus className="h-4 w-4 mr-1" /> Agregar Item
               </Button>
               <div className="text-right">
-                <p className="text-xs text-slate-400">{validCount} item(s) asignados</p>
+                <p className="text-xs text-muted-foreground">{validCount} item(s) asignados</p>
                 <p className="text-sm font-semibold">
                   Total: $ {totalCalculado.toLocaleString("es-CO")}
                 </p>
@@ -540,7 +536,7 @@ export default function FacturaIngresoDialog({ open, onOpenChange }: Props) {
             </div>
 
             {notas && (
-              <div className="text-xs text-slate-500 bg-slate-50 rounded-md p-2">
+              <div className="text-xs text-muted-foreground bg-muted/40 rounded-md p-2">
                 <span className="font-medium">Notas IA:</span> {notas}
               </div>
             )}

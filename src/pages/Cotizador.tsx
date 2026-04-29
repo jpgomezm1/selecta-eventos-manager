@@ -694,7 +694,7 @@ export default function Cotizador() {
   );
 
   return (
-    <div className="container mx-auto px-4 py-8 pb-28">
+    <div className="pb-28 space-y-6">
       {/* Header */}
       <div className="mb-6">
         <span className="kicker text-muted-foreground">Cotizador</span>
@@ -714,10 +714,10 @@ export default function Cotizador() {
                 Información del evento
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-8 space-y-6">
+            <CardContent className="p-4 sm:p-8 space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="text-sm font-medium text-foreground">
                     Nombre de la Cotización *
                   </label>
                   <Input
@@ -728,8 +728,8 @@ export default function Cotizador() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 flex items-center space-x-2">
-                    <Users className="h-4 w-4 text-slate-400" />
+                  <label className="text-sm font-medium text-foreground flex items-center space-x-2">
+                    <Users className="h-4 w-4 text-muted-foreground" />
                     <span>Cliente</span>
                   </label>
                   <ClienteSelector
@@ -748,8 +748,8 @@ export default function Cotizador() {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 flex items-center space-x-2">
-                    <Users className="h-4 w-4 text-slate-400" />
+                  <label className="text-sm font-medium text-foreground flex items-center space-x-2">
+                    <Users className="h-4 w-4 text-muted-foreground" />
                     <span>Número de Invitados</span>
                   </label>
                   <Input
@@ -762,8 +762,8 @@ export default function Cotizador() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-slate-400" />
+                  <label className="text-sm font-medium text-foreground flex items-center space-x-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span>Fecha Estimada del Evento</span>
                   </label>
                   <Input
@@ -776,7 +776,7 @@ export default function Cotizador() {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="text-sm font-medium text-foreground">
                     Comercial Encargado *
                   </label>
                   <Input
@@ -850,34 +850,34 @@ export default function Cotizador() {
               )}
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 flex items-center space-x-2">
-                  <Clock className="h-4 w-4 text-slate-400" />
+                <label className="text-sm font-medium text-foreground flex items-center space-x-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
                   <span>Horarios del Evento (opcional)</span>
                 </label>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-1">
-                    <label className="text-xs text-slate-500">Hora inicio</label>
+                    <label className="text-xs text-muted-foreground">Hora inicio</label>
                     <Input type="time" {...register("hora_inicio")} className="h-12" />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs text-slate-500">Hora fin</label>
+                    <label className="text-xs text-muted-foreground">Hora fin</label>
                     <Input type="time" {...register("hora_fin")} className="h-12" />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 flex items-center space-x-2">
-                  <Clock className="h-4 w-4 text-slate-400" />
+                <label className="text-sm font-medium text-foreground flex items-center space-x-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
                   <span>Horarios de Montaje (opcional)</span>
                 </label>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-1">
-                    <label className="text-xs text-slate-500">Hora inicio montaje</label>
+                    <label className="text-xs text-muted-foreground">Hora inicio montaje</label>
                     <Input type="time" {...register("hora_montaje_inicio")} className="h-12" />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs text-slate-500">Hora fin montaje</label>
+                    <label className="text-xs text-muted-foreground">Hora fin montaje</label>
                     <Input type="time" {...register("hora_montaje_fin")} className="h-12" />
                   </div>
                 </div>
@@ -1044,8 +1044,8 @@ export default function Cotizador() {
 
       {/* ─── Floating bottom bar with navigation + summary ─── */}
       {currentStep < 6 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-lg">
-          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-[var(--shadow-elegant)]">
+          <div className="mx-auto max-w-[1400px] px-5 py-3 lg:px-10 flex flex-wrap items-center justify-between gap-3">
             {/* Left: Back button */}
             <Button
               variant="outline"

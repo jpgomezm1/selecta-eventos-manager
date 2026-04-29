@@ -3,7 +3,7 @@ import { Calendar, MapPin, Users, DollarSign, Grid3X3, CalendarDays, Search, Eye
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar as BigCalendar, dateFnsLocalizer, Views } from 'react-big-calendar';
-import { supabase } from "@/integrations/supabase/client";
+import { listEventosConPersonal } from "@/integrations/supabase/apiPersonal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card";
 import { LiquidacionDialog } from "@/components/Forms/LiquidacionDialog";
 import { useToast } from "@/hooks/use-toast";
-import { EventoConPersonal, PersonalAsignado } from "@/types/database";
+import { EventoConPersonal } from "@/types/database";
 import { fetchChecklistDataBatch } from "@/integrations/supabase/apiEventoChecklist";
 import { computeChecklist } from "@/lib/eventoChecklist";
 import type { ChecklistResult } from "@/lib/eventoChecklist";
@@ -57,64 +57,7 @@ export default function EventosPage() {
 
   const fetchEventos = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from("eventos")
-        .select(`
-          *,
-          evento_personal (
-            id,
-            hora_inicio,
-            hora_fin,
-            horas_trabajadas,
-            pago_calculado,
-            estado_pago,
-            fecha_pago,
-            metodo_pago,
-            notas_pago,
-            personal (*)
-          ),
-          cotizacion_versiones (
-            cotizaciones (
-              ubicacion_evento,
-              comercial_encargado,
-              total_cotizado
-            )
-          )
-        `)
-        .order("fecha_evento", { ascending: false });
-
-      if (error) throw error;
-
-      const eventosConPersonal: EventoConPersonal[] = (data || []).map((evento) => {
-        const personalAsignado: PersonalAsignado[] = (evento.evento_personal?.map((ep) => ({
-          ...ep.personal,
-          hora_inicio: ep.hora_inicio,
-          hora_fin: ep.hora_fin,
-          horas_trabajadas: ep.horas_trabajadas,
-          pago_calculado: ep.pago_calculado,
-          estado_pago: ep.estado_pago ?? "pendiente",
-          fecha_pago: ep.fecha_pago,
-          metodo_pago: ep.metodo_pago,
-          notas_pago: ep.notas_pago,
-          evento_personal_id: ep.id,
-        })) || []) as PersonalAsignado[];
-        const cotizacionInfo = evento.cotizacion_versiones?.cotizaciones;
-        const ubicacionEvento = cotizacionInfo?.ubicacion_evento || evento.ubicacion;
-        const comercialEncargado = cotizacionInfo?.comercial_encargado;
-        // Total cotizado al cliente — el "tamaño" del evento. Lo operativo
-        // (costo a Selecta del personal asignado) vive en el detalle, no acá.
-        const totalCotizado = Number(cotizacionInfo?.total_cotizado ?? 0);
-
-        return {
-          ...evento,
-          ubicacion: ubicacionEvento,
-          comercial_encargado: comercialEncargado,
-          estado_liquidacion: (evento.estado_liquidacion as 'pendiente' | 'liquidado') || 'pendiente',
-          personal: personalAsignado,
-          costo_total: totalCotizado,
-        };
-      });
-
+      const eventosConPersonal = await listEventosConPersonal();
       setEventos(eventosConPersonal);
 
       // Fetch checklist data for all events
@@ -168,7 +111,7 @@ export default function EventosPage() {
     setIsLiquidacionOpen(true);
   };
 
-  const getEventStatus = (fechaEvento: string) => {
+  const getEventStatus = useCallback((fechaEvento: string) => {
     const eventDate = parseLocalDate(fechaEvento);
     if (!eventDate)
       return {
@@ -192,36 +135,39 @@ export default function EventosPage() {
       status: "Próximo",
       variant: "border-primary/25 bg-primary/10 text-primary",
     };
-  };
+  }, []);
 
   // Filtrar eventos
-  const filteredEventos = eventos.filter(evento => {
-    const matchesSearch = searchTerm === '' ||
-      evento.nombre_evento.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      evento.ubicacion?.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredEventos = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    return eventos.filter((evento) => {
+      const matchesSearch = term === '' ||
+        evento.nombre_evento.toLowerCase().includes(term) ||
+        evento.ubicacion?.toLowerCase().includes(term);
 
-    let matchesEstado = true;
-    if (estadoFilter !== 'all') {
-      const { status } = getEventStatus(evento.fecha_evento);
-      const liquidado = evento.estado_liquidacion === 'liquidado';
-      switch (estadoFilter) {
-        case 'proximo':
-          matchesEstado = status === 'Próximo';
-          break;
-        case 'hoy':
-          matchesEstado = status === 'Hoy';
-          break;
-        case 'pasado_pendiente':
-          matchesEstado = status === 'Pasado' && !liquidado;
-          break;
-        case 'pasado_liquidado':
-          matchesEstado = status === 'Pasado' && liquidado;
-          break;
+      let matchesEstado = true;
+      if (estadoFilter !== 'all') {
+        const { status } = getEventStatus(evento.fecha_evento);
+        const liquidado = evento.estado_liquidacion === 'liquidado';
+        switch (estadoFilter) {
+          case 'proximo':
+            matchesEstado = status === 'Próximo';
+            break;
+          case 'hoy':
+            matchesEstado = status === 'Hoy';
+            break;
+          case 'pasado_pendiente':
+            matchesEstado = status === 'Pasado' && !liquidado;
+            break;
+          case 'pasado_liquidado':
+            matchesEstado = status === 'Pasado' && liquidado;
+            break;
+        }
       }
-    }
 
-    return matchesSearch && matchesEstado;
-  });
+      return matchesSearch && matchesEstado;
+    });
+  }, [eventos, searchTerm, estadoFilter, getEventStatus]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -231,19 +177,23 @@ export default function EventosPage() {
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedEventos = filteredEventos.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  const calendarEvents: CalendarEvent[] = filteredEventos
-    .map(evento => {
-      const date = parseLocalDate(evento.fecha_evento);
-      if (!date) return null;
-      return {
-        id: evento.id,
-        title: evento.nombre_evento,
-        start: date,
-        end: date,
-        resource: evento,
-      };
-    })
-    .filter((e): e is CalendarEvent => e !== null);
+  const calendarEvents: CalendarEvent[] = useMemo(
+    () =>
+      filteredEventos
+        .map((evento) => {
+          const date = parseLocalDate(evento.fecha_evento);
+          if (!date) return null;
+          return {
+            id: evento.id,
+            title: evento.nombre_evento,
+            start: date,
+            end: date,
+            resource: evento,
+          };
+        })
+        .filter((e): e is CalendarEvent => e !== null),
+    [filteredEventos]
+  );
 
   const eventStyleGetter = (event: CalendarEvent) => {
     const { status } = getEventStatus(event.resource.fecha_evento);
@@ -328,7 +278,7 @@ export default function EventosPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+            <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
               <Button
                 variant="ghost"
                 size="sm"

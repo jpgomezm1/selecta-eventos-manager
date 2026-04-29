@@ -6,8 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useMemo, useState } from "react";
 import { MenajeMovimiento, SalidaConEvento } from "@/types/menaje";
-import { menajeCatalogoList, readReserva, getSalidasConfirmadas } from "@/integrations/supabase/apiMenaje";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  menajeCatalogoList,
+  readReserva,
+  getSalidasConfirmadas,
+  eventosConReservaMenajeActiva,
+} from "@/integrations/supabase/apiMenaje";
 import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -25,13 +29,6 @@ import {
   Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-type EventoConReserva = {
-  evento_id: string;
-  nombre_evento: string;
-  fecha_evento: string;
-  reserva_id: string;
-};
 
 type DialogItem = {
   menaje_id: string;
@@ -59,20 +56,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
   // Fetch events with confirmed/active menaje reservations (for salida selector)
   const { data: eventosConReserva } = useQuery({
     queryKey: ["eventos-con-reserva-menaje"],
-    queryFn: async (): Promise<EventoConReserva[]> => {
-      const { data, error } = await supabase
-        .from("menaje_reservas")
-        .select("id, evento_id, estado, eventos!inner(id, nombre_evento, fecha_evento)")
-        .in("estado", ["confirmado", "borrador"])
-        .not("evento_id", "is", null);
-      if (error) throw error;
-      return (data ?? []).map((r) => ({
-        evento_id: r.evento_id,
-        nombre_evento: r.eventos?.nombre_evento ?? "",
-        fecha_evento: r.eventos?.fecha_evento ?? "",
-        reserva_id: r.id,
-      }));
-    },
+    queryFn: eventosConReservaMenajeActiva,
   });
 
   // Fetch confirmed salidas for ingreso selector
@@ -466,7 +450,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
             <CardContent>
               <div className="flex gap-3 mb-6">
                 <Select onValueChange={(v) => addItem(v)} disabled={catalogForSelect.length === 0}>
-                  <SelectTrigger className="flex-1 bg-slate-50 border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
+                  <SelectTrigger className="flex-1 bg-muted/40 border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
                     <SelectValue placeholder={
                       catalogForSelect.length === 0
                         ? "No hay más elementos disponibles"
@@ -495,7 +479,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
               <div className="rounded-lg border border-slate-200 overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-50 border-slate-200">
+                    <TableRow className="bg-muted/40 border-slate-200">
                       <TableHead className="font-semibold text-slate-700">Elemento</TableHead>
                       {autoPopulated && (
                         <TableHead className="font-semibold text-slate-700 text-center">
@@ -545,7 +529,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
                         const needsNote = autoPopulated && hasDiff;
 
                         return (
-                          <TableRow key={i.menaje_id} className="hover:bg-slate-50">
+                          <TableRow key={i.menaje_id} className="hover:bg-muted/40">
                             <TableCell>
                               <div className="flex items-center space-x-2">
                                 <Package className="h-4 w-4 text-slate-400" />
@@ -675,7 +659,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="border-slate-300 text-slate-700 hover:bg-slate-50"
+              className="border-slate-300 text-slate-700 hover:bg-muted/40"
             >
               <X className="h-4 w-4 mr-2" />
               Cancelar

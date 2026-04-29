@@ -387,33 +387,32 @@ export async function updateVersionCotizacion(
     (items.menaje ?? []).reduce((a, m) => a + m.precio_alquiler * m.cantidad, 0) +
     lugarPrecio;
 
-  const updateData: Record<string, unknown> = { total };
-  if (nombre_opcion !== undefined) updateData.nombre_opcion = nombre_opcion;
-  // Si el caller pasó `opts.totalOverride` (incluso null) lo persistimos.
-  // Si es undefined (caller sin permiso de override), no tocamos el campo.
+  if (!Number.isFinite(total)) {
+    throw new Error("El total calculado no es un número válido — revisa cantidades y tarifas.");
+  }
+
+  // Construir payload para el RPC atómico. Las keys condicionales se omiten
+  // cuando el caller no las pasa, así el RPC no toca esas columnas.
+  const payload: Record<string, unknown> = {
+    cotizacion_id,
+    version_id,
+    total,
+    items: {
+      platos: items.platos,
+      personal: items.personal,
+      transportes: items.transportes,
+      menaje: items.menaje ?? [],
+    },
+  };
+  if (nombre_opcion !== undefined) payload.nombre_opcion = nombre_opcion;
   if (opts && Object.prototype.hasOwnProperty.call(opts, "totalOverride")) {
-    updateData.total_override = opts.totalOverride ?? null;
+    payload.total_override = opts.totalOverride ?? null;
   }
 
-  const { error: updateError } = await supabase
-    .from("cotizacion_versiones")
-    .update(updateData)
-    .eq("id", version_id);
-  if (updateError) throw updateError;
-
-  // Supabase no lanza: resuelve con { error } poblado. Sin destructurar, los
-  // fallos en estos deletes quedan invisibles y la re-inserción los oculta.
-  const deleteResults = await Promise.all([
-    supabase.from("cotizacion_platos").delete().eq("cotizacion_version_id", version_id),
-    supabase.from("cotizacion_personal_items").delete().eq("cotizacion_version_id", version_id),
-    supabase.from("cotizacion_transporte_items").delete().eq("cotizacion_version_id", version_id),
-    supabase.from("cotizacion_menaje_items").delete().eq("cotizacion_version_id", version_id),
-  ]);
-  for (const r of deleteResults) {
-    if (r.error) throw r.error;
-  }
-
-  await insertItemsForVersion(cotizacion_id, version_id, items);
+  const { error } = await supabase.rpc("fn_update_version_cotizacion_atomic", {
+    p_payload: payload as never,
+  });
+  if (error) throw error;
 
   return { success: true };
 }
@@ -679,6 +678,14 @@ export async function setVersionDefinitiva(cotizacion_id: string, version_id: st
 /** =====================
  *        HELPERS
  *  ===================== */
+function safeSubtotal(a: number, b: number, label: string): number {
+  const r = a * b;
+  if (!Number.isFinite(r)) {
+    throw new Error(`Subtotal inválido en ${label}: ${a} × ${b}. Verifica cantidades y precios.`);
+  }
+  return r;
+}
+
 async function insertItemsForVersion(
   cotizacion_id: string,
   cotizacion_version_id: string,
@@ -691,7 +698,7 @@ async function insertItemsForVersion(
       plato_id: p.plato_id,
       cantidad: p.cantidad,
       precio_unitario: p.precio_unitario,
-      subtotal: p.precio_unitario * p.cantidad,
+      subtotal: safeSubtotal(p.precio_unitario, p.cantidad, "platos"),
     }));
     const { error } = await supabase.from("cotizacion_platos").insert(rows);
     if (error) throw error;
@@ -704,7 +711,7 @@ async function insertItemsForVersion(
       transporte_id: t.transporte_id,
       cantidad: t.cantidad,
       tarifa_unitaria: t.tarifa_unitaria,
-      subtotal: t.tarifa_unitaria * t.cantidad,
+      subtotal: safeSubtotal(t.tarifa_unitaria, t.cantidad, "transportes"),
     }));
     const { error } = await supabase.from("cotizacion_transporte_items").insert(rows);
     if (error) throw error;
@@ -717,7 +724,7 @@ async function insertItemsForVersion(
       personal_costo_id: p.personal_costo_id,
       cantidad: p.cantidad,
       tarifa_estimada_por_persona: p.tarifa_estimada_por_persona,
-      subtotal: p.tarifa_estimada_por_persona * p.cantidad,
+      subtotal: safeSubtotal(p.tarifa_estimada_por_persona, p.cantidad, "personal"),
     }));
     const { error } = await supabase.from("cotizacion_personal_items").insert(rows);
     if (error) throw error;
@@ -730,7 +737,7 @@ async function insertItemsForVersion(
       menaje_id: m.menaje_id,
       cantidad: m.cantidad,
       precio_alquiler: m.precio_alquiler,
-      subtotal: m.precio_alquiler * m.cantidad,
+      subtotal: safeSubtotal(m.precio_alquiler, m.cantidad, "menaje"),
     }));
     const { error } = await supabase.from("cotizacion_menaje_items").insert(rows);
     if (error) throw error;
@@ -859,27 +866,19 @@ export async function getPlatoConIngredientes(platoId: string): Promise<PlatoCat
   };
 }
 
-/** Upsert ingredients for a plato (replace all) */
+/** Upsert ingredients for a plato (replace all) — atomic vía RPC.
+ *
+ * Si el INSERT falla, el DELETE se revierte y el plato conserva sus
+ * ingredientes originales (no queda huérfano). */
 export async function upsertPlatoIngredientes(
   platoId: string,
   items: Array<{ ingrediente_id: string; cantidad: number }>
 ): Promise<void> {
-  // Delete existing
-  const { error: delErr } = await supabase
-    .from("plato_ingredientes")
-    .delete()
-    .eq("plato_id", platoId);
-  if (delErr) throw delErr;
-
-  if (items.length === 0) return;
-
-  const rows = items.map((item) => ({
-    plato_id: platoId,
-    ingrediente_id: item.ingrediente_id,
-    cantidad: item.cantidad,
-  }));
-  const { error: insErr } = await supabase.from("plato_ingredientes").insert(rows);
-  if (insErr) throw insErr;
+  const { error } = await supabase.rpc("fn_upsert_plato_ingredientes_atomic", {
+    p_plato_id: platoId,
+    p_items: items as never,
+  });
+  if (error) throw error;
 }
 
 /** Actualizar campos de un plato */
@@ -956,7 +955,15 @@ export function convertirAUnidadBase(
     return enMl / volAMl[unidadBase];
   }
 
-  // Unidades incompatibles o und → devolver sin convertir
+  // Fallback: unidades incompatibles (peso vs volumen) o desconocidas (ej. "tazas").
+  // Los callers actuales (FacturaIngresoDialog, IngredientesTable) ya validan
+  // compatibilidad antes via `sonUnidadesCompatibles`. Si llegamos acá es porque
+  // algo nuevo se saltó esa validación — alertamos para que el bug no pase silencioso.
+  if (presentacionUnidad !== unidadBase) {
+    console.warn(
+      `[convertirAUnidadBase] unidades no convertibles: "${presentacionUnidad}" → "${unidadBase}" (devuelve cantidad sin convertir).`
+    );
+  }
   return presentacionCantidad;
 }
 

@@ -139,13 +139,13 @@ export default function TransporteTarifasTab() {
           />
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
             <select
               value={filterTipo}
               onChange={(e) => setFilterTipo(e.target.value)}
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0"
+              className="h-10 min-w-0 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0"
             >
               <option value="">Todos los tipos</option>
               {TIPOS_EVENTO.map((t) => (
@@ -216,7 +216,7 @@ export default function TransporteTarifasTab() {
                 </Button>
                 <Button
                   onClick={() => createMut.mutate()}
-                  disabled={createMut.isPending || !newItem.lugar || !newItem.tarifa}
+                  disabled={createMut.isPending || !newItem.lugar || newItem.tarifa == null || Number.isNaN(newItem.tarifa)}
                 >
                   {createMut.isPending ? "Agregando…" : "Agregar tarifa"}
                 </Button>

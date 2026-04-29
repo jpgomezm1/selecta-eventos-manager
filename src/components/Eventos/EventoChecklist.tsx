@@ -30,11 +30,11 @@ export default function EventoChecklist({ checklist, onItemClick }: Props) {
         {checklist.items.map((item) => (
           <button
             key={item.key}
-            onClick={() => !item.completed && item.tab && onItemClick?.(item.tab)}
+            onClick={() => item.tab && onItemClick?.(item.tab)}
             className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] transition-colors ${
-              item.completed
-                ? "text-muted-foreground"
-                : "cursor-pointer text-foreground/80 hover:bg-muted/50"
+              item.tab ? "cursor-pointer hover:bg-muted/50" : ""
+            } ${
+              item.completed ? "text-muted-foreground" : "text-foreground/80"
             }`}
           >
             {item.completed ? (

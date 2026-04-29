@@ -42,6 +42,7 @@ export default function LugaresCatalogoTab() {
     ciudad: "",
     capacidad_estimada: null as number | null,
     precio_referencia: 0,
+    activo: true,
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCiudad, setFilterCiudad] = useState("");
@@ -75,11 +76,11 @@ export default function LugaresCatalogoTab() {
         capacidad_estimada: newItem.capacidad_estimada,
         precio_referencia: newItem.precio_referencia,
         notas: null,
-        activo: true,
+        activo: newItem.activo,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["catalogos", "lugares"] });
-      setNewItem({ nombre: "", direccion: "", ciudad: "", capacidad_estimada: null, precio_referencia: 0 });
+      setNewItem({ nombre: "", direccion: "", ciudad: "", capacidad_estimada: null, precio_referencia: 0, activo: true });
       setIsCreateOpen(false);
       toast({ title: "Lugar creado", description: "El lugar se agregó al catálogo correctamente." });
     },
@@ -243,6 +244,15 @@ export default function LugaresCatalogoTab() {
                     onChange={(e) => setNewItem((p) => ({ ...p, precio_referencia: Number(e.target.value) }))}
                   />
                 </div>
+                <label className="flex items-center gap-2 sm:col-span-2 text-sm text-foreground/85 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newItem.activo}
+                    onChange={(e) => setNewItem((p) => ({ ...p, activo: e.target.checked }))}
+                    className="h-4 w-4 rounded border-border accent-primary"
+                  />
+                  Activo (visible en cotizaciones)
+                </label>
               </div>
 
               <DialogFooter>

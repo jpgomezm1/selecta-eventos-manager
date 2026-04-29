@@ -128,9 +128,9 @@ export default function UsuariosPage() {
       </div>
 
       {sinRol > 0 && (
-        <div className="flex items-start gap-3 rounded-md border border-[hsl(30_40%_70%)] bg-[hsl(30_50%_94%)] px-4 py-3">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(30_55%_42%)]" strokeWidth={1.75} />
-          <div className="text-[13px] leading-relaxed text-[hsl(30_55%_30%)]">
+        <div className="flex items-start gap-3 rounded-md border border-warning-soft bg-warning-tint px-4 py-3">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" strokeWidth={1.75} />
+          <div className="text-[13px] leading-relaxed text-warning">
             {sinRol} {sinRol === 1 ? "cuenta no tiene rol asignado" : "cuentas no tienen rol asignado"}.
             No podrán acceder a la app hasta que se les asigne uno.
           </div>

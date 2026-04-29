@@ -206,7 +206,7 @@ export function PersonalSelector({
         {/* Badge de sugerido */}
         {suggested && !selected && (
           <div className="absolute top-3 right-3 z-10">
-            <Badge variant="outline" className="text-xs font-normal text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]">
+            <Badge variant="outline" className="text-xs font-normal text-warning border-warning-soft">
               <Lightbulb className="h-3 w-3 mr-1" strokeWidth={1.75} />
               Sugerido: {suggested}
             </Badge>
@@ -222,9 +222,7 @@ export function PersonalSelector({
 
         <CardHeader className="pb-3">
           <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-md bg-muted/60">
-              <Icon className="h-5 w-5 text-muted-foreground" />
-            </div>
+            <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
             <div className="flex-1 min-w-0">
               <h4 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                 {person.rol}
@@ -251,7 +249,7 @@ export function PersonalSelector({
           {/* Sugerencia */}
           {suggested && (
             <div className="flex items-center space-x-2 p-2 bg-muted/40 rounded-md border border-border">
-              <Target className="h-4 w-4 text-[hsl(30_55%_42%)]" strokeWidth={1.75} />
+              <Target className="h-4 w-4 text-warning" strokeWidth={1.75} />
               <span className="text-sm text-muted-foreground">
                 Sugerido: {suggested} para {invitados} invitados
               </span>
@@ -302,12 +300,11 @@ export function PersonalSelector({
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  onAdd(person);
-                  for (let i = 1; i < suggested; i++) {
-                    setTimeout(() => onAdd(person), i * 100);
-                  }
+                  // Llamadas síncronas. El parent usa setState funcional
+                  // (mutate(it => ...)) así que cada onAdd lee la cantidad más reciente.
+                  for (let i = 0; i < suggested; i++) onAdd(person);
                 }}
-                className="ml-2 text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)] hover:bg-[hsl(30_55%_42%)]/10"
+                className="ml-2 text-warning border-warning-soft hover:bg-warning/10"
               >
                 <Lightbulb className="h-3 w-3 mr-1" strokeWidth={1.75} />
                 +{suggested}
@@ -370,10 +367,8 @@ export function PersonalSelector({
       >
         <CardContent className="p-4">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center space-x-4 flex-1 min-w-0">
-              <div className="p-2 rounded-md bg-muted/60">
-                <Icon className="h-5 w-5 text-muted-foreground" />
-              </div>
+            <div className="flex items-center space-x-3 flex-1 min-w-0">
+              <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-1">
@@ -384,7 +379,7 @@ export function PersonalSelector({
                     </Badge>
                   )}
                   {suggested && !selected && (
-                    <Badge variant="outline" className="text-xs font-normal text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]">
+                    <Badge variant="outline" className="text-xs font-normal text-warning border-warning-soft">
                       Sugerido: {suggested}
                     </Badge>
                   )}
@@ -496,7 +491,7 @@ export function PersonalSelector({
                 onClick={() => setShowSuggestions(!showSuggestions)}
                 className={cn(
                   "transition-all",
-                  showSuggestions && "text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]"
+                  showSuggestions && "text-warning border-warning-soft"
                 )}
               >
                 <Lightbulb className="h-4 w-4 mr-1" strokeWidth={1.75} />
@@ -530,7 +525,7 @@ export function PersonalSelector({
         <Card className="bg-muted/30 border-border">
           <CardContent className="p-5">
             <div className="flex items-center space-x-3 mb-4">
-              <Calculator className="h-5 w-5 text-[hsl(30_55%_42%)]" strokeWidth={1.75} />
+              <Calculator className="h-5 w-5 text-warning" strokeWidth={1.75} />
               <div>
                 <h4 className="font-serif text-base text-foreground">Sugerencias para {invitados} invitados</h4>
                 <p className="text-muted-foreground text-sm">Recomendaciones basadas en mejores prácticas</p>
@@ -562,7 +557,7 @@ export function PersonalSelector({
                           "text-xs font-normal tabular-nums",
                           current >= cantidad
                             ? "text-primary border-primary/40"
-                            : "text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]"
+                            : "text-warning border-warning-soft"
                         )}>
                           {current}/{cantidad}
                         </Badge>
@@ -574,9 +569,7 @@ export function PersonalSelector({
                           variant="outline"
                           onClick={() => {
                             const needed = cantidad - current;
-                            for (let i = 0; i < needed; i++) {
-                              setTimeout(() => onAdd(person), i * 100);
-                            }
+                            for (let i = 0; i < needed; i++) onAdd(person);
                           }}
                           className="h-6 px-2 text-xs"
                         >

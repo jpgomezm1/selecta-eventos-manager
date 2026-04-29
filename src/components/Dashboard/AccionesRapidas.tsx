@@ -133,7 +133,7 @@ export function AccionesRapidas() {
     : smart.tone === "urgent"
     ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
     : smart.tone === "warning"
-    ? "bg-[hsl(30_55%_42%)] text-white hover:bg-[hsl(30_55%_38%)]"
+    ? "bg-warning text-white hover:bg-warning"
     : "bg-primary text-primary-foreground hover:bg-primary/90";
 
   const allActions: QuickAction[] = useMemo(
