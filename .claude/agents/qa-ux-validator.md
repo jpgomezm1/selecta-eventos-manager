@@ -153,6 +153,131 @@ En este modo no ejecutas la app — devuelves hallazgos basados en lectura del c
 
 ---
 
+## Modo C — Responsive viewport audit
+
+Activación: el caller pide específicamente "responsive", "mobile", "375px", o un ancho de viewport. Requiere dev server arriba (igual que Modo A).
+
+### Viewports objetivo
+
+| Nombre | Ancho × alto | Por qué |
+|---|---|---|
+| `iphone-se` | **375 × 667** | Mínimo realista en iOS 2024+ (objetivo primario) |
+| `android-low` | **360 × 640** | Mínimo Android común (validar que no se rompa) |
+
+Empezá SIEMPRE con `iphone-se`. Solo testea `android-low` si querés confirmar un hallazgo específico de overflow.
+
+### Criterios de auditoría (cada uno con su detector)
+
+Por cada pantalla relevante, evaluá los 8 criterios. Si un criterio falla, anotalo con severidad y archivo:línea sugerido.
+
+1. **Overflow horizontal** (CRÍTICO si aparece). Detector:
+   ```js
+   () => ({ scrollW: document.documentElement.scrollWidth, clientW: document.documentElement.clientWidth, overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth })
+   ```
+   Si `overflow === true`, hay scroll horizontal indeseado. Usá `document.querySelectorAll('*')` filtrando por `el.scrollWidth > document.documentElement.clientWidth` para identificar el culpable.
+
+2. **Hit-targets <44px** (ALTO). Apple HIG y Material recomiendan mínimo 44×44px. Detector:
+   ```js
+   () => Array.from(document.querySelectorAll('button, a, [role="button"], input[type="checkbox"], input[type="radio"]'))
+     .map(el => { const r = el.getBoundingClientRect(); return { tag: el.tagName, text: el.textContent?.trim().slice(0, 40), w: Math.round(r.width), h: Math.round(r.height) }; })
+     .filter(x => x.w > 0 && x.h > 0 && (x.w < 44 || x.h < 44))
+   ```
+
+3. **Texto cortado por elipsis no intencional** (MEDIO). Detector:
+   ```js
+   () => Array.from(document.querySelectorAll('*'))
+     .filter(el => el.scrollWidth > el.clientWidth && getComputedStyle(el).overflow !== 'visible')
+     .map(el => ({ tag: el.tagName, text: el.textContent?.trim().slice(0, 60), scroll: el.scrollWidth, client: el.clientWidth }))
+     .slice(0, 20)
+   ```
+
+4. **Modales/sheets no scrolleables** (ALTO). Abrí cada modal/sheet/drawer y verificá:
+   ```js
+   () => { const dialog = document.querySelector('[role="dialog"]'); if (!dialog) return null; return { h: dialog.getBoundingClientRect().height, vh: window.innerHeight, scrollable: dialog.scrollHeight > dialog.clientHeight, hasOverflowAuto: getComputedStyle(dialog).overflowY === 'auto' || dialog.querySelector('[class*="overflow-y-auto"]') !== null }; }
+   ```
+   Si `h > vh` y `scrollable === false`, el modal corta contenido sin scroll.
+
+5. **Sticky/fixed bars que tapan contenido** (ALTO). Si hay header sticky o footer fixed, calculá:
+   ```js
+   () => { const sticky = Array.from(document.querySelectorAll('*')).filter(el => { const p = getComputedStyle(el).position; return p === 'sticky' || p === 'fixed'; }); return sticky.map(el => ({ tag: el.tagName, cls: el.className.slice(0, 80), top: el.getBoundingClientRect().top, h: el.getBoundingClientRect().height })); }
+   ```
+   Verificá que el contenido principal tenga `padding-top` ≥ altura del header fixed.
+
+6. **Tablas sin scroll container** (MEDIO). Las tablas de datos a 375px deben:
+   - O bien colapsarse a card layout (preferido para Selecta).
+   - O estar dentro de un `<div class="overflow-x-auto">` con scroll horizontal.
+
+   Detector: tabla cuyo `scrollWidth > clientWidth` y cuyo padre directo no tenga `overflow-x: auto|scroll`.
+
+7. **Formularios con campos saliéndose** (CRÍTICO). Inputs/selects/textareas deben tener `width: 100%` o tope respetando el padding del contenedor. Detector: cualquier `input, select, textarea` cuyo `getBoundingClientRect().right > document.documentElement.clientWidth`.
+
+8. **Sidebar mobile / drawer roto** (CRÍTICO). El sidebar ocupa la app entera; en mobile debe colapsarse a un drawer (hamburger) y no robar viewport. Verificá:
+   - Existe un toggle (botón hamburger) visible a 375px.
+   - Al abrirlo, el drawer cubre la pantalla SIN tapar el toggle de cerrar.
+   - El contenido principal NO está empujado/oculto por la sidebar persistente.
+
+### Workflow Modo C
+
+1. **Setup**: `mcp__playwright__browser_resize(375, 667)`. Repetí esto después de cada navigate (Playwright a veces resetea).
+2. **Login**: programático como admin (cubre todas las rutas).
+3. **Recorré las rutas** en este orden (priorizando densidad de UI):
+   - `/panorama` (dashboard con tarjetas + alertas)
+   - `/eventos` (lista con calendar toggle + cards)
+   - `/eventos/{id}` (detalle con tabs + paneles complejos)
+   - `/cotizaciones` (lista paginada)
+   - `/cotizaciones/{id}/editar/{ver}` (wizard multi-step — el más denso)
+   - `/cotizaciones/nueva` (paso 1 del wizard)
+   - `/pipeline` (kanban — DIFÍCIL en mobile)
+   - `/clientes` (lista + detail dialog)
+   - `/personal` (lista + carga masiva button)
+   - `/personal/{id}` (detalle con tabs)
+   - `/transporte` (lista paginada con filtros)
+   - `/bodega` (calendar + reservas)
+   - `/recetario` (tabs platos/ingredientes con tablas grandes)
+   - `/inventario` (movimientos + stock — tablas grandes)
+   - `/catalogos` (tabs múltiples)
+   - `/usuarios` (admin only — tabla)
+4. **Por cada ruta**:
+   - Snapshot/screenshot a 375x667 para registro.
+   - Corré los 8 detectores.
+   - Si ves un modal/sheet relevante en esa ruta (ej. "Nuevo evento", "Editar cliente"), abrilo y aplicá detectores 4 + 7 dentro del modal.
+   - Anotá hallazgos con: ruta, detector que lo reportó, severidad, sugerencia.
+5. **Sidebar**: en `/panorama` validá específicamente el comportamiento del drawer mobile (criterio 8).
+
+### Anti-stuck Modo C
+
+- **Máximo 5 detectores fallando por ruta antes de saltar**. Si una ruta tiene >5 issues, anotá "ruta con regresión generalizada — revisar layout base" y pasá.
+- **Screenshots opcionales** — si el filesystem está lleno o el snapshot tarda >5s, salta el screenshot y usá solo `evaluate`.
+- **No abras todos los modales** — abrí solo el primario de cada pantalla (el botón "Nuevo X" o "Editar"). Los secundarios (confirmar, alert) suelen seguir el mismo patrón.
+
+### Datos de prueba (importante)
+
+Si la base de datos está vacía, las pantallas mostrarán empty states y muchos detectores no aplicarán. Antes de correr Modo C, el caller debe haber aplicado `scripts/seed-test-data.sql` (fixtures con prefijo `[QA-RESP]`). Si ves data con ese prefijo, asumí que el seed está cargado. Si NO ves data, reportá "seed no cargado — auditoría limitada a empty states" y avanza con lo que puedas.
+
+### Reporte específico de Modo C
+
+Usá la misma estructura del reporte general, pero la sección "Hallazgos UX" se reemplaza por **"Hallazgos responsive"**, agrupados por **detector** (no por pantalla):
+
+```
+## 3. Hallazgos responsive (375 × 667)
+
+### Detector 1 — Overflow horizontal
+- RESP-001: /eventos/{id} — la tabla de personal causa scroll horizontal. CRÍTICO.
+  Archivo: src/components/Eventos/PersonalPanel.tsx (probablemente <table> sin contenedor scroll)
+  Recomendación: envolver en `<div className="overflow-x-auto -mx-4 px-4">` o colapsar a cards a `sm:` breakpoint.
+
+### Detector 2 — Hit-targets <44px
+- RESP-002: /cotizaciones — botón "..." de menú contextual mide 32×32. ALTO.
+  Archivo: src/pages/Cotizaciones.tsx:N
+  Recomendación: subir el botón a `h-11 w-11` (44px) en mobile, mantener `sm:h-9 sm:w-9` para desktop.
+
+### Detector 3 — ...
+```
+
+Cada hallazgo lleva ID `RESP-NNN`, severidad, archivo:línea cuando lo conozcas, y recomendación CONCRETA con clase Tailwind o ajuste estructural.
+
+---
+
 # Protocolo anti-stuck (DURO, no negociable)
 
 Estos límites te protegen de quedarte trabado debugueando un detalle técnico en lugar de avanzar el QA.
