@@ -183,7 +183,7 @@ export default function IngredientesTable() {
                   {editingId === ing.id ? (
                     <>
                       <TableCell>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => toggleExpand(ing.id)}>
+                        <Button size="icon" variant="ghost" className="h-10 w-10 sm:h-7 sm:w-7" onClick={() => toggleExpand(ing.id)}>
                           {expandedId === ing.id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                         </Button>
                       </TableCell>
@@ -199,15 +199,15 @@ export default function IngredientesTable() {
                       <TableCell className="text-right text-muted-foreground">{fmt(ing.costo_por_unidad)}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={saveEdit}><Check className="h-4 w-4 text-primary" /></Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingId(null)}><X className="h-4 w-4 text-muted-foreground" /></Button>
+                          <Button size="icon" variant="ghost" className="h-10 w-10 sm:h-7 sm:w-7" onClick={saveEdit}><Check className="h-4 w-4 text-primary" /></Button>
+                          <Button size="icon" variant="ghost" className="h-10 w-10 sm:h-7 sm:w-7" onClick={() => setEditingId(null)}><X className="h-4 w-4 text-muted-foreground" /></Button>
                         </div>
                       </TableCell>
                     </>
                   ) : (
                     <>
                       <TableCell>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => toggleExpand(ing.id)}>
+                        <Button size="icon" variant="ghost" className="h-10 w-10 sm:h-7 sm:w-7" onClick={() => toggleExpand(ing.id)}>
                           {expandedId === ing.id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                         </Button>
                       </TableCell>
@@ -218,10 +218,10 @@ export default function IngredientesTable() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEdit(ing)}><Pencil className="h-4 w-4" /></Button>
+                          <Button size="icon" variant="ghost" className="h-10 w-10 sm:h-7 sm:w-7" onClick={() => startEdit(ing)}><Pencil className="h-4 w-4" /></Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                              <Button size="icon" variant="ghost" className="h-10 w-10 sm:h-7 sm:w-7 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
@@ -259,11 +259,11 @@ export default function IngredientesTable() {
         <p className="text-sm text-muted-foreground">{filtered.length} ingredientes</p>
         {totalPages > 1 && (
           <div className="flex items-center gap-2">
-            <Button size="icon" variant="outline" className="h-8 w-8" disabled={page === 0} onClick={() => setPage(page - 1)}>
+            <Button size="icon" variant="outline" className="h-10 w-10 sm:h-8 sm:w-8" disabled={page === 0} onClick={() => setPage(page - 1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm text-muted-foreground">{page + 1} / {totalPages}</span>
-            <Button size="icon" variant="outline" className="h-8 w-8" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>
+            <Button size="icon" variant="outline" className="h-10 w-10 sm:h-8 sm:w-8" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -550,7 +550,7 @@ function ProveedoresSubtable({ ingrediente }: { ingrediente: IngredienteCatalogo
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-7 w-7"
+                          className="h-10 w-10 sm:h-7 sm:w-7"
                           onClick={() => principalMut.mutate(p.id)}
                           disabled={principalMut.isPending || p.es_principal}
                           title="Marcar como principal"
@@ -573,7 +573,7 @@ function ProveedoresSubtable({ ingrediente }: { ingrediente: IngredienteCatalogo
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          className="h-10 w-10 sm:h-7 sm:w-7 text-muted-foreground hover:text-destructive"
                           onClick={() => {
                             if (window.confirm(`¿Eliminar el proveedor "${p.proveedor}" de ${ingrediente.nombre}?`)) {
                               deleteMut.mutate(p.id);

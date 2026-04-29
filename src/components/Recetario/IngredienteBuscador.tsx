@@ -142,7 +142,7 @@ export default function IngredienteBuscador({ availableIngredientes, onAdd }: Pr
                           <Button
                             size="icon"
                             variant="default"
-                            className="h-7 w-7 shrink-0"
+                            className="h-10 w-10 sm:h-7 sm:w-7 shrink-0"
                             onClick={handleAdd}
                             disabled={!cantidad || Number(cantidad) <= 0}
                           >
