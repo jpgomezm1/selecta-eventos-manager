@@ -14,6 +14,7 @@ interface CotizacionDetalle {
       platos: Array<{ nombre: string; precio_unitario: number; cantidad: number }>;
       personal: Array<{ rol: string; tarifa_estimada_por_persona: number; cantidad: number }>;
       transportes: Array<{ lugar: string; tarifa_unitaria: number; cantidad: number }>;
+      menaje?: Array<{ nombre: string; precio_alquiler: number; cantidad: number }>;
     };
   }>;
 }
@@ -229,6 +230,12 @@ export async function generateSelectaPremiumPDF(
         items: version.items.transportes,
         color: [255, 146, 43] as const, // Naranja
         getValue: (item) => ({ name: `Transporte a ${item.lugar}`, price: item.tarifa_unitaria, qty: item.cantidad })
+      },
+      {
+        title: 'AJUAR Y MENAJE',
+        items: version.items.menaje ?? [],
+        color: selectaColors.accent,
+        getValue: (item) => ({ name: item.nombre, price: item.precio_alquiler, qty: item.cantidad })
       }
     ];
     /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -312,7 +319,8 @@ export async function generateSelectaPremiumPDF(
     return (
       version.items.platos.reduce((sum: number, p) => sum + (p.precio_unitario * p.cantidad), 0) +
       version.items.personal.reduce((sum: number, p) => sum + (p.tarifa_estimada_por_persona * p.cantidad), 0) +
-      version.items.transportes.reduce((sum: number, t) => sum + (t.tarifa_unitaria * t.cantidad), 0)
+      version.items.transportes.reduce((sum: number, t) => sum + (t.tarifa_unitaria * t.cantidad), 0) +
+      (version.items.menaje ?? []).reduce((sum: number, m) => sum + (m.precio_alquiler * m.cantidad), 0)
     );
   };
 
