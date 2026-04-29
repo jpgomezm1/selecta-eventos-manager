@@ -318,78 +318,81 @@ function NuevoUsuarioDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <label className="text-[12px] font-medium text-foreground">Correo electrónico</label>
-            <Input
-              type="email"
-              placeholder="persona@selecta.co"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="off"
-              autoFocus
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[12px] font-medium text-foreground">Contraseña</label>
-            <div className="relative">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!puedeCrear) return;
+            crearMut.mutate({
+              email: email.trim().toLowerCase(),
+              password,
+              role,
+            });
+          }}
+        >
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-[12px] font-medium text-foreground">Correo electrónico</label>
               <Input
-                type={showPassword ? "text" : "password"}
-                placeholder="Mínimo 6 caracteres"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="new-password"
-                className="pr-10"
+                type="email"
+                placeholder="persona@selecta.co"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="off"
+                autoFocus
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
-                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[12px] font-medium text-foreground">Contraseña</label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Mínimo 6 caracteres"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[12px] font-medium text-foreground">Rol inicial</label>
+              <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_KEYS.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {ROLE_LABELS[r]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11.5px] text-muted-foreground">
+                Después puedes asignarle más roles desde la fila correspondiente.
+              </p>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[12px] font-medium text-foreground">Rol inicial</label>
-            <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ROLE_KEYS.map((r) => (
-                  <SelectItem key={r} value={r}>
-                    {ROLE_LABELS[r]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-[11.5px] text-muted-foreground">
-              Después puedes asignarle más roles desde la fila correspondiente.
-            </p>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={crearMut.isPending}>
-            Cancelar
-          </Button>
-          <Button
-            onClick={() =>
-              crearMut.mutate({
-                email: email.trim().toLowerCase(),
-                password,
-                role,
-              })
-            }
-            disabled={!puedeCrear}
-          >
-            {crearMut.isPending ? "Creando..." : "Crear usuario"}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={crearMut.isPending}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={!puedeCrear}>
+              {crearMut.isPending ? "Creando..." : "Crear usuario"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
