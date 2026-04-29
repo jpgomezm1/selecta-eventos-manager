@@ -205,7 +205,7 @@ export default function PersonalPage() {
           <>
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50 hover:bg-slate-50">
+                <TableRow className="bg-muted/40 hover:bg-muted/40">
                   <TableHead className="font-medium">Nombre</TableHead>
                   <TableHead className="font-medium">Cédula</TableHead>
                   <TableHead className="font-medium">Rol</TableHead>

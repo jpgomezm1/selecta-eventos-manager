@@ -450,7 +450,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
             <CardContent>
               <div className="flex gap-3 mb-6">
                 <Select onValueChange={(v) => addItem(v)} disabled={catalogForSelect.length === 0}>
-                  <SelectTrigger className="flex-1 bg-slate-50 border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
+                  <SelectTrigger className="flex-1 bg-muted/40 border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
                     <SelectValue placeholder={
                       catalogForSelect.length === 0
                         ? "No hay más elementos disponibles"
@@ -479,7 +479,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
               <div className="rounded-lg border border-slate-200 overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-50 border-slate-200">
+                    <TableRow className="bg-muted/40 border-slate-200">
                       <TableHead className="font-semibold text-slate-700">Elemento</TableHead>
                       {autoPopulated && (
                         <TableHead className="font-semibold text-slate-700 text-center">
@@ -529,7 +529,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
                         const needsNote = autoPopulated && hasDiff;
 
                         return (
-                          <TableRow key={i.menaje_id} className="hover:bg-slate-50">
+                          <TableRow key={i.menaje_id} className="hover:bg-muted/40">
                             <TableCell>
                               <div className="flex items-center space-x-2">
                                 <Package className="h-4 w-4 text-slate-400" />
@@ -659,7 +659,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="border-slate-300 text-slate-700 hover:bg-slate-50"
+              className="border-slate-300 text-slate-700 hover:bg-muted/40"
             >
               <X className="h-4 w-4 mr-2" />
               Cancelar

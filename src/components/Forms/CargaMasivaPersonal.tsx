@@ -334,7 +334,7 @@ export function CargaMasivaPersonal({ isOpen, onClose, onSuccess }: CargaMasivaP
                   htmlFor="excel-upload"
                   className="cursor-pointer flex flex-col items-center space-y-3"
                 >
-                  <div className="w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center">
+                  <div className="w-14 h-14 bg-muted rounded-xl flex items-center justify-center">
                     <Upload className="h-7 w-7 text-slate-500" />
                   </div>
                   <div>
@@ -367,7 +367,7 @@ export function CargaMasivaPersonal({ isOpen, onClose, onSuccess }: CargaMasivaP
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                    <div className="bg-muted/40 rounded-xl p-4 border border-slate-200">
                       <div className="text-3xl font-bold text-slate-800">{datosPreview.length}</div>
                       <div className="text-sm text-slate-600">Total registros</div>
                     </div>

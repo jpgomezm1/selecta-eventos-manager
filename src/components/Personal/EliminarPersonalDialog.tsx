@@ -136,7 +136,7 @@ export function EliminarPersonalDialog({ person, onDeleted }: Props) {
               )}
 
               {!loading && impact && tieneHistoria && (
-                <div className="bg-slate-50 border border-slate-200 rounded p-3 text-sm space-y-1 text-slate-700">
+                <div className="bg-muted/40 border border-slate-200 rounded p-3 text-sm space-y-1 text-slate-700">
                   <p className="font-medium text-slate-900">Historia que se borra:</p>
                   <ul className="list-disc list-inside space-y-0.5">
                     <li>

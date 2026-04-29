@@ -601,7 +601,7 @@ export default function PersonalDetalle() {
               <>
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-50 hover:bg-slate-50">
+                    <TableRow className="bg-muted/40 hover:bg-muted/40">
                       {eventosPendientes.length > 0 && (
                         <TableHead className="w-12"></TableHead>
                       )}
@@ -693,7 +693,7 @@ export default function PersonalDetalle() {
                                   </DialogHeader>
 
                                   <div className="space-y-4">
-                                    <div className="bg-slate-50 p-4 rounded-lg">
+                                    <div className="bg-muted/40 p-4 rounded-lg">
                                       <div className="grid grid-cols-2 gap-3 text-sm">
                                         <div>
                                           <p className="text-slate-500">Evento</p>
@@ -903,7 +903,7 @@ export default function PersonalDetalle() {
           <div className="space-y-4">
             {/* Lista de eventos */}
             <div className="border border-slate-200 rounded-lg max-h-40 overflow-y-auto">
-              <div className="p-3 bg-slate-50 border-b border-slate-200 sticky top-0">
+              <div className="p-3 bg-muted/40 border-b border-slate-200 sticky top-0">
                 <p className="text-sm font-medium text-slate-700">Eventos Seleccionados</p>
               </div>
               <div className="divide-y divide-slate-100">

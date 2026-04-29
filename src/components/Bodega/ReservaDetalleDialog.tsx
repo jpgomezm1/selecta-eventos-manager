@@ -213,7 +213,7 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
 
   const estadoBadge = (est: string) => {
     const map: Record<string, { cls: string; icon: React.ReactNode }> = {
-      borrador: { cls: "bg-slate-100 text-slate-700", icon: <Clock className="h-3 w-3 mr-1" /> },
+      borrador: { cls: "bg-muted text-muted-foreground", icon: <Clock className="h-3 w-3 mr-1" /> },
       confirmado: { cls: "bg-blue-50 text-blue-700", icon: <CheckCircle className="h-3 w-3 mr-1" /> },
       devuelto: { cls: "bg-emerald-50 text-emerald-700", icon: <Package className="h-3 w-3 mr-1" /> },
     };
@@ -263,7 +263,7 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
             <div className="border border-slate-200 rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50 hover:bg-slate-50">
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
                     <TableHead className="font-medium">Item</TableHead>
                     <TableHead className="font-medium">Unidad</TableHead>
                     <TableHead className="text-right font-medium">Cantidad Reservada</TableHead>

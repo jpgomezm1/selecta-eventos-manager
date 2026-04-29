@@ -328,7 +328,7 @@ export default function ClientesPage() {
           <>
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50 hover:bg-slate-50">
+                <TableRow className="bg-muted/40 hover:bg-muted/40">
                   <TableHead className="font-medium">Nombre</TableHead>
                   <TableHead className="font-medium">Tipo</TableHead>
                   <TableHead className="font-medium">Identificacion</TableHead>
@@ -640,7 +640,7 @@ export default function ClientesPage() {
                 ) : (
                   <div className="space-y-2">
                     {contactos.map((c) => (
-                      <div key={c.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
+                      <div key={c.id} className="flex items-center justify-between p-3 bg-muted/40 rounded-lg border border-slate-200">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-sm text-slate-800">{c.nombre}</span>

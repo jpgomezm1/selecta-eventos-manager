@@ -694,7 +694,7 @@ export default function Cotizador() {
   );
 
   return (
-    <div className="container mx-auto px-4 py-8 pb-28">
+    <div className="pb-28 space-y-6">
       {/* Header */}
       <div className="mb-6">
         <span className="kicker text-muted-foreground">Cotizador</span>
@@ -714,7 +714,7 @@ export default function Cotizador() {
                 Información del evento
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-8 space-y-6">
+            <CardContent className="p-4 sm:p-8 space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">
@@ -1045,7 +1045,7 @@ export default function Cotizador() {
       {/* ─── Floating bottom bar with navigation + summary ─── */}
       {currentStep < 6 && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-[var(--shadow-elegant)]">
-          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="mx-auto max-w-[1400px] px-5 py-3 lg:px-10 flex flex-wrap items-center justify-between gap-3">
             {/* Left: Back button */}
             <Button
               variant="outline"

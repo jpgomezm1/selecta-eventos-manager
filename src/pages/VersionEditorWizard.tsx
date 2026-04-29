@@ -397,7 +397,7 @@ export default function VersionEditorWizard() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 pb-28">
+    <div className="pb-28 space-y-6">
       {/* Header */}
       <PageHeader
         kicker={`Editar versión · ${data.cotizacion.nombre_cotizacion}`}
@@ -522,7 +522,7 @@ export default function VersionEditorWizard() {
       {/* Floating bottom bar (steps 1-4) */}
       {currentStep < 5 && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-[var(--shadow-elegant)]">
-          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="mx-auto max-w-[1400px] px-5 py-3 lg:px-10 flex flex-wrap items-center justify-between gap-3">
             {/* Left: Back button */}
             <Button
               variant="outline"

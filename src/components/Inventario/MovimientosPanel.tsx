@@ -146,7 +146,7 @@ export default function MovimientosPanel() {
                   <Collapsible key={mov.id} open={isExpanded} onOpenChange={(o) => setExpanded(o ? mov.id : null)} asChild>
                     <>
                       <CollapsibleTrigger asChild>
-                        <TableRow className="cursor-pointer hover:bg-slate-50">
+                        <TableRow className="cursor-pointer hover:bg-muted/40">
                           <TableCell>
                             <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                           </TableCell>
@@ -258,7 +258,7 @@ export default function MovimientosPanel() {
                       </CollapsibleTrigger>
                       <CollapsibleContent asChild>
                         <TableRow>
-                          <TableCell colSpan={7} className="bg-slate-50 p-4">
+                          <TableCell colSpan={7} className="bg-muted/40 p-4">
                             {mov.notas && <p className="text-sm text-slate-500 mb-3">{mov.notas}</p>}
                             <Table>
                               <TableHeader>

@@ -88,7 +88,7 @@ export function PersonalAsignacionPopover({ rol, asignados, onToggle, max }: Pro
               return (
                 <label
                   key={p.id}
-                  className={`flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-slate-50 ${
+                  className={`flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-muted/40 ${
                     disabled ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >

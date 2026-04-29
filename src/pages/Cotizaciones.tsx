@@ -273,7 +273,7 @@ export default function CotizacionesListPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setSearchTerm("")}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-slate-100 rounded-full"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-muted rounded-full"
                   >
                     <X className="h-4 w-4" />
                   </Button>
