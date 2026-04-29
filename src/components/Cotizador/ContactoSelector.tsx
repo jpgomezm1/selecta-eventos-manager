@@ -103,13 +103,13 @@ export function ContactoSelector({ clienteId, value, onChange }: Props) {
   };
 
   if (loading) {
-    return <div className="text-sm text-slate-500 py-2">Cargando contactos...</div>;
+    return <div className="text-sm text-muted-foreground py-2">Cargando contactos...</div>;
   }
 
   return (
     <div className="space-y-3">
-      <label className="text-sm font-medium text-slate-700 flex items-center space-x-2">
-        <User className="h-4 w-4 text-slate-400" />
+      <label className="text-sm font-medium text-foreground flex items-center space-x-2">
+        <User className="h-4 w-4 text-muted-foreground" />
         <span>Contacto de la Empresa</span>
       </label>
 
@@ -123,10 +123,10 @@ export function ContactoSelector({ clienteId, value, onChange }: Props) {
               <div className="flex items-center gap-2">
                 <span className="font-medium">{c.nombre}</span>
                 {c.cargo && (
-                  <span className="text-xs text-slate-500">({c.cargo})</span>
+                  <span className="text-xs text-muted-foreground">({c.cargo})</span>
                 )}
                 {c.es_principal && (
-                  <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Principal</span>
+                  <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded">Principal</span>
                 )}
               </div>
             </SelectItem>
@@ -142,27 +142,27 @@ export function ContactoSelector({ clienteId, value, onChange }: Props) {
 
       {/* Mini card with selected contacto info */}
       {selectedContacto && (
-        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 text-sm space-y-1">
+        <div className="p-3 bg-card rounded-md border border-border text-sm space-y-1">
           <div className="flex items-center gap-2">
-            <User className="h-3.5 w-3.5 text-blue-600" />
-            <span className="font-medium text-blue-900">{selectedContacto.nombre}</span>
+            <User className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
+            <span className="font-medium text-foreground">{selectedContacto.nombre}</span>
           </div>
           {selectedContacto.cargo && (
             <div className="flex items-center gap-2">
-              <Briefcase className="h-3.5 w-3.5 text-blue-500" />
-              <span className="text-blue-700">{selectedContacto.cargo}</span>
+              <Briefcase className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+              <span className="text-muted-foreground">{selectedContacto.cargo}</span>
             </div>
           )}
           {selectedContacto.telefono && (
             <div className="flex items-center gap-2">
-              <Phone className="h-3.5 w-3.5 text-blue-500" />
-              <span className="text-blue-700">{selectedContacto.telefono}</span>
+              <Phone className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+              <span className="text-muted-foreground">{selectedContacto.telefono}</span>
             </div>
           )}
           {selectedContacto.correo && (
             <div className="flex items-center gap-2">
-              <Mail className="h-3.5 w-3.5 text-blue-500" />
-              <span className="text-blue-700">{selectedContacto.correo}</span>
+              <Mail className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+              <span className="text-muted-foreground">{selectedContacto.correo}</span>
             </div>
           )}
         </div>

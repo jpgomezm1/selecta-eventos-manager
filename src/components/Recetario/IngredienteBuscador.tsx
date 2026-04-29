@@ -58,11 +58,11 @@ export default function IngredienteBuscador({ availableIngredientes, onAdd }: Pr
 
   return (
     <div className="space-y-2">
-      <label className="text-xs font-medium text-slate-500">Agregar ingrediente</label>
+      <label className="text-xs font-medium text-muted-foreground">Agregar ingrediente</label>
 
       {/* Search input */}
       <div className="relative">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           ref={searchRef}
           value={query}
@@ -77,7 +77,7 @@ export default function IngredienteBuscador({ availableIngredientes, onAdd }: Pr
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>
@@ -86,9 +86,9 @@ export default function IngredienteBuscador({ availableIngredientes, onAdd }: Pr
 
       {/* Results list */}
       {query.trim() && (
-        <div className="border rounded-md bg-white">
+        <div className="border rounded-md bg-card">
           {filtered.length === 0 ? (
-            <div className="p-3 text-sm text-slate-400 text-center">
+            <div className="p-3 text-sm text-muted-foreground text-center">
               {availableIngredientes.length === 0
                 ? "Todos los ingredientes ya fueron agregados"
                 : "No se encontraron ingredientes"}
@@ -133,9 +133,9 @@ export default function IngredienteBuscador({ availableIngredientes, onAdd }: Pr
                             className="h-7 w-24 text-sm"
                             placeholder="Cantidad"
                           />
-                          <span className="text-xs text-slate-500">{ing.unidad}</span>
+                          <span className="text-xs text-muted-foreground">{ing.unidad}</span>
                           {Number(cantidad || 0) > 0 && (
-                            <span className="text-xs font-medium text-slate-700 ml-auto">
+                            <span className="text-xs font-medium text-foreground ml-auto">
                               = {fmt(subtotal)}
                             </span>
                           )}
@@ -155,7 +155,7 @@ export default function IngredienteBuscador({ availableIngredientes, onAdd }: Pr
                 })}
               </div>
               {filtered.length > MAX_VISIBLE && (
-                <div className="px-3 py-1.5 text-xs text-slate-400 border-t text-center">
+                <div className="px-3 py-1.5 text-xs text-muted-foreground border-t text-center">
                   Mostrando {MAX_VISIBLE} de {filtered.length}
                 </div>
               )}

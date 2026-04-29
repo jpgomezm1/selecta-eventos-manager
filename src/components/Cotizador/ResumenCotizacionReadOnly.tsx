@@ -12,8 +12,6 @@ import {
   ChefHat,
   Truck,
   Package,
-  AlertCircle,
-  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CotizacionItemsState } from "@/types/cotizador";
@@ -260,28 +258,6 @@ export function ResumenCotizacionReadOnly({
                 </div>
               </div>
 
-              {total > 0 && (
-                <div className="space-y-2">
-                  {total < 50000 && (
-                    <div className="flex items-center space-x-2 p-3 bg-muted/40 rounded-md border border-border">
-                      <AlertCircle className="h-4 w-4 text-[hsl(30_55%_42%)]" strokeWidth={1.75} />
-                      <span className="text-sm text-muted-foreground">Cotización básica</span>
-                    </div>
-                  )}
-                  {total >= 50000 && total < 150000 && (
-                    <div className="flex items-center space-x-2 p-3 bg-primary/5 rounded-md border border-primary/20">
-                      <CheckCircle2 className="h-4 w-4 text-primary" strokeWidth={1.75} />
-                      <span className="text-sm text-foreground">Cotización completa</span>
-                    </div>
-                  )}
-                  {total >= 150000 && (
-                    <div className="flex items-center space-x-2 p-3 bg-primary/10 rounded-md border border-primary/30">
-                      <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.75} />
-                      <span className="text-sm text-foreground">Cotización premium</span>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </>
         )}

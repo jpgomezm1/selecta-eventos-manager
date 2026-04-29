@@ -13,6 +13,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -109,21 +119,21 @@ export default function CotizacionEditorPage() {
     setRenamingValue("");
   };
 
-  const confirmarEliminarVersion = (versionId: string, versionName: string) => {
-    if (
-      window.confirm(
-        `¿Estás seguro de que quieres eliminar la "${versionName}"? Esta acción no se puede deshacer.`
-      )
-    ) {
-      eliminarVersion(versionId);
-    }
-  };
+  const [versionToDelete, setVersionToDelete] = useState<{ id: string; nombre: string } | null>(null);
 
   const { mutate: agregarVersion, isPending: creandoVersion } = useMutation({
     mutationFn: async () => {
       const nextIndex = (data?.versiones?.length ?? 0) + 1;
+      // Letter sequence: 1→A, 26→Z, 27→AA, 52→AZ, 53→BA, ...
+      let n = nextIndex;
+      let letra = "";
+      while (n > 0) {
+        n--;
+        letra = String.fromCharCode(65 + (n % 26)) + letra;
+        n = Math.floor(n / 26);
+      }
       return addVersionToCotizacion(id!, {
-        nombre_opcion: `Opción ${String.fromCharCode(64 + nextIndex)}`,
+        nombre_opcion: `Opción ${letra}`,
         version_index: nextIndex,
         total: 0,
         estado: "Pendiente por Aprobación",
@@ -243,7 +253,7 @@ export default function CotizacionEditorPage() {
   const getStatusConfig = (estado: string) => {
     const configs: Record<string, { cls: string; label: string }> = {
       "Pendiente por Aprobación": {
-        cls: "text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]",
+        cls: "text-warning border-warning-soft",
         label: "Pendiente",
       },
       "Cotización Aprobada": {
@@ -475,7 +485,7 @@ export default function CotizacionEditorPage() {
                             {data?.versiones && data.versiones.length > 1 && (
                               <Button
                                 onClick={() =>
-                                  confirmarEliminarVersion(v.id, v.nombre_opcion)
+                                  setVersionToDelete({ id: v.id, nombre: v.nombre_opcion })
                                 }
                                 variant="outline"
                                 size="sm"
@@ -734,6 +744,32 @@ export default function CotizacionEditorPage() {
         cotizacionName={cotizacion.nombre_cotizacion}
         versiones={versiones.map(v => ({ id: v.id, nombre_opcion: v.nombre_opcion }))}
       />
+
+      {/* Confirm delete version */}
+      <AlertDialog open={!!versionToDelete} onOpenChange={(o) => !o && setVersionToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar versión</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminará la versión "{versionToDelete?.nombre}" y todos sus items. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (versionToDelete) {
+                  eliminarVersion(versionToDelete.id);
+                  setVersionToDelete(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

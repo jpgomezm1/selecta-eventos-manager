@@ -512,7 +512,7 @@ function EventoRow({
       ? "border-primary/30 bg-primary/10 text-primary"
       : estado === "sin-personal"
       ? "border-destructive/30 bg-destructive/10 text-destructive"
-      : "border-[hsl(30_55%_42%/0.3)] bg-[hsl(30_55%_42%/0.1)] text-[hsl(30_55%_30%)]";
+      : "border-warning/30 bg-warning/10 text-warning";
 
   return (
     <li className="group flex items-start gap-5 px-4 py-4 transition-colors hover:bg-muted/40">

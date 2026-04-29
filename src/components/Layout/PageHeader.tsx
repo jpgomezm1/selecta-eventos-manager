@@ -17,7 +17,7 @@ export function KPI({ kicker, value, suffix, tone = "neutral", hint }: KPIProps)
     tone === "primary"
       ? "text-primary"
       : tone === "warning"
-      ? "text-[hsl(30_55%_42%)]"
+      ? "text-warning"
       : tone === "destructive"
       ? "text-destructive"
       : "text-foreground";

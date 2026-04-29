@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ingredientesConStock, inventarioMovimientoCreate, inventarioMovimientoConfirmar } from "@/integrations/supabase/apiInventario";
+import { ingredientesConStock, inventarioMovimientoCreate } from "@/integrations/supabase/apiInventario";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -64,11 +64,11 @@ export default function NuevoMovimientoDialog({ open, onOpenChange }: Props) {
 
   const createMut = useMutation({
     mutationFn: async (confirmar: boolean) => {
-      const mov = await inventarioMovimientoCreate(
+      return await inventarioMovimientoCreate(
         {
           tipo,
           fecha: new Date().toISOString().slice(0, 10),
-          estado: confirmar ? "borrador" : "borrador",
+          estado: "borrador",
           evento_id: tipo === "uso" ? eventoId || null : null,
           proveedor: tipo === "compra" ? proveedor || null : null,
           notas: notas || null,
@@ -77,14 +77,9 @@ export default function NuevoMovimientoDialog({ open, onOpenChange }: Props) {
           ingrediente_id: i.ingrediente_id,
           cantidad: i.cantidad,
           costo_unitario: tipo === "compra" ? i.costo_unitario : 0,
-        }))
+        })),
+        confirmar
       );
-
-      if (confirmar) {
-        await inventarioMovimientoConfirmar(mov.id);
-      }
-
-      return mov;
     },
     onSuccess: (_, confirmar) => {
       qc.invalidateQueries({ queryKey: ["inventario-movimientos"] });
@@ -265,17 +260,30 @@ export default function NuevoMovimientoDialog({ open, onOpenChange }: Props) {
           )}
         </div>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
+          {items.some((i) => !(i.cantidad > 0)) && (
+            <p className="text-xs text-destructive sm:mr-auto">
+              Cada ingrediente requiere una cantidad mayor a cero.
+            </p>
+          )}
           <Button variant="outline" onClick={resetAndClose}>Cancelar</Button>
           <Button
             variant="secondary"
-            disabled={items.length === 0 || createMut.isPending}
+            disabled={
+              items.length === 0 ||
+              createMut.isPending ||
+              items.some((i) => !(i.cantidad > 0))
+            }
             onClick={() => createMut.mutate(false)}
           >
             Guardar borrador
           </Button>
           <Button
-            disabled={items.length === 0 || createMut.isPending}
+            disabled={
+              items.length === 0 ||
+              createMut.isPending ||
+              items.some((i) => !(i.cantidad > 0))
+            }
             onClick={() => createMut.mutate(true)}
           >
             Confirmar

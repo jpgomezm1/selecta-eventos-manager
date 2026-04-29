@@ -367,7 +367,7 @@ function StatusPill({ tone, children }: { tone: PillTone; children: React.ReactN
   const classes: Record<PillTone, string> = {
     neutral: "border-border bg-muted/60 text-muted-foreground",
     primary: "border-primary/30 bg-primary/10 text-primary",
-    warning: "border-[hsl(30_55%_42%/0.3)] bg-[hsl(30_55%_42%/0.1)] text-[hsl(30_55%_30%)]",
+    warning: "border-warning/30 bg-warning/10 text-warning",
     destructive: "border-destructive/30 bg-destructive/10 text-destructive",
   };
   return (

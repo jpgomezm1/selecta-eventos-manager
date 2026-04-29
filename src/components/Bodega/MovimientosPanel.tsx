@@ -24,7 +24,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import moment from "moment";
+import { formatLocalDate } from "@/lib/dateLocal";
 import { KPI } from "@/components/Layout/PageHeader";
 
 type DiscrepancyInfo = {
@@ -60,9 +60,10 @@ export default function MovimientosPanel() {
       }
     }
 
-    // For each ingreso, compute discrepancy against its matching salida
+    // For each ingreso, compute discrepancy against its matching salida.
+    // Skip cancelados — su discrepancia no representa un evento real.
     for (const m of data) {
-      if (m.tipo !== "ingreso" || !m.evento_id) continue;
+      if (m.tipo !== "ingreso" || !m.evento_id || m.estado === "cancelado") continue;
 
       const key = `${m.evento_id}|${m.reserva_id ?? ""}`;
       const salidaItems = salidaMap.get(key);
@@ -105,11 +106,11 @@ export default function MovimientosPanel() {
     return matchesTipo && matchesEstado;
   });
 
-  // Estadísticas
+  // Estadísticas. Excluyen cancelados: representan movimientos reales (no descartados).
   const stats = {
-    total: data?.length ?? 0,
-    ingresos: data?.filter(m => m.tipo === 'ingreso').length ?? 0,
-    salidas: data?.filter(m => m.tipo === 'salida').length ?? 0,
+    total: data?.filter(m => m.estado !== 'cancelado').length ?? 0,
+    ingresos: data?.filter(m => m.tipo === 'ingreso' && m.estado !== 'cancelado').length ?? 0,
+    salidas: data?.filter(m => m.tipo === 'salida' && m.estado !== 'cancelado').length ?? 0,
     pendientes: data?.filter(m => m.estado === 'borrador').length ?? 0
   };
 
@@ -331,7 +332,7 @@ export default function MovimientosPanel() {
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-muted-foreground/60" strokeWidth={1.5} />
                           <span className="font-mono text-sm tabular-nums text-foreground/85">
-                            {moment(m.fecha).format("DD/MM/YYYY")}
+                            {formatLocalDate(m.fecha)}
                           </span>
                         </div>
                       </TableCell>
@@ -358,7 +359,7 @@ export default function MovimientosPanel() {
                             "inline-flex w-fit items-center gap-1 font-normal",
                             estadoBadge.color === "green" && "border-primary/25 bg-primary/10 text-primary",
                             estadoBadge.color === "amber" &&
-                              "border-[hsl(30_55%_42%)]/30 bg-[hsl(30_55%_42%)]/10 text-[hsl(30_55%_42%)]",
+                              "border-warning/30 bg-warning/10 text-warning",
                             estadoBadge.color === "red" &&
                               "border-destructive/30 bg-destructive/10 text-destructive"
                           )}
@@ -417,7 +418,7 @@ export default function MovimientosPanel() {
                             {disc.totalMerma > 0 && (
                               <Badge
                                 variant="outline"
-                                className="inline-flex w-fit items-center gap-1 border-[hsl(30_55%_42%)]/30 bg-[hsl(30_55%_42%)]/10 text-xs font-normal text-[hsl(30_55%_42%)]"
+                                className="inline-flex w-fit items-center gap-1 border-warning/30 bg-warning/10 text-xs font-normal text-warning"
                               >
                                 <AlertTriangle className="h-3 w-3" />
                                 <span>Merma: {disc.totalMerma}</span>
@@ -492,7 +493,7 @@ export default function MovimientosPanel() {
                             variant="ghost"
                             onClick={() => {
                               const etiqueta = m.tipo === "ingreso" ? "ingreso" : "salida";
-                              const fecha = moment(m.fecha).format("DD/MM/YYYY");
+                              const fecha = formatLocalDate(m.fecha);
                               if (window.confirm(`¿Eliminar este movimiento de ${etiqueta} del ${fecha}?`)) {
                                 deleteMut.mutate(m.id);
                               }

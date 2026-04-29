@@ -114,8 +114,12 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
           queryClient.invalidateQueries({ queryKey: ["plato-detail", created.id] });
           queryClient.invalidateQueries({ queryKey: ["plato-ingredientes-all"] });
           toast({ title: "Plato creado con ingredientes" });
-        } catch {
-          toast({ title: "Plato creado", description: "Pero hubo un error guardando los ingredientes. Guárdalos manualmente." });
+        } catch (err) {
+          toast({
+            title: "Plato creado",
+            description: `No se pudieron guardar los ingredientes: ${err instanceof Error ? err.message : "Error desconocido"}. Guárdalos manualmente.`,
+            variant: "destructive",
+          });
         }
       } else {
         toast({ title: "Plato creado" });
@@ -268,7 +272,10 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
         </SheetHeader>
 
         {effectiveId && isLoading ? (
-          <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
+          <div className="flex flex-col items-center justify-center gap-3 py-12">
+            <div className="h-8 w-8 animate-pulse rounded-full bg-muted/70" />
+            <p className="text-sm italic text-muted-foreground">Cargando plato…</p>
+          </div>
         ) : (
           <div className="space-y-8 mt-6">
             {/* AI Recipe Generator — only in creation mode */}
@@ -304,28 +311,28 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
 
             {/* Info del plato */}
             <section className="space-y-4">
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Información del plato</h3>
+              <h3 className="kicker">Información del plato</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2 space-y-1">
-                  <label className="text-xs font-medium text-slate-500">Nombre</label>
+                  <label className="text-xs font-medium text-muted-foreground">Nombre</label>
                   <Input value={form.nombre ?? ""} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-500">Precio de venta</label>
-                  <div className="h-10 px-3 flex items-center rounded-md border bg-slate-100 text-sm font-medium">
+                  <label className="text-xs font-medium text-muted-foreground">Precio de venta</label>
+                  <div className="h-10 px-3 flex items-center rounded-md border bg-muted/40 text-sm font-medium">
                     {fmt(precioCalculado)}
                   </div>
-                  <p className="text-[10px] text-slate-400">Calculado desde costo + margen</p>
+                  <p className="text-[10px] text-muted-foreground">Calculado desde costo + margen</p>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-500">Categoría</label>
+                  <label className="text-xs font-medium text-muted-foreground">Categoría</label>
                   <Select value={form.categoria ?? ""} onValueChange={(v) => setForm({ ...form, categoria: v })}>
                     <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent>{CATEGORIAS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-500">Tipo menú</label>
+                  <label className="text-xs font-medium text-muted-foreground">Tipo menú</label>
                   <Select value={form.tipo_menu ?? "Menu General"} onValueChange={(v) => setForm({ ...form, tipo_menu: v as PlatoCatalogo["tipo_menu"] })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -335,23 +342,23 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-500">Porciones receta</label>
+                  <label className="text-xs font-medium text-muted-foreground">Porciones receta</label>
                   <Input type="number" value={form.porciones_receta ?? ""} onChange={(e) => setForm({ ...form, porciones_receta: Number(e.target.value) || null })} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-500">Tiempo preparación</label>
+                  <label className="text-xs font-medium text-muted-foreground">Tiempo preparación</label>
                   <Input value={form.tiempo_preparacion ?? ""} onChange={(e) => setForm({ ...form, tiempo_preparacion: e.target.value })} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-500">Temperatura cocción</label>
+                  <label className="text-xs font-medium text-muted-foreground">Temperatura cocción</label>
                   <Input value={form.temperatura_coccion ?? ""} onChange={(e) => setForm({ ...form, temperatura_coccion: e.target.value })} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-500">Rendimiento</label>
+                  <label className="text-xs font-medium text-muted-foreground">Rendimiento</label>
                   <Input value={form.rendimiento ?? ""} onChange={(e) => setForm({ ...form, rendimiento: e.target.value })} />
                 </div>
                 <div className="col-span-2 space-y-1">
-                  <label className="text-xs font-medium text-slate-500">Notas</label>
+                  <label className="text-xs font-medium text-muted-foreground">Notas</label>
                   <Textarea value={form.notas ?? ""} onChange={(e) => setForm({ ...form, notas: e.target.value })} rows={2} />
                 </div>
               </div>
@@ -359,7 +366,7 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
 
             {/* Ingredientes */}
             <section className="space-y-4">
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Ingredientes</h3>
+              <h3 className="kicker">Ingredientes</h3>
               <div className="rounded-md border overflow-auto">
                 <Table>
                   <TableHeader>
@@ -384,7 +391,7 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
                             className="h-7 w-20"
                           />
                         </TableCell>
-                        <TableCell className="text-slate-500">{pi.ingrediente?.unidad ?? ""}</TableCell>
+                        <TableCell className="text-muted-foreground">{pi.ingrediente?.unidad ?? ""}</TableCell>
                         <TableCell className="text-right">{fmt(pi.ingrediente?.costo_por_unidad ?? 0)}</TableCell>
                         <TableCell className="text-right font-medium">{fmt(pi.cantidad * (pi.ingrediente?.costo_por_unidad ?? 0))}</TableCell>
                         <TableCell>
@@ -395,7 +402,7 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
                       </TableRow>
                     ))}
                     {ingredientes.length === 0 && (
-                      <TableRow><TableCell colSpan={6} className="text-center text-slate-400 py-4">Sin ingredientes</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-4">Sin ingredientes</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -408,24 +415,24 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
               />
 
               {ingredientes.length > 0 && (
-                <p className="text-xs text-slate-400">Los ingredientes se guardarán al {effectiveId ? "guardar" : "crear"} el plato.</p>
+                <p className="text-xs text-muted-foreground">Los ingredientes se guardarán al {effectiveId ? "guardar" : "crear"} el plato.</p>
               )}
             </section>
 
             {/* Resumen costos + margen */}
-            <section className="p-4 bg-slate-50 rounded-lg border space-y-3">
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Costos y precio de venta</h3>
+            <section className="p-4 bg-muted/40 rounded-lg border space-y-3">
+              <h3 className="kicker">Costos y precio de venta</h3>
               <div className="flex justify-between">
-                <span className="text-sm text-slate-600">Costo total receta</span>
+                <span className="text-sm text-muted-foreground">Costo total receta</span>
                 <span className="font-semibold">{fmt(costoTotal)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-slate-600">Costo por porción</span>
+                <span className="text-sm text-muted-foreground">Costo por porción</span>
                 <span className="font-semibold">{form.porciones_receta ? fmt(costoPorcion) : "—"}</span>
               </div>
               <div className="border-t pt-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-600">Margen de ganancia</span>
+                  <span className="text-sm text-muted-foreground">Margen de ganancia</span>
                   <div className="flex items-center gap-1">
                     <Input
                       type="number"
@@ -434,7 +441,7 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
                       placeholder="Ej: 40"
                       className="h-8 w-20 text-right"
                     />
-                    <span className="text-sm text-slate-500">%</span>
+                    <span className="text-sm text-muted-foreground">%</span>
                   </div>
                 </div>
               </div>
@@ -444,11 +451,11 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
               </div>
               {costoPorcion > 0 && precioCalculado > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-sm text-slate-600">Ganancia por porción</span>
+                  <span className="text-sm text-muted-foreground">Ganancia por porción</span>
                   <span className="font-semibold">{fmt(precioCalculado - costoPorcion)}</span>
                 </div>
               )}
-              <p className="text-[10px] text-slate-400">El precio de venta se guarda automáticamente al guardar el plato y se usa en las cotizaciones.</p>
+              <p className="text-[10px] text-muted-foreground">El precio de venta se guarda automáticamente al guardar el plato y se usa en las cotizaciones.</p>
             </section>
 
             {/* Botón principal de guardar/crear */}

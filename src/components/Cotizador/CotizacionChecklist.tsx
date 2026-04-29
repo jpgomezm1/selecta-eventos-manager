@@ -121,7 +121,7 @@ export function CotizacionChecklist({ cotizacionVersionId }: Props) {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+        <CardTitle className="kicker flex items-center gap-1.5">
           <ClipboardList className="h-3.5 w-3.5" />
           Checklist
         </CardTitle>
@@ -130,13 +130,13 @@ export function CotizacionChecklist({ cotizacionVersionId }: Props) {
         {/* Progress bar */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-600 font-medium">Progreso</span>
-            <span className="font-bold text-slate-800">
+            <span className="text-muted-foreground font-medium">Progreso</span>
+            <span className="font-bold text-foreground">
               {checklist.completedCount}/{checklist.totalCount}
             </span>
           </div>
           <Progress value={checklist.percent} className="h-2" />
-          <p className="text-xs text-slate-500">{checklist.percent}% completado</p>
+          <p className="text-xs text-muted-foreground">{checklist.percent}% completado</p>
         </div>
 
         {/* Checklist items */}
@@ -146,13 +146,13 @@ export function CotizacionChecklist({ cotizacionVersionId }: Props) {
               key={item.key}
               className={cn(
                 "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm",
-                item.completed ? "text-slate-500" : "text-slate-700"
+                item.completed ? "text-muted-foreground" : "text-foreground"
               )}
             >
               {item.completed ? (
                 <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
               ) : (
-                <Circle className="h-4 w-4 text-slate-300 flex-shrink-0" />
+                <Circle className="h-4 w-4 text-muted-foreground/40 flex-shrink-0" />
               )}
               <span className={cn(item.completed && "line-through")}>
                 {item.label}

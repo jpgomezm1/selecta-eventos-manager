@@ -91,7 +91,7 @@ export default function PersonalCostosTab() {
       qc.invalidateQueries({ queryKey: ["catalogos", "personal-costos"] });
       setNewItem({ rol: ROLES[0], modalidad_cobro: MODALIDADES[0].value, tarifa: 0 });
       setIsCreateOpen(false);
-      toast({ title: "Costo creado", description: "El costo de personal se agregó correctamente." });
+      toast({ title: "Precio creado", description: "El precio de personal al cliente se agregó correctamente." });
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -112,7 +112,7 @@ export default function PersonalCostosTab() {
     mutationFn: (id: string) => personalCostosDelete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["catalogos", "personal-costos"] });
-      toast({ title: "Eliminado", description: "El costo se eliminó correctamente." });
+      toast({ title: "Eliminado", description: "El precio se eliminó correctamente." });
     },
     onError: (e) => {
       const msg = e.message?.includes("violates foreign key")
@@ -182,14 +182,14 @@ export default function PersonalCostosTab() {
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
-                Nuevo costo
+                Nuevo precio
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle className="font-serif text-2xl">Nuevo costo de personal</DialogTitle>
+                <DialogTitle className="font-serif text-2xl">Nuevo precio de personal al cliente</DialogTitle>
                 <DialogDescription>
-                  Define la tarifa para un rol y modalidad específica — usada por el cotizador.
+                  Define el precio que se cobra al cliente por un rol y modalidad — usado por el cotizador.
                 </DialogDescription>
               </DialogHeader>
 
@@ -240,9 +240,9 @@ export default function PersonalCostosTab() {
                 </Button>
                 <Button
                   onClick={() => createMut.mutate()}
-                  disabled={createMut.isPending || !newItem.tarifa}
+                  disabled={createMut.isPending || newItem.tarifa == null || Number.isNaN(newItem.tarifa)}
                 >
-                  {createMut.isPending ? "Agregando…" : "Agregar costo"}
+                  {createMut.isPending ? "Agregando…" : "Agregar precio"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -268,7 +268,7 @@ export default function PersonalCostosTab() {
                   <TableCell colSpan={4} className="py-12 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
-                      <span className="text-sm text-muted-foreground">Cargando costos…</span>
+                      <span className="text-sm text-muted-foreground">Cargando precios…</span>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -278,11 +278,11 @@ export default function PersonalCostosTab() {
                     <div className="flex flex-col items-center gap-3">
                       <Users className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.25} />
                       <div>
-                        <h3 className="font-serif text-lg text-foreground">No hay costos</h3>
+                        <h3 className="font-serif text-lg text-foreground">No hay precios</h3>
                         <p className="mt-1 text-sm text-muted-foreground">
                           {searchTerm || filterModalidad
                             ? "No se encontraron resultados con los filtros aplicados."
-                            : "Comienza agregando costos de personal."}
+                            : "Comienza agregando precios de personal al cliente."}
                         </p>
                       </div>
                     </div>
@@ -398,7 +398,7 @@ export default function PersonalCostosTab() {
                                 onClick={() => {
                                   if (
                                     window.confirm(
-                                      `¿Eliminar el costo de "${item.rol}" (${modalidadLabel(item.modalidad_cobro)})?`
+                                      `¿Eliminar el precio de "${item.rol}" (${modalidadLabel(item.modalidad_cobro)})?`
                                     )
                                   ) {
                                     delMut.mutate(item.id);

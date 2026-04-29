@@ -370,7 +370,7 @@ export default function InventarioTable() {
                             className={cn(
                               "font-mono text-sm font-semibold tabular-nums",
                               status.color === "red" && "text-destructive",
-                              status.color === "amber" && "text-[hsl(30_55%_42%)]",
+                              status.color === "amber" && "text-warning",
                               status.color === "green" && "text-foreground"
                             )}
                           >
@@ -404,7 +404,7 @@ export default function InventarioTable() {
                             "mx-auto inline-flex w-fit items-center gap-1 font-normal",
                             status.color === "red" && "border-destructive/30 bg-destructive/10 text-destructive",
                             status.color === "amber" &&
-                              "border-[hsl(30_55%_42%)]/30 bg-[hsl(30_55%_42%)]/10 text-[hsl(30_55%_42%)]",
+                              "border-warning/30 bg-warning/10 text-warning",
                             status.color === "green" && "border-primary/25 bg-primary/10 text-primary"
                           )}
                         >

@@ -276,9 +276,7 @@ export function TransporteSelector({
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 rounded-md bg-muted/60">
-                    <Icon className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} />
-                  </div>
+                  <Icon className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
                   <h4 className="font-semibold text-foreground line-clamp-1 flex-1">
                     {transporte.lugar}
                   </h4>
@@ -386,7 +384,7 @@ export function TransporteSelector({
                     "text-xs font-normal",
                     totalSelected >= 2
                       ? "text-primary border-primary/40"
-                      : "text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]"
+                      : "text-warning border-warning-soft"
                   )}
                 >
                   {totalSelected >= 2 ? "Completo" : "Básico"}

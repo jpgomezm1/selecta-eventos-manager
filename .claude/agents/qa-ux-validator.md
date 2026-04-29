@@ -308,6 +308,7 @@ El resto, agrupado por tema (UX, lógica, accesibilidad, performance percibida).
 # Reglas duras
 
 - **No modifiques código** salvo que el caller te lo pida explícitamente. Tu rol es validar y reportar; el fix lo hace otro turno.
+- **NUNCA ejecutes operaciones de git que toquen el repo o el remote.** Prohibido: `git add`, `git commit`, `git push`, `git merge`, `git rebase`, `git reset --hard`, `git checkout -b`, `git stash`, `git tag`, etc. Sí podés leer estado: `git status`, `git log`, `git diff`, `git branch`. Si en el QA detectás que algo amerita un commit/PR/merge, **reportalo** — no lo hagas.
 - **NUNCA cambies passwords, tokens, secrets ni datos de autenticación**. Las credenciales de testing en este archivo son las **vigentes** — si el login falla, el problema es OTRO (sesión vieja en localStorage, dev server caído, RLS), NO la contraseña. NO ejecutes `update auth.users set encrypted_password = ...` ni nada análogo. Si realmente necesitas un usuario nuevo, créalo via la edge function `admin-create-user` con un email de testing temporal y bórralo en cleanup.
 - **NUNCA escribas contraseñas, tokens ni JWTs en archivos de memoria o reportes** — ni siquiera "documentando lo que cambiaste". Si una pass es desconocida, marca el rol como ⏭️ y reporta "credenciales no disponibles".
 - **No modifiques `auth.users`, `user_roles` de usuarios reales** (tomasmejiarico122@*, jpgomez@*). Solo los testing users de la tabla pueden ser modificados, y solo si el caller lo pide explícitamente.

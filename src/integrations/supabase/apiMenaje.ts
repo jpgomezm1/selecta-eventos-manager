@@ -375,6 +375,43 @@ export async function despacharMenajeDesdeReserva(
   if (error) throw error;
 }
 
+/** True si la reserva tiene un movimiento `salida` registrado (ya fue despachada). */
+export async function reservaTieneSalida(reservaId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("menaje_movimientos")
+    .select("id")
+    .eq("reserva_id", reservaId)
+    .eq("tipo", "salida")
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return !!data;
+}
+
+/** Eventos con reserva de menaje activa (confirmado o borrador) — usado por el selector
+ *  de salida en MovimientoDialog. */
+export type EventoConReservaMenaje = {
+  evento_id: string;
+  nombre_evento: string;
+  fecha_evento: string;
+  reserva_id: string;
+};
+
+export async function eventosConReservaMenajeActiva(): Promise<EventoConReservaMenaje[]> {
+  const { data, error } = await supabase
+    .from("menaje_reservas")
+    .select("id, evento_id, estado, eventos!inner(id, nombre_evento, fecha_evento)")
+    .in("estado", ["confirmado", "borrador"])
+    .not("evento_id", "is", null);
+  if (error) throw error;
+  return (data ?? []).map((r) => ({
+    evento_id: r.evento_id ?? "",
+    nombre_evento: r.eventos?.nombre_evento ?? "",
+    fecha_evento: r.eventos?.fecha_evento ?? "",
+    reserva_id: r.id,
+  }));
+}
+
 /** Get dispatched items for a reservation (from the salida movement) */
 export async function getSalidaItemsForReserva(
   reservaId: string

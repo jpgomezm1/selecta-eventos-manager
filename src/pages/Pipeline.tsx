@@ -72,9 +72,7 @@ export default function PipelinePage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center space-y-4 text-center">
-          <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center">
-            <AlertTriangle className="h-6 w-6 text-red-500" />
-          </div>
+          <AlertTriangle className="h-9 w-9 text-destructive" strokeWidth={1.5} />
           <h3 className="text-lg font-semibold text-slate-800">Error al cargar pipeline</h3>
           <p className="text-slate-500">No se pudieron obtener las cotizaciones</p>
           <Button onClick={() => window.location.reload()} variant="outline">

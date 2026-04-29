@@ -1,9 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Truck, Search, Eye } from "lucide-react";
+import { Truck, Search, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -40,15 +40,22 @@ function formatTimeRange(inicio: string | null, fin: string | null) {
   return fmt(inicio) || fmt(fin);
 }
 
+const ITEMS_PER_PAGE = 15;
+
 export default function TransportePage() {
   const nav = useNavigate();
   const [search, setSearch] = useState("");
   const [estadoFilter, setEstadoFilter] = useState("todos");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { data: ordenes = [], isLoading } = useQuery({
     queryKey: ["transporte-ordenes"],
     queryFn: listAllTransporteOrdenes,
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, estadoFilter]);
 
   const stats = useMemo(() => {
     const total = ordenes.length;
@@ -69,6 +76,10 @@ export default function TransportePage() {
       return matchSearch && matchEstado;
     });
   }, [ordenes, search, estadoFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginated = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   if (isLoading) {
     return (
@@ -152,7 +163,7 @@ export default function TransportePage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((o) => {
+                {paginated.map((o) => {
                   const cfg = estadoConfig[(o.estado as Estado) ?? "borrador"];
                   return (
                     <tr
@@ -206,6 +217,38 @@ export default function TransportePage() {
               </tbody>
             </table>
           </div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-border px-4 py-3">
+              <p className="font-mono text-xs tabular-nums text-muted-foreground">
+                {startIndex + 1}–{Math.min(startIndex + ITEMS_PER_PAGE, filtered.length)} de {filtered.length}
+              </p>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => p - 1)}
+                  className="h-8 w-8 p-0"
+                  aria-label="Página anterior"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="px-3 font-mono text-xs tabular-nums text-muted-foreground">
+                  {currentPage} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => p + 1)}
+                  className="h-8 w-8 p-0"
+                  aria-label="Página siguiente"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

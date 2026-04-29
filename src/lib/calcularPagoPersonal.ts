@@ -29,7 +29,10 @@ export function calcularPagoPersonal(
       return tarifa;
 
     case 'jornada_hasta_10h': {
-      if (horas_trabajadas == null) return tarifa;
+      // Defensa en profundidad: requiereRegistroHoras() ya gatea la liquidación
+      // en la UI. Si horas llega null, no asumimos jornada normal — devolvemos 0
+      // para que el pago_calculado refleje el dato faltante en lugar de pagar a ciegas.
+      if (horas_trabajadas == null) return 0;
       if (horas_trabajadas <= 0) return 0;
       if (horas_trabajadas <= 10) return tarifa;
       const horasExtras = horas_trabajadas - 10;

@@ -2,8 +2,6 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "./types";
 import type { InventarioMovimiento, InventarioMovItem, IngredienteCatalogo } from "@/types/cotizador";
 
-type MovRow = Database["public"]["Tables"]["inventario_movimientos"]["Row"];
-type MovInsert = Database["public"]["Tables"]["inventario_movimientos"]["Insert"];
 type MovUpdate = Database["public"]["Tables"]["inventario_movimientos"]["Update"];
 
 /* =========================
@@ -24,47 +22,34 @@ export async function ingredientesConStock(): Promise<IngredienteCatalogo[]> {
 export async function inventarioMovimientosList(): Promise<
   (InventarioMovimiento & { items: InventarioMovItem[] })[]
 > {
-  const { data: movs, error: e1 } = await supabase
+  const { data, error } = await supabase
     .from("inventario_movimientos")
-    .select("*")
+    .select(
+      "*, items:inventario_mov_items(*, ingrediente:ingrediente_id(id,nombre,unidad,costo_por_unidad))"
+    )
     .order("fecha", { ascending: false });
-  if (e1) throw e1;
-
-  const result: (InventarioMovimiento & { items: InventarioMovItem[] })[] = [];
-  for (const m of (movs ?? []) as MovRow[]) {
-    const { data: it, error: e2 } = await supabase
-      .from("inventario_mov_items")
-      .select("*, ingrediente:ingrediente_id(id,nombre,unidad,costo_por_unidad)")
-      .eq("movimiento_id", m.id);
-    if (e2) throw e2;
-    result.push({ ...(m as unknown as InventarioMovimiento), items: (it ?? []) as unknown as InventarioMovItem[] });
-  }
-  return result;
+  if (error) throw error;
+  return (data ?? []) as unknown as (InventarioMovimiento & { items: InventarioMovItem[] })[];
 }
 
 export async function inventarioMovimientoCreate(
   payload: Omit<InventarioMovimiento, "id" | "created_at">,
-  items: Array<{ ingrediente_id: string; cantidad: number; costo_unitario?: number }>
+  items: Array<{ ingrediente_id: string; cantidad: number; costo_unitario?: number }>,
+  confirmar = false
 ) {
-  const { data: mov, error } = await supabase
-    .from("inventario_movimientos")
-    .insert(payload as unknown as MovInsert)
-    .select("*")
-    .single();
+  const { data, error } = await supabase.rpc("fn_inventario_movimiento_create_atomic", {
+    p_payload: {
+      movimiento: payload,
+      items: items.map((i) => ({
+        ingrediente_id: i.ingrediente_id,
+        cantidad: i.cantidad,
+        costo_unitario: i.costo_unitario ?? 0,
+      })),
+    },
+    p_confirmar: confirmar,
+  });
   if (error) throw error;
-
-  if (items.length) {
-    const movRow = mov as MovRow;
-    const rows = items.map((i) => ({
-      movimiento_id: movRow.id,
-      ingrediente_id: i.ingrediente_id,
-      cantidad: i.cantidad,
-      costo_unitario: i.costo_unitario ?? 0,
-    }));
-    const { error: e2 } = await supabase.from("inventario_mov_items").insert(rows);
-    if (e2) throw e2;
-  }
-  return mov as InventarioMovimiento;
+  return data as unknown as InventarioMovimiento;
 }
 
 export async function inventarioMovimientoConfirmar(id: string) {

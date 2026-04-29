@@ -265,7 +265,7 @@ function AlertaRow({ alerta, onDismiss }: { alerta: Alerta; onDismiss: () => voi
     alerta.tipo === "urgente"
       ? "text-destructive"
       : alerta.tipo === "atencion"
-      ? "text-[hsl(30_55%_42%)]"
+      ? "text-warning"
       : "text-muted-foreground";
 
   return (

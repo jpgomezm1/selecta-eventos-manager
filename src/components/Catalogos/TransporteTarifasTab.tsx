@@ -216,7 +216,7 @@ export default function TransporteTarifasTab() {
                 </Button>
                 <Button
                   onClick={() => createMut.mutate()}
-                  disabled={createMut.isPending || !newItem.lugar || !newItem.tarifa}
+                  disabled={createMut.isPending || !newItem.lugar || newItem.tarifa == null || Number.isNaN(newItem.tarifa)}
                 >
                   {createMut.isPending ? "Agregando…" : "Agregar tarifa"}
                 </Button>

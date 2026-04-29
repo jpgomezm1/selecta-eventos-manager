@@ -79,7 +79,7 @@ export function PipelineCard({ cotizacion: c, onMarcarEnviada, onRechazar, onRea
             <PipelineAction onClick={onMarcarEnviada} icon={Send} label="Enviar" />
           )}
           {c.estado === "Enviada" && (
-            <PipelineAction onClick={onAbrir} icon={Check} label="Aprobar" tone="primary" />
+            <PipelineAction onClick={onAbrir} icon={Check} label="Abrir para aprobar" tone="primary" />
           )}
           {(c.estado === "Pendiente por Aprobación" || c.estado === "Enviada") && onRechazar && (
             <PipelineAction onClick={onRechazar} icon={XCircle} label="Rechazar" tone="destructive" />

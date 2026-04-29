@@ -206,7 +206,7 @@ export function LiquidacionDialog({
             <div className="bg-muted/40 border border-border rounded-md p-5">
               <div className="flex items-start gap-3 mb-3">
                 <AlertTriangle
-                  className="h-5 w-5 text-[hsl(30_55%_42%)] mt-0.5 flex-shrink-0"
+                  className="h-5 w-5 text-warning mt-0.5 flex-shrink-0"
                   strokeWidth={1.75}
                 />
                 <div>
@@ -240,7 +240,7 @@ export function LiquidacionDialog({
                 <div className="font-serif text-3xl font-semibold text-foreground tabular-nums mt-1">
                   {empleadosPendientes.length}
                 </div>
-                <div className="text-sm text-[hsl(30_55%_42%)] font-medium tabular-nums mt-2">
+                <div className="text-sm text-warning font-medium tabular-nums mt-2">
                   ${totalPendientes.toLocaleString()}
                 </div>
               </CardContent>
@@ -313,7 +313,7 @@ export function LiquidacionDialog({
                             <div className="flex items-center gap-3">
                               <Clock className="h-3.5 w-3.5" strokeWidth={1.75} />
                               <span>Pendientes de pago ({empleadosPendientes.length})</span>
-                              <span className="font-mono tabular-nums normal-case tracking-normal text-[hsl(30_55%_42%)]">
+                              <span className="font-mono tabular-nums normal-case tracking-normal text-warning">
                                 ${totalPendientes.toLocaleString()}
                               </span>
                             </div>
@@ -380,7 +380,7 @@ export function LiquidacionDialog({
                             <td className="px-5 py-3 text-center">
                               <Badge
                                 variant="outline"
-                                className="text-xs font-normal text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]"
+                                className="text-xs font-normal text-warning border-warning-soft"
                               >
                                 <Clock className="h-3 w-3 mr-1" strokeWidth={1.75} />
                                 Pendiente

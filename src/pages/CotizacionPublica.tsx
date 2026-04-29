@@ -14,7 +14,7 @@ const IMG_HERO = "https://storage.googleapis.com/cluvi/Selecta-Eventos/image1_se
 const IMG_GASTRO = "https://storage.googleapis.com/cluvi/Selecta-Eventos/image2_selecta.png";
 const IMG_EVENTO = "https://storage.googleapis.com/cluvi/Selecta-Eventos/image3_selecta.png";
 
-const ROMAN = ["I", "II", "III", "IV", "V", "VI"];
+const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 
 type PageData = {
   cotizacion: Cotizacion;
@@ -30,6 +30,21 @@ const fmt = (n: number) =>
     maximumFractionDigits: 0,
   }).format(n);
 
+/** Normaliza nombres en MAYÚSCULAS (ej. "PERSONAL DE SERVICIO MESERO POR HORA")
+ *  a Title Case para que encaje con el tono editorial. No-op para nombres ya
+ *  en mayúscula y minúscula combinadas. */
+const toTitleCase = (s: string): string => {
+  if (!s) return s;
+  // Solo normaliza si está mayoritariamente en MAYÚSCULAS (>70%).
+  const letters = s.replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ]/g, "");
+  if (letters.length === 0) return s;
+  const upperRatio = letters.split("").filter((c) => c === c.toUpperCase()).length / letters.length;
+  if (upperRatio < 0.7) return s;
+  return s
+    .toLowerCase()
+    .replace(/(^|[\s\-/])(\p{L})/gu, (_, sep, ch) => sep + ch.toUpperCase());
+};
+
 export default function CotizacionPublica() {
   const { token } = useParams<{ token: string }>();
   const [searchParams] = useSearchParams();
@@ -41,6 +56,7 @@ export default function CotizacionPublica() {
   const [transitioning, setTransitioning] = useState(false);
   const totalSectionRef = useRef<HTMLDivElement>(null);
   const mastheadRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLElement>(null);
 
   const versiones = useMemo(() => {
     if (!data) return [];
@@ -61,12 +77,17 @@ export default function CotizacionPublica() {
   useEffect(() => {
     const mastheadEl = mastheadRef.current;
     const totalEl = totalSectionRef.current;
+    const footerEl = footerRef.current;
     if (!mastheadEl || !totalEl) return;
 
     let mastheadVisible = true;
     let totalVisible = false;
+    let footerVisible = false;
 
-    const update = () => setShowStickyBar(!mastheadVisible && !totalVisible);
+    // Sticky aparece solo en el rango "ya pasaste el masthead, todavía no llegás
+    // al total monumental ni al footer". Sin el guard del footer, la sticky tapa
+    // el copyright + tagline cuando el usuario llega al final.
+    const update = () => setShowStickyBar(!mastheadVisible && !totalVisible && !footerVisible);
 
     const mastheadObs = new IntersectionObserver(
       ([e]) => { mastheadVisible = e.isIntersecting; update(); },
@@ -76,10 +97,15 @@ export default function CotizacionPublica() {
       ([e]) => { totalVisible = e.isIntersecting; update(); },
       { threshold: 0.3 }
     );
+    const footerObs = new IntersectionObserver(
+      ([e]) => { footerVisible = e.isIntersecting; update(); },
+      { threshold: 0 }
+    );
 
     mastheadObs.observe(mastheadEl);
     totalObs.observe(totalEl);
-    return () => { mastheadObs.disconnect(); totalObs.disconnect(); };
+    if (footerEl) footerObs.observe(footerEl);
+    return () => { mastheadObs.disconnect(); totalObs.disconnect(); footerObs.disconnect(); };
   }, [data]);
 
   const switchVersion = useCallback((idx: number) => {
@@ -427,10 +453,10 @@ export default function CotizacionPublica() {
                   className="flex items-baseline gap-3 py-4 border-b border-border/60 last:border-b-0"
                 >
                   <span className="font-serif text-lg sm:text-xl text-foreground leading-snug">
-                    {item.nombre}
+                    {toTitleCase(item.nombre)}
                   </span>
                   {item.cantidad > 1 && (
-                    <span className="font-mono text-xs text-muted-foreground tabular-nums shrink-0">
+                    <span className="font-serif italic text-sm text-muted-foreground tabular-nums shrink-0">
                       × {item.cantidad}
                     </span>
                   )}
@@ -530,12 +556,12 @@ export default function CotizacionPublica() {
       </figure>
 
       {/* ════════ FOOTER — olive sólido ════════ */}
-      <footer className="bg-primary text-primary-foreground">
+      <footer ref={footerRef} className="bg-primary text-primary-foreground">
         <div className="max-w-5xl mx-auto px-6 sm:px-10 py-20 text-center">
           <img
             src={LOGO_URL}
             alt="Selecta"
-            className="h-14 mx-auto mb-6 [filter:brightness(0)_invert(1)] opacity-90"
+            className="h-14 mx-auto mb-6 [filter:brightness(0)_invert(1)]"
           />
 
           <p className="font-serif italic text-xl sm:text-2xl text-primary-foreground/80 max-w-xl mx-auto leading-relaxed">
@@ -546,7 +572,7 @@ export default function CotizacionPublica() {
 
           {whatsappPhone && (
             <div className="mt-8 space-y-1">
-              <span className="kicker text-primary-foreground/50 block">Contacto</span>
+              <span className="kicker text-primary-foreground/70 block">Contacto</span>
               <a
                 href={whatsappUrl ?? "#"}
                 target="_blank"
@@ -558,11 +584,11 @@ export default function CotizacionPublica() {
             </div>
           )}
 
-          <div className="mt-14 flex items-center justify-center gap-3 text-[10px] font-mono uppercase tracking-[0.2em] text-primary-foreground/40">
+          <div className="mt-14 flex items-center justify-center gap-3 text-[10px] font-mono uppercase tracking-[0.2em] text-primary-foreground/55">
             <span>Selecta Eventos</span>
-            <span className="w-1 h-1 rounded-full bg-primary-foreground/40" />
+            <span className="w-1 h-1 rounded-full bg-primary-foreground/55" />
             <span>{new Date().getFullYear()}</span>
-            <span className="w-1 h-1 rounded-full bg-primary-foreground/40" />
+            <span className="w-1 h-1 rounded-full bg-primary-foreground/55" />
             <span>By Irrelevant</span>
           </div>
         </div>
@@ -597,7 +623,7 @@ export default function CotizacionPublica() {
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="shrink-0 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                className="shrink-0 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-none hover:bg-primary/90 transition-colors"
               >
                 Conversar
                 <span className="font-mono text-xs">→</span>

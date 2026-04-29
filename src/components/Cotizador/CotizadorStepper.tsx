@@ -73,7 +73,7 @@ export function CotizadorStepper({ steps, currentStep, onStepClick }: Props) {
 
                   {/* Optional badge / item count */}
                   {step.isSkippable && !isCompleted && (
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Opcional</span>
+                    <span className="kicker text-muted-foreground">Opcional</span>
                   )}
                   {isCompleted && step.itemCount != null && step.itemCount > 0 && (
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal bg-primary/5 text-primary border-primary/30">

@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DollarSign, Users, ShoppingCart, UtensilsCrossed, CheckCircle, Clock, Building2 } from "lucide-react";
+import { PanelHeader } from "@/components/Layout/PageHeader";
 
 type Props = {
   eventoId: string;
@@ -80,8 +81,9 @@ export default function CierreEventoPanel({ eventoId, totalRequerimiento, estado
 
   if (loading || !data) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-600 rounded-full animate-spin" />
+      <div className="flex flex-col items-center justify-center gap-3 py-12">
+        <div className="h-8 w-8 animate-pulse rounded-full bg-muted/70" />
+        <p className="text-sm italic text-muted-foreground">Cargando cierre…</p>
       </div>
     );
   }
@@ -90,7 +92,12 @@ export default function CierreEventoPanel({ eventoId, totalRequerimiento, estado
   const diferencia = totalRequerimiento - costoReal;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      <PanelHeader
+        kicker="Operación"
+        title="Cierre del evento"
+        description="Comparación entre cotizado al cliente y costo real ejecutado."
+      />
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="p-4">
@@ -156,7 +163,7 @@ export default function CierreEventoPanel({ eventoId, totalRequerimiento, estado
                 Devuelto
               </Badge>
             ) : (
-              <Badge variant="outline" className="font-normal text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]">
+              <Badge variant="outline" className="font-normal text-warning border-warning-soft">
                 <Clock className="h-3 w-3 mr-1" />
                 Pendiente
               </Badge>
@@ -170,7 +177,7 @@ export default function CierreEventoPanel({ eventoId, totalRequerimiento, estado
                 Liquidado
               </Badge>
             ) : (
-              <Badge variant="outline" className="font-normal text-[hsl(30_55%_42%)] border-[hsl(30_40%_70%)]">
+              <Badge variant="outline" className="font-normal text-warning border-warning-soft">
                 <Clock className="h-3 w-3 mr-1" />
                 Pendiente
               </Badge>

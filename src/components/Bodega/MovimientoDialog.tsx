@@ -6,8 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useMemo, useState } from "react";
 import { MenajeMovimiento, SalidaConEvento } from "@/types/menaje";
-import { menajeCatalogoList, readReserva, getSalidasConfirmadas } from "@/integrations/supabase/apiMenaje";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  menajeCatalogoList,
+  readReserva,
+  getSalidasConfirmadas,
+  eventosConReservaMenajeActiva,
+} from "@/integrations/supabase/apiMenaje";
 import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -25,13 +29,6 @@ import {
   Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-type EventoConReserva = {
-  evento_id: string;
-  nombre_evento: string;
-  fecha_evento: string;
-  reserva_id: string;
-};
 
 type DialogItem = {
   menaje_id: string;
@@ -59,20 +56,7 @@ export default function MovimientoDialog({ open, onOpenChange, movimiento, onSav
   // Fetch events with confirmed/active menaje reservations (for salida selector)
   const { data: eventosConReserva } = useQuery({
     queryKey: ["eventos-con-reserva-menaje"],
-    queryFn: async (): Promise<EventoConReserva[]> => {
-      const { data, error } = await supabase
-        .from("menaje_reservas")
-        .select("id, evento_id, estado, eventos!inner(id, nombre_evento, fecha_evento)")
-        .in("estado", ["confirmado", "borrador"])
-        .not("evento_id", "is", null);
-      if (error) throw error;
-      return (data ?? []).map((r) => ({
-        evento_id: r.evento_id,
-        nombre_evento: r.eventos?.nombre_evento ?? "",
-        fecha_evento: r.eventos?.fecha_evento ?? "",
-        reserva_id: r.id,
-      }));
-    },
+    queryFn: eventosConReservaMenajeActiva,
   });
 
   // Fetch confirmed salidas for ingreso selector

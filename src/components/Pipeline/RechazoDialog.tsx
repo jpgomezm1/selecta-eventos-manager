@@ -80,7 +80,7 @@ export function RechazoDialog({
           </div>
 
           <div className="flex items-start gap-3 p-3 bg-muted/40 rounded-md border border-border">
-            <AlertTriangle className="h-4 w-4 text-[hsl(30_55%_42%)] mt-0.5 flex-shrink-0" strokeWidth={1.75} />
+            <AlertTriangle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" strokeWidth={1.75} />
             <p className="text-sm text-muted-foreground">
               La cotización se puede reabrir después si es necesario.
             </p>

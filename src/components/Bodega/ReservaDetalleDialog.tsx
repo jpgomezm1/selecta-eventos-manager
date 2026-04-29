@@ -5,13 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle, Package, Clock, Truck, RotateCcw, Calendar, AlertTriangle } from "lucide-react";
 import {
   readReserva,
   despacharMenajeDesdeReserva,
   registrarDevolucionMenaje,
   getSalidaItemsForReserva,
+  reservaTieneSalida,
 } from "@/integrations/supabase/apiMenaje";
 import type { MenajeReservaCal, MenajeReservaFull } from "@/types/menaje";
 
@@ -66,14 +66,7 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
       setReservaFull(rf);
 
       // Check if dispatched
-      const { data: salidaMov } = await supabase
-        .from("menaje_movimientos")
-        .select("id")
-        .eq("reserva_id", reservaCal.reserva_id)
-        .eq("tipo", "salida")
-        .limit(1)
-        .maybeSingle();
-      setDespachado(!!salidaMov);
+      setDespachado(await reservaTieneSalida(reservaCal.reserva_id));
     } catch (err) {
       toast({ title: "Error", description: (err as Error)?.message, variant: "destructive" });
     } finally {
@@ -264,7 +257,7 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
           {/* Items table (read-only) */}
           {loading ? (
             <div className="flex justify-center py-6">
-              <div className="w-5 h-5 border-2 border-slate-200 border-t-slate-600 rounded-full animate-spin" />
+              <div className="h-5 w-5 animate-pulse rounded-full bg-muted/70" />
             </div>
           ) : reservaFull && reservaFull.items.length > 0 ? (
             <div className="border border-slate-200 rounded-lg overflow-hidden">

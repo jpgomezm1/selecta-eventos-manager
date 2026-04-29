@@ -399,10 +399,8 @@ export default function PersonalDetalle() {
 
   if (!personal) {
     return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-          <User className="h-6 w-6 text-slate-400" />
-        </div>
+      <div className="flex flex-col items-center justify-center h-64 text-center">
+        <User className="h-9 w-9 text-muted-foreground/60 mb-4" strokeWidth={1.5} />
         <p className="text-slate-900 font-medium">Personal no encontrado</p>
         <p className="text-slate-500 text-sm mt-1 mb-4">El empleado solicitado no existe en el sistema</p>
         <Button
@@ -587,10 +585,8 @@ export default function PersonalDetalle() {
 
             {/* Tabla o estado vacío */}
             {trabajosFiltrados.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 px-4">
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                  <Calendar className="h-6 w-6 text-slate-400" />
-                </div>
+              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                <Calendar className="h-9 w-9 text-muted-foreground/60 mb-4" strokeWidth={1.5} />
                 <p className="text-slate-900 font-medium">
                   {trabajos.length === 0 ? "Sin trabajos registrados" : "Sin resultados"}
                 </p>

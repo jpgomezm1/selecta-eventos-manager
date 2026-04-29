@@ -349,9 +349,9 @@ export function CargaMasivaPersonal({ isOpen, onClose, onSuccess }: CargaMasivaP
               </div>
 
               {cargando && (
-                <div className="mt-4 text-center">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-selecta-green"></div>
-                  <p className="text-sm text-slate-600 mt-2">Procesando archivo...</p>
+                <div className="mt-4 flex flex-col items-center gap-3">
+                  <div className="h-8 w-8 animate-pulse rounded-full bg-muted/70" />
+                  <p className="text-sm italic text-muted-foreground">Procesando archivo…</p>
                 </div>
               )}
             </CardContent>

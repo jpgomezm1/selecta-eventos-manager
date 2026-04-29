@@ -87,7 +87,7 @@ export default function Auth() {
           {/* Editorial copy */}
           <section className="animate-rise stagger-1 space-y-8 lg:col-span-3">
             <div className="space-y-4">
-              <span className="kicker">Volumen XII · Acceso</span>
+              <span className="kicker">Acceso</span>
               <h1 className="font-serif text-[52px] leading-[0.98] tracking-[-0.035em] text-foreground md:text-[72px]">
                 <span className="italic text-primary">Bienvenido</span>
                 <br />

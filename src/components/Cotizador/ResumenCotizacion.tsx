@@ -17,7 +17,6 @@ import {
   ChefHat,
   Package,
   MapPin,
-  CheckCircle2,
   AlertCircle,
   Sparkles,
   TrendingUp,
@@ -357,7 +356,7 @@ export function ResumenCotizacion({
                   {totalAjustado && (
                     <Badge
                       variant="outline"
-                      className="border-[hsl(30_40%_70%)] bg-[hsl(30_50%_94%)] text-[10px] font-medium uppercase tracking-[0.12em] text-[hsl(30_55%_30%)]"
+                      className="border-warning-soft bg-warning-tint text-[10px] font-medium uppercase tracking-[0.12em] text-warning"
                     >
                       Total ajustado
                     </Badge>
@@ -424,45 +423,15 @@ export function ResumenCotizacion({
                 </div>
 
                 {totalAjustado && totalEfectivo === 0 && (
-                  <div className="mt-3 flex items-start gap-2 rounded-md border border-[hsl(30_40%_70%)] bg-[hsl(30_50%_94%)] px-3 py-2">
-                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(30_55%_42%)]" strokeWidth={1.75} />
-                    <span className="text-[12.5px] leading-snug text-[hsl(30_55%_30%)]">
+                  <div className="mt-3 flex items-start gap-2 rounded-md border border-warning-soft bg-warning-tint px-3 py-2">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" strokeWidth={1.75} />
+                    <span className="text-[12.5px] leading-snug text-warning">
                       El total quedó en $0. Confirma que es intencional antes de guardar — el cliente verá $0 en la propuesta.
                     </span>
                   </div>
                 )}
               </div>
 
-              {total > 0 && (
-                <div className="space-y-2">
-                  {total < 50000 && (
-                    <div className="flex items-center space-x-2 p-3 bg-muted/40 rounded-md border border-border">
-                      <AlertCircle className="h-4 w-4 text-[hsl(30_55%_42%)]" strokeWidth={1.75} />
-                      <span className="text-sm text-muted-foreground">
-                        Cotización básica — considera agregar más elementos
-                      </span>
-                    </div>
-                  )}
-
-                  {total >= 50000 && total < 150000 && (
-                    <div className="flex items-center space-x-2 p-3 bg-primary/5 rounded-md border border-primary/20">
-                      <CheckCircle2 className="h-4 w-4 text-primary" strokeWidth={1.75} />
-                      <span className="text-sm text-foreground">
-                        Cotización completa — excelente propuesta
-                      </span>
-                    </div>
-                  )}
-
-                  {total >= 150000 && (
-                    <div className="flex items-center space-x-2 p-3 bg-primary/10 rounded-md border border-primary/30">
-                      <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.75} />
-                      <span className="text-sm text-foreground">
-                        Cotización premium — propuesta de alto valor
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </>
         )}
