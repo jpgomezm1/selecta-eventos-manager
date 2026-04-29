@@ -31,7 +31,7 @@ export default function EventoChecklist({ checklist, onItemClick }: Props) {
           <button
             key={item.key}
             onClick={() => item.tab && onItemClick?.(item.tab)}
-            className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] transition-colors ${
+            className={`flex min-h-[44px] sm:min-h-0 items-center gap-2.5 rounded-md px-2.5 py-2 sm:py-1.5 text-left text-[13px] transition-colors ${
               item.tab ? "cursor-pointer hover:bg-muted/50" : ""
             } ${
               item.completed ? "text-muted-foreground" : "text-foreground/80"

@@ -283,7 +283,7 @@ export default function EventosPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setViewMode('grid')}
-                className={`h-8 ${viewMode === 'grid' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-600 hover:bg-slate-200'}`}
+                className={`h-10 sm:h-8 ${viewMode === 'grid' ? 'bg-card text-foreground shadow-sm hover:bg-card' : 'text-muted-foreground hover:bg-muted'}`}
               >
                 <Grid3X3 className="h-4 w-4 mr-2" />
                 Tarjetas
@@ -292,7 +292,7 @@ export default function EventosPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setViewMode('calendar')}
-                className={`h-8 ${viewMode === 'calendar' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-600 hover:bg-slate-200'}`}
+                className={`h-10 sm:h-8 ${viewMode === 'calendar' ? 'bg-card text-foreground shadow-sm hover:bg-card' : 'text-muted-foreground hover:bg-muted'}`}
               >
                 <CalendarDays className="h-4 w-4 mr-2" />
                 Calendario
@@ -443,7 +443,7 @@ export default function EventosPage() {
                         {/* Header */}
                         <div className="mb-3 flex items-start justify-between">
                           <div className="min-w-0 flex-1">
-                            <h3 className="truncate font-serif text-[17px] font-medium text-foreground transition-colors group-hover:text-primary">
+                            <h3 className="line-clamp-2 break-words font-serif text-[17px] font-medium text-foreground transition-colors group-hover:text-primary">
                               {evento.nombre_evento}
                             </h3>
                             <p className="mt-0.5 text-sm text-muted-foreground">

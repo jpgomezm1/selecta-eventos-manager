@@ -389,7 +389,7 @@ function EditorialTab({
   return (
     <TabsTrigger
       value={value}
-      className="flex min-w-[110px] flex-1 items-center gap-1.5 text-[12px] font-medium data-[state=active]:bg-card data-[state=active]:shadow-soft"
+      className="flex min-h-[44px] sm:min-h-0 min-w-[110px] flex-1 items-center gap-1.5 text-[12px] font-medium data-[state=active]:bg-card data-[state=active]:shadow-soft"
     >
       <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
       {label}

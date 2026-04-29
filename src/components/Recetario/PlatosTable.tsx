@@ -143,7 +143,7 @@ export default function PlatosTable() {
                   <TableCell className="text-right">{costo > 0 ? fmt(costo) : <span className="text-slate-300">—</span>}</TableCell>
                   <TableCell className="text-right">{p.porciones_receta ?? <span className="text-slate-300">—</span>}</TableCell>
                   <TableCell>
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openDetail(p.id); }}>
+                    <Button size="icon" variant="ghost" className="h-10 w-10 sm:h-7 sm:w-7" onClick={(e) => { e.stopPropagation(); openDetail(p.id); }}>
                       <Eye className="h-4 w-4" />
                     </Button>
                   </TableCell>
@@ -161,11 +161,11 @@ export default function PlatosTable() {
         <p className="text-sm text-slate-400">{filtered.length} platos</p>
         {totalPages > 1 && (
           <div className="flex items-center gap-2">
-            <Button size="icon" variant="outline" className="h-8 w-8" disabled={page === 0} onClick={() => setPage(page - 1)}>
+            <Button size="icon" variant="outline" className="h-10 w-10 sm:h-8 sm:w-8" disabled={page === 0} onClick={() => setPage(page - 1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm text-slate-600">{page + 1} / {totalPages}</span>
-            <Button size="icon" variant="outline" className="h-8 w-8" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>
+            <Button size="icon" variant="outline" className="h-10 w-10 sm:h-8 sm:w-8" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

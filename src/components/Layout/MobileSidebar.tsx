@@ -48,7 +48,7 @@ export function MobileSidebar() {
         </SheetTrigger>
         <SheetContent
           side="left"
-          className="w-72 border-r-sidebar-border bg-sidebar p-0 text-sidebar-foreground"
+          className="w-72 border-r-sidebar-border bg-sidebar p-0 text-sidebar-foreground [&>button]:text-sidebar-foreground/80 [&>button]:opacity-90 hover:[&>button]:opacity-100"
         >
           <div className="flex h-full flex-col">
             <SheetHeader className="border-b border-sidebar-border/60 px-5 py-5">

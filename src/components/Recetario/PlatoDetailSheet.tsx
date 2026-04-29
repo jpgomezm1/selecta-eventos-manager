@@ -395,7 +395,7 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
                         <TableCell className="text-right">{fmt(pi.ingrediente?.costo_por_unidad ?? 0)}</TableCell>
                         <TableCell className="text-right font-medium">{fmt(pi.cantidad * (pi.ingrediente?.costo_por_unidad ?? 0))}</TableCell>
                         <TableCell>
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeIngrediente(pi.ingrediente_id)}>
+                          <Button size="icon" variant="ghost" className="h-10 w-10 sm:h-7 sm:w-7 text-muted-foreground hover:text-destructive" onClick={() => removeIngrediente(pi.ingrediente_id)}>
                             <X className="h-4 w-4" />
                           </Button>
                         </TableCell>
