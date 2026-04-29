@@ -32,18 +32,19 @@ export async function generateSelectaPremiumPDF(
     ? data.versiones.filter(v => selectedVersionIds.includes(v.id))
     : data.versiones;
 
-  // Paleta de colores oficial de Selecta (refinada)
+  // Paleta editorial Selecta (alineada con index.css y CotizacionPublica).
   // `as const` narrows cada tupla para que `pdf.setTextColor(...selectaColors.x)` satisfaga
   // la firma de 3 args (jspdf rechaza `number[]` de longitud arbitraria).
   const selectaColors = {
-    primary: [0, 90, 100],        // #005A64 - Azul petróleo principal
-    secondary: [177, 201, 30],     // #B1C91E - Verde lima distintivo
-    neutral: [245, 247, 250],      // Gris muy claro para fondos
-    white: [255, 255, 255],        // Blanco puro
-    darkText: [45, 55, 72],        // Gris oscuro para texto principal
-    lightText: [107, 114, 128],    // Gris medio para texto secundario
-    border: [229, 231, 235],       // Bordes sutiles
-    accent: [16, 185, 129]         // Verde accent para destacados
+    primary: [76, 91, 51],         // Olive profundo — equivalente a hsl(82 28% 28%)
+    deepOlive: [43, 48, 33],       // Olive muy oscuro — sidebar / títulos fuertes
+    paper: [248, 246, 242],        // Paper warm — fondo editorial
+    neutral: [240, 236, 228],      // Beige cálido para cards / secciones
+    white: [255, 255, 255],
+    darkText: [43, 48, 33],        // Texto principal — deep olive
+    lightText: [122, 116, 105],    // Texto secundario warm — muted-foreground
+    border: [224, 220, 214],       // Borders warm sutiles
+    accent: [102, 117, 75]         // Sage — destacados
   } as const;
 
   // Cargar logo
@@ -63,15 +64,16 @@ export async function generateSelectaPremiumPDF(
     console.warn('Logo no disponible:', error);
   }
 
-  // Header elegante y profesional
+  // Header editorial — fondo deep olive con masthead serif
   const createProfessionalHeader = () => {
-    // Fondo principal azul petróleo
-    pdf.setFillColor(...selectaColors.primary);
+    // Fondo principal deep olive
+    pdf.setFillColor(...selectaColors.deepOlive);
     pdf.rect(0, 0, pageWidth, 50, 'F');
 
-    // Franja verde lima
-    pdf.setFillColor(...selectaColors.secondary);
-    pdf.rect(0, 50, pageWidth, 4, 'F');
+    // Hairline inferior sutil (en lugar de franja chillona)
+    pdf.setDrawColor(...selectaColors.border);
+    pdf.setLineWidth(0.4);
+    pdf.line(0, 50, pageWidth, 50);
 
     // Logo con espacio en blanco
     if (logoImg) {
@@ -80,15 +82,15 @@ export async function generateSelectaPremiumPDF(
       pdf.addImage(logoImg, 'PNG', 20, 15, 40, 20, undefined, 'FAST');
     }
 
-    // Título principal
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(24);
-    pdf.setTextColor(...selectaColors.white);
-    pdf.text('PROPUESTA COMERCIAL', logoImg ? 75 : 25, 30);
+    // Título principal — serif (times) imitando Fraunces editorial
+    pdf.setFont('times', 'bold');
+    pdf.setFontSize(26);
+    pdf.setTextColor(...selectaColors.paper);
+    pdf.text('Propuesta Comercial', logoImg ? 75 : 25, 30);
 
-    // Línea decorativa sutil
-    pdf.setDrawColor(...selectaColors.white);
-    pdf.setLineWidth(0.5);
+    // Hairline decorativa bajo el título
+    pdf.setDrawColor(...selectaColors.paper);
+    pdf.setLineWidth(0.3);
     pdf.line(logoImg ? 75 : 25, 35, 180, 35);
   };
 
@@ -216,7 +218,7 @@ export async function generateSelectaPremiumPDF(
       {
         title: 'EXPERIENCIA GASTRONÓMICA',
         items: version.items.platos,
-        color: selectaColors.secondary,
+        color: selectaColors.primary,
         getValue: (item) => ({ name: item.nombre, price: item.precio_unitario, qty: item.cantidad })
       },
       {
@@ -228,13 +230,13 @@ export async function generateSelectaPremiumPDF(
       {
         title: 'LOGÍSTICA Y TRANSPORTE',
         items: version.items.transportes,
-        color: [255, 146, 43] as const, // Naranja
+        color: selectaColors.primary,
         getValue: (item) => ({ name: `Transporte a ${item.lugar}`, price: item.tarifa_unitaria, qty: item.cantidad })
       },
       {
         title: 'AJUAR Y MENAJE',
         items: version.items.menaje ?? [],
-        color: selectaColors.accent,
+        color: selectaColors.primary,
         getValue: (item) => ({ name: item.nombre, price: item.precio_alquiler, qty: item.cantidad })
       }
     ];
