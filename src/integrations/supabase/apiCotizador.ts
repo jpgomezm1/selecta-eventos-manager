@@ -130,9 +130,29 @@ export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
     .eq("id", cotizacion_id)
     .single();
 
+  // Versiones + items (4 categorías) + sus joins de catálogo en UNA sola query
+  // anidada PostgREST. Antes: 1+3+(4×N) queries. Ahora: 3 queries totales.
   const { data: vers, error: e2 } = await supabase
     .from("cotizacion_versiones")
-    .select("*")
+    .select(`
+      *,
+      cotizacion_platos (
+        *,
+        platos_catalogo (nombre)
+      ),
+      cotizacion_transporte_items (
+        *,
+        transporte_tarifas (lugar)
+      ),
+      cotizacion_personal_items (
+        *,
+        personal_costos_catalogo (rol)
+      ),
+      cotizacion_menaje_items (
+        *,
+        menaje_catalogo (nombre)
+      )
+    `)
     .eq("cotizacion_id", cotizacion_id)
     .order("version_index", { ascending: true });
 
@@ -149,82 +169,50 @@ export async function getCotizacionDetalle(cotizacion_id: string): Promise<{
   if (e1) throw e1;
   if (e2) throw e2;
 
-  const versiones = await Promise.all(
-    (vers ?? []).map(async (v) => {
-      const [{ data: p }, { data: t }, { data: pe }, { data: me }] = await Promise.all([
-        supabase
-          .from("cotizacion_platos")
-          .select(`
-            *,
-            platos_catalogo (
-              nombre
-            )
-          `)
-          .eq("cotizacion_version_id", v.id),
-        supabase
-          .from("cotizacion_transporte_items")
-          .select(`
-            *,
-            transporte_tarifas (
-              lugar
-            )
-          `)
-          .eq("cotizacion_version_id", v.id),
-        supabase
-          .from("cotizacion_personal_items")
-          .select(`
-            *,
-            personal_costos_catalogo (
-              rol
-            )
-          `)
-          .eq("cotizacion_version_id", v.id),
-        supabase
-          .from("cotizacion_menaje_items")
-          .select(`
-            *,
-            menaje_catalogo (
-              nombre
-            )
-          `)
-          .eq("cotizacion_version_id", v.id),
-      ]);
+  type VerWithItems = {
+    id: string;
+    cotizacion_platos?: Array<{ plato_id: string; precio_unitario: number; cantidad: number; platos_catalogo?: { nombre: string } | null }>;
+    cotizacion_transporte_items?: Array<{ transporte_id: string; tarifa_unitaria: number; cantidad: number; transporte_tarifas?: { lugar: string } | null }>;
+    cotizacion_personal_items?: Array<{ personal_costo_id: string; tarifa_estimada_por_persona: number; cantidad: number; personal_costos_catalogo?: { rol: string } | null }>;
+    cotizacion_menaje_items?: Array<{ menaje_id: string; precio_alquiler: number; cantidad: number; menaje_catalogo?: { nombre: string } | null }>;
+  };
 
-      const items: CotizacionItemsState = {
-        platos: (p ?? []).map((x) => ({
-          plato_id: x.plato_id,
-          nombre: x.platos_catalogo?.nombre || "Plato sin nombre",
-          precio_unitario: Number(x.precio_unitario) || 0,
-          cantidad: x.cantidad,
-        })),
-        transportes: (t ?? []).map((x) => ({
-          transporte_id: x.transporte_id,
-          lugar: x.transporte_tarifas?.lugar || "Lugar sin especificar",
-          tarifa_unitaria: Number(x.tarifa_unitaria) || 0,
-          cantidad: x.cantidad,
-        })),
-        personal: (pe ?? []).map((x) => ({
-          personal_costo_id: x.personal_costo_id,
-          rol: x.personal_costos_catalogo?.rol || "Rol sin especificar",
-          tarifa_estimada_por_persona: Number(x.tarifa_estimada_por_persona) || 0,
-          cantidad: x.cantidad,
-        })),
-        menaje: (me ?? []).map((x) => ({
-          menaje_id: x.menaje_id,
-          nombre: x.menaje_catalogo?.nombre || "Menaje sin nombre",
-          precio_alquiler: Number(x.precio_alquiler) || 0,
-          cantidad: x.cantidad,
-        })),
-      };
+  const versiones = (vers ?? []).map((v) => {
+    const ver = v as unknown as VerWithItems;
+    const items: CotizacionItemsState = {
+      platos: (ver.cotizacion_platos ?? []).map((x) => ({
+        plato_id: x.plato_id,
+        nombre: x.platos_catalogo?.nombre || "Plato sin nombre",
+        precio_unitario: Number(x.precio_unitario) || 0,
+        cantidad: x.cantidad,
+      })),
+      transportes: (ver.cotizacion_transporte_items ?? []).map((x) => ({
+        transporte_id: x.transporte_id,
+        lugar: x.transporte_tarifas?.lugar || "Lugar sin especificar",
+        tarifa_unitaria: Number(x.tarifa_unitaria) || 0,
+        cantidad: x.cantidad,
+      })),
+      personal: (ver.cotizacion_personal_items ?? []).map((x) => ({
+        personal_costo_id: x.personal_costo_id,
+        rol: x.personal_costos_catalogo?.rol || "Rol sin especificar",
+        tarifa_estimada_por_persona: Number(x.tarifa_estimada_por_persona) || 0,
+        cantidad: x.cantidad,
+      })),
+      menaje: (ver.cotizacion_menaje_items ?? []).map((x) => ({
+        menaje_id: x.menaje_id,
+        nombre: x.menaje_catalogo?.nombre || "Menaje sin nombre",
+        precio_alquiler: Number(x.precio_alquiler) || 0,
+        cantidad: x.cantidad,
+      })),
+    };
 
-      return {
-        ...(v as CotizacionVersion),
-        total: Number(v.total),
-        total_override: v.total_override != null ? Number(v.total_override) : null,
-        items,
-      };
-    })
-  );
+    return {
+      ...(v as CotizacionVersion),
+      total: Number((v as CotizacionVersion).total),
+      total_override: (v as CotizacionVersion).total_override != null ? Number((v as CotizacionVersion).total_override) : null,
+      items,
+    };
+  });
 
   type CotRow = Cotizacion & { clientes?: unknown; cliente_contactos?: unknown };
   const cotRow = cot as unknown as CotRow;
