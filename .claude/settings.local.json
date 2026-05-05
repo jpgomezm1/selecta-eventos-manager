@@ -9,5 +9,9 @@
       "WebSearch",
       "WebFetch(domain:docs.anthropic.com)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "supabase"
+  ],
+  "enableAllProjectMcpServers": true
 }
