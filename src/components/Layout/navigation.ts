@@ -3,6 +3,7 @@ import {
   Calendar,
   FileText,
   Boxes,
+  ChefHat,
   CookingPot,
   Warehouse,
   UserCircle,
@@ -51,6 +52,7 @@ export const navSections: NavSection[] = [
   {
     label: "Cocina y bodega",
     items: [
+      { title: "Producción", url: "/cocina", icon: ChefHat, match: /^\/cocina/, roles: ["admin", "cocina"] },
       { title: "Recetario", url: "/recetario", icon: CookingPot, match: /^\/recetario/, roles: ["admin", "cocina"] },
       { title: "Inventario", url: "/inventario", icon: Warehouse, match: /^\/inventario/, roles: ["admin", "cocina"] },
       { title: "Menaje", url: "/bodega", icon: Boxes, match: /^\/bodega/, roles: ["admin", "operaciones"] },

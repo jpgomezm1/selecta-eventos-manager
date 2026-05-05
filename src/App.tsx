@@ -19,6 +19,7 @@ import VersionEditorWizard from "./pages/VersionEditorWizard";
 import EventoDetallePage from "./pages/EventoDetalle";
 import BodegaPage from "./pages/Bodega"; // ⬅️ NUEVO
 import RecetarioPage from "./pages/Recetario";
+import CocinaProduccionPage from "./pages/CocinaProduccion";
 import InventarioPage from "./pages/Inventario";
 import ClientesPage from "./pages/Clientes";
 import CotizacionPublica from "./pages/CotizacionPublica";
@@ -242,6 +243,16 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["admin", "cocina"]}>
                   <RecetarioPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Cocina — producción del día/semana */}
+            <Route
+              path="/cocina"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "cocina"]}>
+                  <CocinaProduccionPage />
                 </ProtectedRoute>
               }
             />
