@@ -1531,6 +1531,7 @@ export type Database = {
       platos_catalogo: {
         Row: {
           categoria: string | null
+          codigo: string | null
           created_at: string | null
           id: string
           margen_ganancia: number | null
@@ -1545,6 +1546,7 @@ export type Database = {
         }
         Insert: {
           categoria?: string | null
+          codigo?: string | null
           created_at?: string | null
           id?: string
           margen_ganancia?: number | null
@@ -1559,6 +1561,7 @@ export type Database = {
         }
         Update: {
           categoria?: string | null
+          codigo?: string | null
           created_at?: string | null
           id?: string
           margen_ganancia?: number | null
