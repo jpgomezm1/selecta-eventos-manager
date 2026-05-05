@@ -150,26 +150,25 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  // Compute ingredient costs (must be before precioCalculado)
+  // Costo de ingredientes (calculado desde la receta)
   const costoTotal = useMemo(
     () => ingredientes.reduce((sum, i) => sum + i.cantidad * (i.ingrediente?.costo_por_unidad ?? 0), 0),
     [ingredientes]
   );
   const costoPorcion = form.porciones_receta ? costoTotal / form.porciones_receta : 0;
 
-  // Auto-calculate precio from margen + costoPorcion
-  const precioCalculado = (form.margen_ganancia != null && costoPorcion > 0)
-    ? Math.round(costoPorcion * (1 + form.margen_ganancia / 100))
-    : form.precio ?? 0;
+  // Precio de venta = input manual (proveniente del portafolio comercial).
+  // Margen bruto sobre costo = métrica derivada (informativa), NO determina precio.
+  const precioVenta = form.precio ?? 0;
+  const margenBrutoPct =
+    costoPorcion > 0 && precioVenta > 0 ? ((precioVenta - costoPorcion) / costoPorcion) * 100 : null;
 
   const handleSavePlato = () => {
     if (!form.nombre?.trim()) {
       toast({ title: "Nombre requerido", description: "Ingresa el nombre del plato antes de guardar.", variant: "destructive" });
       return;
     }
-    const precioFinal = (form.margen_ganancia != null && costoPorcion > 0)
-      ? Math.round(costoPorcion * (1 + form.margen_ganancia / 100))
-      : form.precio ?? 0;
+    const precioFinal = Math.round(form.precio ?? 0);
 
     if (!effectiveId) {
       createMut.mutate({
@@ -319,10 +318,13 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-muted-foreground">Precio de venta</label>
-                  <div className="h-10 px-3 flex items-center rounded-md border bg-muted/40 text-sm font-medium">
-                    {fmt(precioCalculado)}
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">Calculado desde costo + margen</p>
+                  <Input
+                    type="number"
+                    value={form.precio ?? ""}
+                    onChange={(e) => setForm({ ...form, precio: e.target.value ? Number(e.target.value) : 0 })}
+                    placeholder="Ej: 43500"
+                  />
+                  <p className="text-[10px] text-muted-foreground">Precio del portafolio comercial</p>
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-muted-foreground">Categoría</label>
@@ -419,9 +421,9 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
               )}
             </section>
 
-            {/* Resumen costos + margen */}
+            {/* Resumen costos + margen bruto (informativo) */}
             <section className="p-4 bg-muted/40 rounded-lg border space-y-3">
-              <h3 className="kicker">Costos y precio de venta</h3>
+              <h3 className="kicker">Costos y rentabilidad</h3>
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Costo total receta</span>
                 <span className="font-semibold">{fmt(costoTotal)}</span>
@@ -430,32 +432,27 @@ export default function PlatoDetailSheet({ platoId, open, onOpenChange }: Props)
                 <span className="text-sm text-muted-foreground">Costo por porción</span>
                 <span className="font-semibold">{form.porciones_receta ? fmt(costoPorcion) : "—"}</span>
               </div>
-              <div className="border-t pt-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Margen de ganancia</span>
-                  <div className="flex items-center gap-1">
-                    <Input
-                      type="number"
-                      value={form.margen_ganancia ?? ""}
-                      onChange={(e) => setForm({ ...form, margen_ganancia: e.target.value ? Number(e.target.value) : null })}
-                      placeholder="Ej: 40"
-                      className="h-8 w-20 text-right"
-                    />
-                    <span className="text-sm text-muted-foreground">%</span>
-                  </div>
-                </div>
-              </div>
               <div className="flex justify-between border-t pt-3">
                 <span className="text-sm font-semibold text-foreground">Precio de venta</span>
-                <span className="text-lg font-semibold text-primary tabular-nums">{fmt(precioCalculado)}</span>
+                <span className="text-lg font-semibold text-primary tabular-nums">{fmt(precioVenta)}</span>
               </div>
-              {costoPorcion > 0 && precioCalculado > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Ganancia por porción</span>
-                  <span className="font-semibold">{fmt(precioCalculado - costoPorcion)}</span>
-                </div>
+              {costoPorcion > 0 && precioVenta > 0 && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Ganancia bruta por porción</span>
+                    <span className="font-semibold">{fmt(precioVenta - costoPorcion)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Margen bruto sobre costo</span>
+                    <span className="font-semibold tabular-nums">
+                      {margenBrutoPct != null ? `${margenBrutoPct.toFixed(0)}%` : "—"}
+                    </span>
+                  </div>
+                </>
               )}
-              <p className="text-[10px] text-muted-foreground">El precio de venta se guarda automáticamente al guardar el plato y se usa en las cotizaciones.</p>
+              <p className="text-[10px] text-muted-foreground">
+                El precio de venta se ingresa manualmente arriba (viene del portafolio comercial). El margen bruto es informativo — no incluye costos del evento (personal, transporte, menaje, etc.).
+              </p>
             </section>
 
             {/* Botón principal de guardar/crear */}
