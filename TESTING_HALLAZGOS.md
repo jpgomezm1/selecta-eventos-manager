@@ -215,3 +215,40 @@ Registro abierto durante la pasada de testing del 2026-05-11. Se corrige al fina
 - Responsive 375px.
 
 **Estado del repo:** sin commits durante el testing. Cotización TEST `fcc7f1e4` quedó con override $99.999 y la opción B intacta. Cliente TEST `cbbb16bc` creado. Limpiables manualmente cuando termines.
+
+---
+
+## Estado al cierre 2026-05-20 (pre-reunión cliente)
+
+Sprint dedicado a cerrar todo lo que dependa solo de código antes de la reunión del 2026-05-21.
+
+| ID | Estado | Notas |
+|----|--------|-------|
+| **H1** | 🟡 Pendiente decisión cliente | Naming sidebar (`/bodega`="Menaje", `/cocina`="Producción"). Para la reunión. |
+| **H2** | ✅ Resuelto | Hook `useCan` + sweep en 6 archivos (commit `530a8ab`). Botones "Nueva cotización", "Agregar" personal/cliente, "Nuevo Plato", "Nuevo movimiento", "Nuevo elemento" ahora gated por rol matcheando la ruta. |
+| **H3** | 🟡 Pendiente decisión cliente | Validaciones mínimas del form Nuevo Cliente. Para la reunión. |
+| **H4** | ✅ Validado | Matriz de roles vía Playwright fue correcta. No requiere acción. |
+| **H5** | 🟡 Pendiente decisión cliente | ¿Cocina crea platos? Mientras se decide, el botón sigue matcheando ruta admin+cocina. |
+| **H6** | ✅ Resuelto | Helper `nextOpcionLetra` extraído a `src/lib/cotizadorOpciones.ts` (commit `54f8782`). Opción 27 ya genera "AA". |
+| **H7** | ✅ Falso positivo | Por inspección de código: `ClienteSelector.tsx:74-77` → `Cotizador.tsx:475-476` persiste `cliente_id` correctamente. El bug reportado fue evento sintético de Playwright que no dispara `onSelect` de Radix `cmdk`. Click humano real funciona. |
+| **H8** | ✅ Resuelto | `ResumenCotizacion.tsx:382` ahora trata `next === 0` como override intencional (commit `a55fc4e`). El dialog de confirmación en `VersionEditorWizard` sigue validando la intencionalidad. |
+| **H9** | ✅ Ya estaba | `v_menaje_reservas_cal` ya tiene `security_invoker=true` en `reloptions` (no figura más en advisors). |
+| **H10** | ✅ Resuelto | Las 3 policies `USING(true)` dropeadas. `cotizacion_lugares` recibió 4 policies por rol; las otras 2 ya tenían policies por rol (commit `884124a` + migration `20260520000000`). |
+| **H11** | ✅ Parcial | `trg_audit_*` (×3) y `log_cotizacion_change` con EXECUTE revocado de anon/public. Las 7 funciones restantes (`assign_role`, `revoke_role`, `has_role`, `cotizacion_has_active_share`, `create_ingrediente_with_proveedor`, `list_users_with_roles`, `list_cotizacion_audit`) tienen guards internos `has_role(...)` y son intencionalmente RPC-callable. Los advisors siguen reportándolas como WARN — falsos positivos del linter, los guards mitigan. |
+| **H12** | ✅ Resuelto | `SET search_path = public, pg_temp` aplicado a las 13 funciones legacy. Advisors limpios. |
+| **H13** | 🟠 Dashboard | Upgrade Postgres (5 min en Supabase Dashboard). |
+| **H14** | 🟠 Dashboard | OTP expiry a < 60 min (Dashboard → Auth → Email provider). |
+| **H15** | 🟠 Dashboard | Habilitar leaked password protection (Dashboard → Auth → Password protection). |
+| **H16** | 🟢 Diferido | FKs sin índice. Solo importa a escala — no urgente. |
+
+**Pendientes de datos (decisión cliente):**
+- 17 platos con `codigo IS NULL` en `platos_catalogo` — no se pudieron mapear al portafolio comercial 2026.
+- Gaseosa **BEB-003** con 2 precios distintos en el Excel del portafolio — cuál es el correcto.
+- 209 platos sin receta (`plato_ingredientes` vacío) — afecta cálculo de costos en Cocina.
+
+**Acciones manuales rápidas para la reunión (sin código):**
+1. Dashboard Supabase → upgrade Postgres (H13).
+2. Dashboard Supabase → Auth → OTP expiry a 30 min (H14).
+3. Dashboard Supabase → Auth → enable leaked password protection (H15).
+
+**Estado del repo al cierre:** 6 commits a `origin/main` en el sprint (último `cf1ddaf`). Working tree limpio.
