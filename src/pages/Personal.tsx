@@ -14,6 +14,7 @@ import { CargaMasivaPersonal } from "@/components/Forms/CargaMasivaPersonal";
 import { EliminarPersonalDialog } from "@/components/Personal/EliminarPersonalDialog";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/Layout/PageHeader";
+import { useCan } from "@/hooks/useCan";
 import { Personal, ROLES_PERSONAL } from "@/types/database";
 
 const ITEMS_PER_PAGE = 10;
@@ -29,6 +30,8 @@ export default function PersonalPage() {
   const [isCargaMasivaOpen, setIsCargaMasivaOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
+  const can = useCan();
+  const puedeGestionar = can(["admin", "operaciones"]);
 
   const filteredPersonal = useMemo(() => {
     let filtered = personal;
@@ -120,17 +123,21 @@ export default function PersonalPage() {
         description={`${totalPersonal} ${totalPersonal === 1 ? "empleado registrado" : "empleados registrados"} · tarifas, modalidades y liquidaciones`}
         actions={
           <>
-            <Button onClick={() => setIsCargaMasivaOpen(true)} variant="outline" size="sm" className="gap-2">
-              <Upload className="h-4 w-4" strokeWidth={1.75} />
-              Importar
-            </Button>
+            {puedeGestionar && (
+              <Button onClick={() => setIsCargaMasivaOpen(true)} variant="outline" size="sm" className="gap-2">
+                <Upload className="h-4 w-4" strokeWidth={1.75} />
+                Importar
+              </Button>
+            )}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="gap-2">
-                  <UserPlus className="h-4 w-4" strokeWidth={1.75} />
-                  Agregar
-                </Button>
-              </DialogTrigger>
+              {puedeGestionar && (
+                <DialogTrigger asChild>
+                  <Button size="sm" className="gap-2">
+                    <UserPlus className="h-4 w-4" strokeWidth={1.75} />
+                    Agregar
+                  </Button>
+                </DialogTrigger>
+              )}
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>

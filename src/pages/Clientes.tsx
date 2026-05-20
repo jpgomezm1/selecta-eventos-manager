@@ -16,6 +16,7 @@ import {
 } from "@/integrations/supabase/apiClientes";
 import type { Cliente, ClienteInsert, ContactoCliente, ContactoClienteInsert } from "@/integrations/supabase/apiClientes";
 import { PageHeader } from "@/components/Layout/PageHeader";
+import { useCan } from "@/hooks/useCan";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -41,6 +42,8 @@ export default function ClientesPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<typeof emptyForm>(emptyForm);
   const { toast } = useToast();
+  const can = useCan();
+  const puedeGestionar = can(["admin", "comercial"]);
 
   // Contactos state
   const [contactos, setContactos] = useState<ContactoCliente[]>([]);
@@ -278,10 +281,12 @@ export default function ClientesPage() {
         title="Clientes"
         description={`${totalClientes} ${totalClientes === 1 ? "cliente registrado" : "clientes registrados"} · personas y empresas con sus contactos`}
         actions={
-          <Button size="sm" className="gap-2" onClick={openCreate}>
-            <UserPlus className="h-4 w-4" strokeWidth={1.75} />
-            Agregar
-          </Button>
+          puedeGestionar ? (
+            <Button size="sm" className="gap-2" onClick={openCreate}>
+              <UserPlus className="h-4 w-4" strokeWidth={1.75} />
+              Agregar
+            </Button>
+          ) : null
         }
       />
 

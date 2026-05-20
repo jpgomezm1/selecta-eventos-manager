@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, ChevronDown, ChevronLeft, ChevronRight, Check, Trash2, Camera, Receipt } from "lucide-react";
+import { useCan } from "@/hooks/useCan";
 import NuevoMovimientoDialog from "./NuevoMovimientoDialog";
 import FacturaIngresoDialog from "./FacturaIngresoDialog";
 import { getFacturaSignedUrl } from "@/services/facturaStorage";
@@ -44,6 +45,8 @@ const estadoBadge: Record<string, { label: string; variant: "default" | "seconda
 export default function MovimientosPanel() {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const can = useCan();
+  const puedeGestionar = can(["admin", "cocina"]);
   const [page, setPage] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [facturaDialogOpen, setFacturaDialogOpen] = useState(false);
@@ -107,14 +110,16 @@ export default function MovimientosPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={() => setFacturaDialogOpen(true)}>
-          <Camera className="h-4 w-4 mr-2" strokeWidth={1.75} /> Registrar ingreso
-        </Button>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" strokeWidth={1.75} /> Nuevo movimiento
-        </Button>
-      </div>
+      {puedeGestionar && (
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setFacturaDialogOpen(true)}>
+            <Camera className="h-4 w-4 mr-2" strokeWidth={1.75} /> Registrar ingreso
+          </Button>
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" strokeWidth={1.75} /> Nuevo movimiento
+          </Button>
+        </div>
+      )}
 
       <div className="rounded-md border overflow-x-auto">
         <Table>

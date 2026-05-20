@@ -30,10 +30,13 @@ import {
 import { cn } from "@/lib/utils";
 import { PageSkeleton } from "@/components/ui/skeletons";
 import { PageHeader, KPI } from "@/components/Layout/PageHeader";
+import { useCan } from "@/hooks/useCan";
 
 export default function CotizacionesListPage() {
   const nav = useNavigate();
   const { toast } = useToast();
+  const can = useCan();
+  const puedeCrear = can(["admin", "comercial"]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterComercial, setFilterComercial] = useState<string>("all");
@@ -234,10 +237,12 @@ export default function CotizacionesListPage() {
         title="Cotizaciones"
         description="Propuestas y presupuestos — del brief inicial a la aprobación del cliente."
         actions={
-          <Button onClick={() => nav("/cotizaciones/nueva")} className="gap-2">
-            <Plus className="h-4 w-4" strokeWidth={1.75} />
-            Nueva cotización
-          </Button>
+          puedeCrear ? (
+            <Button onClick={() => nav("/cotizaciones/nueva")} className="gap-2">
+              <Plus className="h-4 w-4" strokeWidth={1.75} />
+              Nueva cotización
+            </Button>
+          ) : null
         }
       />
 
@@ -396,7 +401,7 @@ export default function CotizacionesListPage() {
                 ? "No se encontraron cotizaciones que coincidan con los filtros aplicados."
                 : "Comienza creando tu primera cotización para gestionar presupuestos."}
             </p>
-            {!searchTerm && filterStatus === "all" && (
+            {!searchTerm && filterStatus === "all" && puedeCrear && (
               <Button onClick={() => nav("/cotizaciones/nueva")} className="mt-6">
                 <Plus className="mr-2 h-4 w-4" />
                 Crear primera cotización
