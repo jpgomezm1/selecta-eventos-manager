@@ -587,7 +587,17 @@ export default function VersionEditorWizard() {
         </div>
       )}
 
-      <AlertDialog open={zeroConfirmOpen} onOpenChange={setZeroConfirmOpen}>
+      <AlertDialog
+        open={zeroConfirmOpen}
+        onOpenChange={(open) => {
+          setZeroConfirmOpen(open);
+          // Al cancelar el dialog, revertimos el override $0 al valor que tenía
+          // la versión en BD para que no quede un estado volátil que se pierda.
+          if (!open) {
+            setTotalOverride(version?.total_override ?? null);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar total $0</AlertDialogTitle>

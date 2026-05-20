@@ -452,6 +452,32 @@ export default function Cotizador() {
       return;
     }
 
+    const invitados = Number(v.numero_invitados);
+    if (!Number.isFinite(invitados) || invitados < 1) {
+      toast({
+        title: "Número de invitados inválido",
+        description: "Debe ser al menos 1 invitado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const opcionVacia = opciones.find(
+      (o) =>
+        o.items.platos.length === 0 &&
+        o.items.personal.length === 0 &&
+        o.items.transportes.length === 0 &&
+        (o.items.menaje?.length ?? 0) === 0
+    );
+    if (opcionVacia) {
+      toast({
+        title: `${opcionVacia.nombre_opcion} está vacía`,
+        description: "Agrega al menos un plato, personal, transporte o menaje antes de guardar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const versiones = opciones.map((o, i) => {
       const tot = calcSubtotales(o.items);
       return {
