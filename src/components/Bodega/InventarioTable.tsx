@@ -31,10 +31,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { KPI } from "@/components/Layout/PageHeader";
+import { useCan } from "@/hooks/useCan";
 
 export default function InventarioTable() {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const can = useCan();
+  const puedeGestionar = can(["admin", "operaciones"]);
   const { data, isLoading } = useQuery({ queryKey: ["menaje-catalogo"], queryFn: menajeCatalogoList });
 
   const [newItem, setNewItem] = useState<Partial<MenajeCatalogo>>({
@@ -184,12 +187,14 @@ export default function InventarioTable() {
           </span>
 
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Nuevo elemento
-              </Button>
-            </DialogTrigger>
+            {puedeGestionar && (
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Nuevo elemento
+                </Button>
+              </DialogTrigger>
+            )}
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle className="font-serif text-2xl">Nuevo elemento de menaje</DialogTitle>

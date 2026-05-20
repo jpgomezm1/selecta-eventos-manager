@@ -22,6 +22,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Search, Eye, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { KPI } from "@/components/Layout/PageHeader";
 import { Button } from "@/components/ui/button";
+import { useCan } from "@/hooks/useCan";
 import PlatoDetailSheet from "./PlatoDetailSheet";
 
 const CATEGORIAS = ["Todas", "Bebida", "Entrada", "Fuerte", "Guarnición", "Pasaboca"];
@@ -33,6 +34,8 @@ export default function PlatosTable() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [page, setPage] = useState(0);
   const pageSize = 15;
+  const can = useCan();
+  const puedeCrear = can(["admin", "cocina"]);
 
   const { data: platos = [], isLoading: loadingPlatos } = useQuery({
     queryKey: ["platos-catalogo"],
@@ -97,11 +100,13 @@ export default function PlatosTable() {
       </div>
 
       {/* Search + Filter + New */}
-      <div className="flex flex-wrap gap-3 items-end">
-        <Button onClick={() => openDetail(null)} size="sm">
-          <Plus className="h-4 w-4 mr-1" /> Nuevo Plato
-        </Button>
-      </div>
+      {puedeCrear && (
+        <div className="flex flex-wrap gap-3 items-end">
+          <Button onClick={() => openDetail(null)} size="sm">
+            <Plus className="h-4 w-4 mr-1" /> Nuevo Plato
+          </Button>
+        </div>
+      )}
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
