@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import { nextOpcionLetra } from "@/lib/cotizadorOpciones";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -172,7 +173,7 @@ export default function Cotizador() {
   const addOpcion = () => {
     const nextIndex = opciones.length + 1;
     const key = crypto.randomUUID();
-    const letra = String.fromCharCode(64 + nextIndex);
+    const letra = nextOpcionLetra(nextIndex);
     setOpciones((prev) => [
       ...prev,
       {

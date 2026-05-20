@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { nextOpcionLetra } from "@/lib/cotizadorOpciones";
 import {
   getCotizacionDetalle,
   addVersionToCotizacion,
@@ -124,14 +125,7 @@ export default function CotizacionEditorPage() {
   const { mutate: agregarVersion, isPending: creandoVersion } = useMutation({
     mutationFn: async () => {
       const nextIndex = (data?.versiones?.length ?? 0) + 1;
-      // Letter sequence: 1→A, 26→Z, 27→AA, 52→AZ, 53→BA, ...
-      let n = nextIndex;
-      let letra = "";
-      while (n > 0) {
-        n--;
-        letra = String.fromCharCode(65 + (n % 26)) + letra;
-        n = Math.floor(n / 26);
-      }
+      const letra = nextOpcionLetra(nextIndex);
       return addVersionToCotizacion(id!, {
         nombre_opcion: `Opción ${letra}`,
         version_index: nextIndex,

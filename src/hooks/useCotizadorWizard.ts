@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { nextOpcionLetra } from "@/lib/cotizadorOpciones";
 import type {
   CotizacionItemsState,
   PlatoCatalogo,
@@ -59,14 +60,7 @@ export function useCotizadorWizard() {
   const addOpcion = useCallback(() => {
     const nextIndex = opciones.length + 1;
     const key = crypto.randomUUID();
-    // Letter sequence: 1→A, 26→Z, 27→AA, 52→AZ, 53→BA, ...
-    let n = nextIndex;
-    let letra = "";
-    while (n > 0) {
-      n--;
-      letra = String.fromCharCode(65 + (n % 26)) + letra;
-      n = Math.floor(n / 26);
-    }
+    const letra = nextOpcionLetra(nextIndex);
     setOpciones((prev) => [
       ...prev,
       {
