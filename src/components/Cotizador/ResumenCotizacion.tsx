@@ -377,8 +377,12 @@ export function ResumenCotizacion({
                       value={totalEfectivo}
                       sugerido={total}
                       onCommit={(next) => {
-                        // Si el admin escribe el mismo valor que el calculado,
-                        // limpiamos el override (vuelve al automático).
+                        // Override $0 es intencional (admin lo confirma con un dialog
+                        // aparte); el caso "limpiar override" solo aplica con next>0.
+                        if (next === 0) {
+                          onTotalOverrideChange?.(0);
+                          return;
+                        }
                         onTotalOverrideChange?.(next === total ? null : next);
                       }}
                       bigText={fullWidth}
