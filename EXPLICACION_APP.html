@@ -1,0 +1,1163 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Selecta — gestor de eventos de catering</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --olive-900: #2d3a1a;
+        --olive-700: #4a5d2a;
+        --olive-500: #6b7d4a;
+        --olive-300: #b3bf95;
+        --olive-100: #e8ead8;
+        --paper: #f7f5ed;
+        --paper-2: #efece1;
+        --ink: #1f1f1d;
+        --ink-soft: #4a4a45;
+        --muted: #8a8a82;
+        --line: #d9d6c7;
+      }
+
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+
+      body {
+        margin: 0;
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-size: 16px;
+        line-height: 1.65;
+        color: var(--ink);
+        background: var(--paper);
+        font-feature-settings: "ss01", "tnum";
+      }
+
+      .page {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 80px 32px 120px;
+      }
+
+      /* --- Header --- */
+      header {
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 56px;
+        margin-bottom: 80px;
+      }
+
+      .kicker {
+        font-family: "Inter", sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--olive-700);
+      }
+
+      h1 {
+        font-family: "Fraunces", Georgia, serif;
+        font-weight: 500;
+        font-size: 56px;
+        line-height: 1.08;
+        margin: 16px 0 24px;
+        letter-spacing: -0.01em;
+        color: var(--olive-900);
+      }
+
+      .lead {
+        font-size: 19px;
+        line-height: 1.6;
+        color: var(--ink-soft);
+        max-width: 640px;
+      }
+
+      /* --- Sections --- */
+      section {
+        margin-top: 96px;
+      }
+
+      h2 {
+        font-family: "Fraunces", serif;
+        font-weight: 500;
+        font-size: 36px;
+        line-height: 1.2;
+        margin: 12px 0 24px;
+        color: var(--olive-900);
+        letter-spacing: -0.01em;
+      }
+
+      h3 {
+        font-family: "Fraunces", serif;
+        font-weight: 500;
+        font-size: 22px;
+        line-height: 1.3;
+        margin: 0 0 8px;
+        color: var(--olive-900);
+      }
+
+      p { margin: 0 0 16px; }
+
+      .intro {
+        font-size: 17px;
+        color: var(--ink-soft);
+        margin-bottom: 48px;
+        max-width: 640px;
+      }
+
+      /* ===== Flujo end-to-end (timeline) ===== */
+      .flow {
+        margin-top: 24px;
+        position: relative;
+      }
+
+      .flow-step {
+        display: grid;
+        grid-template-columns: 80px 1fr;
+        gap: 32px;
+        padding-bottom: 48px;
+        position: relative;
+      }
+      .flow-step:not(:last-child)::before {
+        content: "";
+        position: absolute;
+        left: 39px;
+        top: 56px;
+        bottom: 0;
+        width: 1px;
+        background: var(--olive-300);
+      }
+
+      .flow-marker {
+        position: relative;
+        z-index: 1;
+      }
+      .flow-num {
+        font-family: "Fraunces", serif;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--olive-700);
+        background: var(--paper);
+        border: 1px solid var(--olive-300);
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        margin: 0 auto;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .flow-body {
+        padding-top: 6px;
+      }
+      .flow-stage {
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--olive-700);
+        margin-bottom: 4px;
+      }
+      .flow-title {
+        font-family: "Fraunces", serif;
+        font-size: 24px;
+        font-weight: 500;
+        color: var(--olive-900);
+        margin: 0 0 12px;
+        line-height: 1.3;
+      }
+      .flow-body p {
+        color: var(--ink-soft);
+        margin-bottom: 10px;
+      }
+      .flow-handoff {
+        margin-top: 12px;
+        padding: 12px 16px;
+        background: var(--olive-100);
+        border-left: 2px solid var(--olive-500);
+        font-size: 14.5px;
+        color: var(--olive-900);
+      }
+      .flow-handoff strong {
+        font-weight: 600;
+      }
+
+      /* ===== Area details ===== */
+      .area-list {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .area {
+        padding: 36px 0;
+        border-top: 1px solid var(--line);
+      }
+      .area:last-child { border-bottom: 1px solid var(--line); }
+
+      .area-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+      .area-route {
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 12.5px;
+        color: var(--olive-700);
+        background: var(--olive-100);
+        padding: 2px 8px;
+        border-radius: 3px;
+      }
+      .area p {
+        color: var(--ink-soft);
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+        margin-top: 20px;
+      }
+      .feature {
+        display: grid;
+        grid-template-columns: 16px 1fr;
+        gap: 14px;
+        align-items: start;
+      }
+      .feature-dot {
+        margin-top: 9px;
+        width: 5px;
+        height: 5px;
+        background: var(--olive-500);
+        border-radius: 50%;
+      }
+      .feature-text {
+        font-size: 15.5px;
+        color: var(--ink-soft);
+        line-height: 1.55;
+      }
+      .feature-text strong {
+        color: var(--olive-900);
+        font-weight: 600;
+      }
+
+      /* ===== Roles ===== */
+      .roles {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-top: 24px;
+      }
+      .role {
+        padding: 24px;
+        border: 1px solid var(--line);
+        background: var(--paper-2);
+      }
+      .role h4 {
+        font-family: "Fraunces", serif;
+        font-size: 18px;
+        color: var(--olive-900);
+        margin: 0 0 6px;
+        font-weight: 500;
+      }
+      .role p {
+        font-size: 14.5px;
+        color: var(--ink-soft);
+        margin: 0;
+      }
+
+      /* ===== Requirement blocks ===== */
+      .req-block {
+        background: white;
+        border: 1px solid var(--line);
+        padding: 36px;
+        margin-bottom: 20px;
+      }
+      .req-block h3 { margin-bottom: 12px; }
+      .req-block > p:first-of-type {
+        color: var(--ink-soft);
+        margin: 0;
+      }
+
+      .req-list {
+        list-style: none;
+        padding: 0;
+        margin: 16px 0 0;
+      }
+      .req-list li {
+        padding: 14px 0;
+        border-top: 1px solid var(--line);
+        display: grid;
+        grid-template-columns: 24px 1fr;
+        gap: 16px;
+      }
+      .req-list li:first-child { border-top: none; padding-top: 8px; }
+      .req-list li:last-child { padding-bottom: 0; }
+
+      .marker {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        background: var(--olive-700);
+        border-radius: 50%;
+        margin-top: 11px;
+        margin-left: 8px;
+      }
+
+      .req-list strong {
+        font-weight: 600;
+        color: var(--olive-900);
+      }
+      .req-list .desc {
+        display: block;
+        color: var(--ink-soft);
+        font-size: 15px;
+        margin-top: 2px;
+      }
+
+      /* ===== Help ===== */
+      .help-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .help-list li {
+        padding: 20px 0;
+        border-top: 1px solid var(--line);
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+      .help-list li:last-child { border-bottom: 1px solid var(--line); }
+      .help-list .title {
+        font-family: "Fraunces", serif;
+        font-size: 18px;
+        color: var(--olive-900);
+        font-weight: 500;
+      }
+      .help-list .body {
+        color: var(--ink-soft);
+        font-size: 15px;
+      }
+
+      /* ===== Access card ===== */
+      .access {
+        margin-top: 56px;
+        background: var(--olive-900);
+        color: #fff;
+        padding: 40px 36px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+      }
+      .access-head {
+        grid-column: 1 / -1;
+        margin-bottom: 4px;
+      }
+      .access-kicker {
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--olive-300);
+      }
+      .access-title {
+        font-family: "Fraunces", serif;
+        font-size: 24px;
+        font-weight: 500;
+        margin: 8px 0 0;
+        color: #fff;
+      }
+      .access-row {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .access-label {
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--olive-300);
+      }
+      .access-value {
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 15px;
+        color: #fff;
+        word-break: break-all;
+      }
+      .access-note {
+        grid-column: 1 / -1;
+        font-size: 13px;
+        color: var(--olive-300);
+        margin-top: 16px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(255,255,255,0.15);
+      }
+
+      /* ===== Footer ===== */
+      footer {
+        margin-top: 96px;
+        padding-top: 40px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 13.5px;
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+
+      /* ===== Responsive ===== */
+      @media (max-width: 640px) {
+        .page { padding: 56px 20px 80px; }
+        h1 { font-size: 38px; }
+        h2 { font-size: 28px; }
+        .flow-step { grid-template-columns: 48px 1fr; gap: 16px; padding-bottom: 36px; }
+        .flow-step:not(:last-child)::before { left: 23px; top: 44px; }
+        .flow-num { width: 40px; height: 40px; font-size: 13px; }
+        .roles { grid-template-columns: 1fr; }
+        .req-block { padding: 24px; }
+        .access { grid-template-columns: 1fr; padding: 28px 24px; gap: 20px; }
+      }
+
+      @media print {
+        body { background: white; }
+        .page { padding: 24px; max-width: none; }
+        section { margin-top: 48px; page-break-inside: avoid; }
+        .flow-step, .area, .req-block, .role { page-break-inside: avoid; }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="page">
+      <header>
+        <div class="kicker">Selecta — Gestor interno</div>
+        <h1>Una herramienta diseñada para el flujo real de un catering.</h1>
+        <p class="lead">
+          Cada evento atraviesa las mismas etapas: brief, propuesta,
+          aprobación, planificación operativa, producción y cierre. Selecta
+          mapea esas etapas a pantallas conectadas entre sí, de forma que
+          nada se cae en los traspasos entre comercial, operaciones y
+          cocina.
+        </p>
+
+        <div class="access">
+          <div class="access-head">
+            <div class="access-kicker">Acceso para la demo</div>
+            <div class="access-title">Pruebas en vivo</div>
+          </div>
+          <div class="access-row">
+            <span class="access-label">URL</span>
+            <span class="access-value">[URL DE LA APP]</span>
+          </div>
+          <div class="access-row">
+            <span class="access-label">Rol</span>
+            <span class="access-value">Administración</span>
+          </div>
+          <div class="access-row">
+            <span class="access-label">Usuario</span>
+            <span class="access-value">[email]</span>
+          </div>
+          <div class="access-row">
+            <span class="access-label">Contraseña</span>
+            <span class="access-value">[contraseña]</span>
+          </div>
+          <div class="access-note">
+            Las credenciales son temporales para la sesión de hoy. Una vez
+            definidos los usuarios reales, cada persona del equipo recibirá
+            su acceso con el rol que le corresponda.
+          </div>
+        </div>
+      </header>
+
+      <!-- ====================================================== -->
+      <!-- FLUJO END-TO-END                                        -->
+      <!-- ====================================================== -->
+      <section>
+        <div class="kicker">El recorrido</div>
+        <h2>Del primer contacto al último plato</h2>
+        <p class="intro">
+          Así viaja un evento por la aplicación. Cada paso pasa la
+          información al siguiente sin reingreso manual; los recuadros
+          señalan qué dato queda registrado en cada traspaso.
+        </p>
+
+        <div class="flow">
+          <div class="flow-step">
+            <div class="flow-marker"><div class="flow-num">01</div></div>
+            <div class="flow-body">
+              <div class="flow-stage">Comercial</div>
+              <h3 class="flow-title">Llega un prospecto y se registra en el pipeline</h3>
+              <p>
+                El equipo comercial crea una tarjeta en el tablero del
+                pipeline con el cliente, la fecha tentativa y una nota del
+                brief. La tarjeta empieza en la columna "Prospecto" y se
+                mueve hacia adelante a medida que la oportunidad avanza.
+              </p>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-marker"><div class="flow-num">02</div></div>
+            <div class="flow-body">
+              <div class="flow-stage">Comercial</div>
+              <h3 class="flow-title">Se arma la cotización con opciones</h3>
+              <p>
+                Comercial abre el wizard de cotización y completa cuatro
+                pasos: datos del evento, menú, personal, transporte y
+                menaje. Puede crear una Opción A, duplicarla en una
+                Opción B con cambios y agregar una Opción C si el cliente
+                pide tres niveles de propuesta.
+              </p>
+              <p>
+                Cada opción calcula su total automáticamente sumando
+                platos, personal según modalidad, transporte y alquiler de
+                menaje, más el costo del lugar elegido.
+              </p>
+              <div class="flow-handoff">
+                <strong>Queda en sistema:</strong> la cotización con todas
+                sus versiones, el cliente vinculado y la versión que el
+                comercial recomienda como principal.
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-marker"><div class="flow-num">03</div></div>
+            <div class="flow-body">
+              <div class="flow-stage">Comercial → Cliente</div>
+              <h3 class="flow-title">Se le envía al cliente</h3>
+              <p>
+                Dos formas de compartir la propuesta. La primera, un PDF
+                editorial con la marca de Selecta, las opciones de la
+                cotización y el detalle de qué incluye cada una. La
+                segunda, un enlace público que el cliente abre desde el
+                navegador sin necesidad de cuenta, donde ve la propuesta
+                en vivo y puede compararla entre opciones.
+              </p>
+              <p>
+                Si Administración necesita ajustar el total final por una
+                negociación puntual, puede sobrescribirlo y queda
+                registrado quién y cuándo lo hizo.
+              </p>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-marker"><div class="flow-num">04</div></div>
+            <div class="flow-body">
+              <div class="flow-stage">Decisión del cliente</div>
+              <h3 class="flow-title">El cliente aprueba una de las opciones</h3>
+              <p>
+                Una vez que el cliente confirma, comercial marca esa versión
+                como definitiva. La aplicación pide confirmación porque
+                este paso es el que dispara la creación del evento.
+              </p>
+              <div class="flow-handoff">
+                <strong>Lo que pasa automáticamente:</strong> se crea un
+                evento nuevo con la fecha, ubicación, los platos, el
+                personal cotizado, el transporte y el menaje. Sin
+                reingreso. Si el comercial intentara crear el evento dos
+                veces, la app detecta que ya existe y devuelve el mismo.
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-marker"><div class="flow-num">05</div></div>
+            <div class="flow-body">
+              <div class="flow-stage">Operaciones</div>
+              <h3 class="flow-title">Operaciones planifica la ejecución</h3>
+              <p>
+                El equipo de operaciones abre el evento y trabaja sobre
+                seis paneles paralelos: menaje, personal, transporte,
+                orden de compra, cierre y un checklist general.
+              </p>
+              <p>
+                En menaje, reservan los items necesarios sobre un
+                calendario que muestra qué hay disponible en esa fecha
+                considerando los otros eventos. En personal, asignan
+                empleados reales a los puestos cotizados; la app calcula
+                automáticamente el pago según la modalidad de cobro de
+                cada uno. La orden de compra registra los ingredientes
+                que hay que adquirir para el evento.
+              </p>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-marker"><div class="flow-num">06</div></div>
+            <div class="flow-body">
+              <div class="flow-stage">Cocina</div>
+              <h3 class="flow-title">Cocina trabaja con producción y recetas escaladas</h3>
+              <p>
+                El chef abre la pantalla de producción y filtra por día o
+                semana. Ve los platos a preparar consolidados entre todos
+                los eventos del rango, con cantidad total y desglose por
+                evento.
+              </p>
+              <p>
+                Al abrir un plato, ve la receta con las cantidades
+                escaladas al número real de invitados del evento, no la
+                receta base. Si el plato no tiene receta cargada, la
+                herramienta de IA puede generarla a partir de una
+                descripción.
+              </p>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-marker"><div class="flow-num">07</div></div>
+            <div class="flow-body">
+              <div class="flow-stage">Cierre</div>
+              <h3 class="flow-title">Se ejecuta el evento y se cierra</h3>
+              <p>
+                Después del evento, operaciones registra la devolución del
+                menaje (con merma si la hubo), confirma los pagos al
+                personal y cierra el evento con un balance final que
+                compara lo presupuestado con lo realmente gastado.
+              </p>
+              <p>
+                Toda la información del evento queda guardada con su
+                cotización original para consultas futuras, propuestas a
+                clientes recurrentes o análisis del negocio.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================== -->
+      <!-- CÓMO FUNCIONA CADA ÁREA                                 -->
+      <!-- ====================================================== -->
+      <section>
+        <div class="kicker">Detalle por área</div>
+        <h2>Lo que hace cada pantalla</h2>
+        <p class="intro">
+          Cada área de la aplicación cubre una función específica del
+          negocio. Las pantallas se conectan entre sí; cambios en una
+          (por ejemplo, ajustar un precio en catálogos) se reflejan en
+          las cotizaciones nuevas que la usen.
+        </p>
+
+        <div class="area-list">
+          <article class="area">
+            <div class="area-head">
+              <h3>Pipeline</h3>
+              <span class="area-route">/pipeline</span>
+            </div>
+            <p>
+              Tablero kanban con todas las oportunidades por estado.
+              Comercial mueve las tarjetas entre columnas a medida que
+              progresan, y desde cada tarjeta puede saltar directo a la
+              cotización asociada.
+            </p>
+            <div class="feature-grid">
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Estados configurables</strong> que reflejan el
+                  embudo comercial real de Selecta.
+                </span>
+              </div>
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Vista de funnel</strong> con métricas básicas
+                  por etapa para ver dónde se traban los prospectos.
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <article class="area">
+            <div class="area-head">
+              <h3>Cotizaciones</h3>
+              <span class="area-route">/cotizaciones</span>
+            </div>
+            <p>
+              El núcleo de la operación comercial. Un wizard de cuatro
+              pasos guía al usuario por la construcción de la propuesta,
+              evitando errores típicos como olvidar un transporte o
+              dejar un precio en cero.
+            </p>
+            <div class="feature-grid">
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Opciones A, B y C</strong> en una misma
+                  cotización, cada una con sus propios platos, personal
+                  y precios. Pensado para clientes que piden alternativas.
+                </span>
+              </div>
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Duplicación rápida</strong> de una opción para
+                  crear variantes (por ejemplo, "lo mismo pero con un
+                  postre más" sin rearmar todo).
+                </span>
+              </div>
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Total automático</strong> que recalcula al
+                  vuelo cuando se agrega un plato o se mueve la cantidad
+                  de invitados.
+                </span>
+              </div>
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Override admin con auditoría</strong>: si
+                  administración cierra una negociación a un total
+                  distinto del calculado, lo puede registrar y queda
+                  trazado en el historial con quién y cuándo.
+                </span>
+              </div>
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>PDF editorial y enlace público</strong> para
+                  compartir con el cliente sin que necesite cuenta. El
+                  link se puede desactivar en cualquier momento.
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <article class="area">
+            <div class="area-head">
+              <h3>Eventos</h3>
+              <span class="area-route">/eventos</span>
+            </div>
+            <p>
+              Cuando una cotización se aprueba, se convierte en evento.
+              El evento es donde la operación se materializa: se asignan
+              personas concretas, se reserva el menaje, se hace la
+              compra, se ejecuta y se cierra.
+            </p>
+            <div class="feature-grid">
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Seis paneles especializados</strong>: menaje,
+                  personal, transporte, orden de compra, cierre y
+                  checklist. Cada uno gestiona una dimensión del evento
+                  sin interferir con las otras.
+                </span>
+              </div>
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Asignación de personal con cálculo automático</strong>:
+                  al asignar a un empleado a un puesto, la app calcula
+                  cuánto cobra según su modalidad (por hora, jornada,
+                  jornada nocturna, por evento).
+                </span>
+              </div>
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Checklist visible</strong> de qué falta hacer
+                  antes del evento: orden de compra creada, personal
+                  asignado, menaje despachado.
+                </span>
+              </div>
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Balance final</strong> en el cierre que
+                  contrasta lo cotizado con lo realmente gastado.
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <article class="area">
+            <div class="area-head">
+              <h3>Cocina</h3>
+              <span class="area-route">/cocina</span>
+            </div>
+            <p>
+              Pensada para que el chef la abra al llegar al sitio. Una
+              sola pantalla con lo que hay que producir hoy o esta
+              semana, sin necesidad de revisar cotización por cotización.
+            </p>
+            <div class="feature-grid">
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Vista día / semana</strong> con todos los
+                  eventos del rango y los platos consolidados.
+                </span>
+              </div>
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Receta escalada al instante</strong>: si la
+                  receta base rinde 10 porciones y el evento es para
+                  120, la cantidad de cada ingrediente se multiplica
+                  automáticamente.
+                </span>
+              </div>
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Desglose por evento</strong>: en eventos del
+                  mismo día, el chef ve cuánto de cada plato va a cada
+                  uno.
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <article class="area">
+            <div class="area-head">
+              <h3>Bodega de menaje</h3>
+              <span class="area-route">/bodega</span>
+            </div>
+            <p>
+              Inventario de lo que se alquila o se usa en eventos:
+              vajilla, cristalería, mantelería, mobiliario, etc.
+              Calendario de reservas para evitar sobreasignaciones.
+            </p>
+            <div class="feature-grid">
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Calendario visual</strong> que muestra qué
+                  items están comprometidos en qué fechas.
+                </span>
+              </div>
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Devolución registrada</strong>: al volver del
+                  evento, se asienta qué se devolvió y qué se rompió o
+                  perdió como merma.
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <article class="area">
+            <div class="area-head">
+              <h3>Inventario de insumos</h3>
+              <span class="area-route">/inventario</span>
+            </div>
+            <p>
+              Stock de ingredientes y materiales consumibles, con
+              historial de movimientos (entradas por compra, salidas por
+              uso, ajustes manuales, mermas).
+            </p>
+            <div class="feature-grid">
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Lectura automática de facturas</strong>: se
+                  carga la foto o el PDF de la factura del proveedor y
+                  la IA extrae los items para ingresar al stock con un
+                  click de confirmación, en lugar de tipearlos uno por
+                  uno.
+                </span>
+              </div>
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Trazabilidad</strong> de cada movimiento con
+                  quién lo hizo, cuándo y por qué.
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <article class="area">
+            <div class="area-head">
+              <h3>Recetario</h3>
+              <span class="area-route">/recetario</span>
+            </div>
+            <p>
+              La biblioteca de platos de Selecta. Cada plato tiene un
+              precio de venta (manual, lo decide comercial) y un costo
+              que se deriva automáticamente de la receta cargada. El
+              margen es visible.
+            </p>
+            <div class="feature-grid">
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Receta con ingredientes y porciones</strong>:
+                  define cuánto rinde la receta y qué ingredientes
+                  usa, para que la app pueda escalar después.
+                </span>
+              </div>
+              <div class="feature">
+                <span class="feature-dot"></span>
+                <span class="feature-text">
+                  <strong>Asistencia de IA</strong> para generar recetas
+                  faltantes a partir de una descripción breve del plato.
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <article class="area">
+            <div class="area-head">
+              <h3>Catálogos</h3>
+              <span class="area-route">/catalogos</span>
+            </div>
+            <p>
+              Datos maestros administrados solo por administración:
+              lista de platos con precio, tarifas de personal por
+              modalidad y tarifas de transporte por zona. Es la fuente
+              de verdad que alimenta a todas las cotizaciones nuevas.
+            </p>
+          </article>
+        </div>
+
+        <div style="margin-top: 56px;">
+          <div class="kicker" style="margin-bottom: 12px;">Quién ve qué</div>
+          <h3 style="font-size: 22px;">Roles</h3>
+          <p style="color: var(--ink-soft); max-width: 640px;">
+            Cada persona del equipo entra con un rol. El rol filtra el
+            menú lateral y oculta acciones que no le corresponden, para
+            que cada perfil vea solo lo suyo.
+          </p>
+          <div class="roles">
+            <div class="role">
+              <h4>Administración</h4>
+              <p>
+                Acceso completo. Configura catálogos, gestiona usuarios,
+                puede sobrescribir totales de cotización.
+              </p>
+            </div>
+            <div class="role">
+              <h4>Comercial</h4>
+              <p>
+                Pipeline, cotizaciones y clientes. Crea propuestas y las
+                acompaña hasta la aprobación.
+              </p>
+            </div>
+            <div class="role">
+              <h4>Operaciones</h4>
+              <p>
+                Eventos aprobados, bodega de menaje, personal asignado y
+                transporte. Coordina la ejecución.
+              </p>
+            </div>
+            <div class="role">
+              <h4>Cocina</h4>
+              <p>
+                Producción del día, recetario e inventario de insumos.
+                Trabaja con las recetas escaladas.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================== -->
+      <!-- REQUERIMIENTOS                                          -->
+      <!-- ====================================================== -->
+      <section>
+        <div class="kicker">Para arrancar</div>
+        <h2>Qué necesitamos de su parte</h2>
+        <p class="intro">
+          La aplicación está lista y en producción con el catálogo y los
+          precios del año cargados. Para que entre en operación plena
+          quedan tres frentes que dependen de su decisión o sus datos.
+        </p>
+
+        <div class="req-block">
+          <h3>Cerrar la carga del catálogo</h3>
+          <p>Tres items abiertos en la carga del portafolio 2026:</p>
+          <ul class="req-list">
+            <li>
+              <span class="marker"></span>
+              <div>
+                <strong>17 platos sin código</strong>
+                <span class="desc">
+                  Están en la base pero no se pudieron mapear al
+                  portafolio comercial. Necesitamos revisarlos uno por
+                  uno para entender si son platos descontinuados,
+                  duplicados o si les falta el código en el Excel.
+                </span>
+              </div>
+            </li>
+            <li>
+              <span class="marker"></span>
+              <div>
+                <strong>Gaseosa BEB-003 con dos precios</strong>
+                <span class="desc">
+                  En el portafolio comercial 2026 aparece con dos
+                  valores distintos. Definir cuál es el correcto.
+                </span>
+              </div>
+            </li>
+            <li>
+              <span class="marker"></span>
+              <div>
+                <strong>Platos sin receta cargada</strong>
+                <span class="desc">
+                  No bloquea la venta porque los precios al cliente
+                  están, pero afecta el cálculo de costo y la receta
+                  escalada en cocina. Se pueden generar con la
+                  herramienta de IA o cargar manualmente los que más se
+                  venden.
+                </span>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="req-block">
+          <h3>Tres decisiones de producto</h3>
+          <p>Definiciones que requieren su criterio antes de cerrar la configuración:</p>
+          <ul class="req-list">
+            <li>
+              <span class="marker"></span>
+              <div>
+                <strong>Nombres del menú</strong>
+                <span class="desc">
+                  Algunas secciones tienen un nombre interno y otro
+                  visible distinto ("Menaje" / "Producción"). Definir si
+                  quieren que coincidan o se mantienen como están.
+                </span>
+              </div>
+            </li>
+            <li>
+              <span class="marker"></span>
+              <div>
+                <strong>Campos obligatorios al registrar un cliente</strong>
+                <span class="desc">
+                  Hoy se puede registrar un cliente con solo el nombre.
+                  ¿Qué campos quieren obligatorios? Recomendamos al
+                  menos un dato de contacto (teléfono o correo).
+                </span>
+              </div>
+            </li>
+            <li>
+              <span class="marker"></span>
+              <div>
+                <strong>¿El rol Cocina puede crear platos nuevos?</strong>
+                <span class="desc">
+                  Hoy sí puede. Si prefieren que la creación de platos
+                  sea exclusiva de Administración, lo ajustamos en una
+                  línea.
+                </span>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="req-block">
+          <h3>Carga inicial y accesos del equipo</h3>
+          <ul class="req-list">
+            <li>
+              <span class="marker"></span>
+              <div>
+                <strong>Roster real de empleados</strong>
+                <span class="desc">
+                  Hay un importador masivo desde Excel listo. Si nos
+                  comparten el archivo lo procesamos y el personal queda
+                  cargado con sus modalidades de cobro.
+                </span>
+              </div>
+            </li>
+            <li>
+              <span class="marker"></span>
+              <div>
+                <strong>Base de clientes</strong>
+                <span class="desc">
+                  Si tienen base existente, la importamos. Si prefieren,
+                  se van creando a medida que se cotiza.
+                </span>
+              </div>
+            </li>
+            <li>
+              <span class="marker"></span>
+              <div>
+                <strong>Definir quién accede con qué rol</strong>
+                <span class="desc">
+                  Listar qué personas del equipo tendrán cuenta y qué
+                  rol asignar a cada una entre los cuatro disponibles.
+                </span>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ====================================================== -->
+      <!-- CÓMO LOS ACOMPAÑAMOS                                    -->
+      <!-- ====================================================== -->
+      <section>
+        <div class="kicker">De nuestro lado</div>
+        <h2>Cómo los acompañamos</h2>
+        <p class="intro">
+          Una vez recibidas las definiciones, podemos ejecutar varias
+          tareas para que la operación arranque rápido.
+        </p>
+
+        <ul class="help-list">
+          <li>
+            <span class="title">Sesión de carga del roster</span>
+            <span class="body">
+              Procesamos el Excel de empleados de planta y dejamos las
+              modalidades de cobro configuradas. Una sola sesión deja la
+              operación de personal lista para asignar a eventos.
+            </span>
+          </li>
+          <li>
+            <span class="title">Carga de la base de clientes</span>
+            <span class="body">
+              Si tienen base existente la importamos en bloque. Si no,
+              se va construyendo desde el formulario a medida que se
+              cotiza.
+            </span>
+          </li>
+          <li>
+            <span class="title">Workshop por área</span>
+            <span class="body">
+              Una hora por área (pipeline y cotizador, operaciones,
+              cocina) con las personas que las van a usar. Se puede
+              grabar para onboardings posteriores.
+            </span>
+          </li>
+          <li>
+            <span class="title">Generación de recetas faltantes</span>
+            <span class="body">
+              Cargamos en bloque las recetas de los platos que más se
+              venden usando la herramienta de IA del recetario, y
+              quedan disponibles para escalar en cocina.
+            </span>
+          </li>
+          <li>
+            <span class="title">Onboarding de usuarios</span>
+            <span class="body">
+              Creación de cuentas, asignación de roles y primer acceso
+              guiado para cada persona del equipo.
+            </span>
+          </li>
+        </ul>
+      </section>
+
+      <footer>
+        <div>Selecta · Gestor interno de eventos de catering</div>
+        <div>2026-05-21</div>
+      </footer>
+    </main>
+  </body>
+</html>
