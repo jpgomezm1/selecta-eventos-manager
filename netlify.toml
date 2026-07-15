@@ -4,8 +4,9 @@
   functions = "netlify/functions"
   publish = "dist"
 
-  ## Uncomment to use this redirect for Single Page Applications like create-react-app.
-  ## Not needed for static site generators.
+  ## SPA redirects are handled by public/_redirects (copied into dist/ by Vite),
+  ## verified active in prod — deep links and refresh return 200. The block below
+  ## stays commented to keep a single source of truth.
   #[[redirects]]
   #  from = "/*"
   #  to = "/index.html"
