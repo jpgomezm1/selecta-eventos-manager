@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Selecta — guía para el seguimiento del proyecto</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --olive-900: #2d3a1a;
+        --olive-700: #4a5d2a;
+        --olive-500: #6b7d4a;
+        --olive-300: #b3bf95;
+        --olive-100: #e8ead8;
+        --paper: #f7f5ed;
+        --paper-2: #efece1;
+        --ink: #1f1f1d;
+        --ink-soft: #4a4a45;
+        --muted: #8a8a82;
+        --line: #d9d6c7;
+      }
+
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+      @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        * { transition: none !important; }
+      }
+
+      body {
+        margin: 0;
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-size: 16px;
+        line-height: 1.65;
+        color: var(--ink);
+        background: var(--paper);
+        font-feature-settings: "ss01", "tnum";
+      }
+
+      .page {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 72px 32px 120px;
+      }
+
+      header {
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 48px;
+        margin-bottom: 72px;
+      }
+
+      .kicker {
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--olive-700);
+      }
+
+      h1 {
+        font-family: "Fraunces", Georgia, serif;
+        font-weight: 500;
+        font-size: 46px;
+        line-height: 1.1;
+        margin: 16px 0 20px;
+        letter-spacing: -0.01em;
+        color: var(--olive-900);
+      }
+
+      .lead {
+        font-size: 18px;
+        line-height: 1.6;
+        color: var(--ink-soft);
+        max-width: 640px;
+      }
+
+      .lead a, p a {
+        color: var(--olive-700);
+        text-decoration-color: var(--olive-300);
+        text-underline-offset: 3px;
+      }
+
+      section { margin-top: 88px; }
+
+      h2 {
+        font-family: "Fraunces", Georgia, serif;
+        font-weight: 500;
+        font-size: 32px;
+        line-height: 1.2;
+        margin: 12px 0 20px;
+        color: var(--olive-900);
+        letter-spacing: -0.01em;
+      }
+
+      h3 {
+        font-family: "Fraunces", Georgia, serif;
+        font-weight: 500;
+        font-size: 21px;
+        line-height: 1.3;
+        margin: 0 0 6px;
+        color: var(--olive-900);
+      }
+
+      p { margin: 0 0 16px; color: var(--ink-soft); }
+      strong { color: var(--ink); font-weight: 600; }
+
+      .ruta {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+      }
+
+      /* --- El recorrido --- */
+      .etapas { margin-top: 32px; }
+
+      .etapa {
+        position: relative;
+        padding: 0 0 40px 36px;
+        border-left: 1px solid var(--line);
+        margin-left: 8px;
+      }
+      .etapa:last-child { border-left-color: transparent; padding-bottom: 0; }
+
+      .etapa::before {
+        content: "";
+        position: absolute;
+        left: -6px;
+        top: 6px;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: var(--olive-500);
+        border: 2px solid var(--paper);
+      }
+
+      .etapa p { margin-bottom: 10px; }
+
+      .aqui {
+        margin: 14px 0 4px;
+        padding: 14px 18px;
+        background: var(--olive-100);
+        border-radius: 6px;
+        font-size: 14.5px;
+        line-height: 1.55;
+        color: var(--olive-900);
+      }
+      .aqui .tag {
+        display: block;
+        font-size: 10.5px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--olive-700);
+        margin-bottom: 4px;
+      }
+
+      /* --- Checklist --- */
+      .progreso {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        margin: 8px 0 28px;
+      }
+      .progreso .num {
+        font-family: "Fraunces", Georgia, serif;
+        font-size: 30px;
+        color: var(--olive-900);
+        font-variant-numeric: tabular-nums;
+      }
+      .progreso .det { font-size: 13px; color: var(--muted); }
+
+      .pedido {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fffef9;
+        margin-bottom: 14px;
+        overflow: hidden;
+      }
+
+      .pedido summary {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 18px 20px;
+        cursor: pointer;
+        list-style: none;
+      }
+      .pedido summary::-webkit-details-marker { display: none; }
+      .pedido summary:focus-visible {
+        outline: 2px solid var(--olive-500);
+        outline-offset: -2px;
+        border-radius: 8px;
+      }
+
+      .pedido input[type="checkbox"] {
+        flex: none;
+        width: 19px;
+        height: 19px;
+        margin-top: 3px;
+        accent-color: var(--olive-700);
+        cursor: pointer;
+      }
+
+      .pedido .titulo {
+        font-weight: 600;
+        color: var(--ink);
+        font-size: 15.5px;
+        line-height: 1.45;
+      }
+      .pedido .hint {
+        display: block;
+        font-weight: 400;
+        font-size: 13.5px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .pedido[data-checked="true"] .titulo {
+        color: var(--muted);
+        text-decoration: line-through;
+        text-decoration-color: var(--olive-300);
+      }
+
+      .pedido .cuerpo {
+        padding: 0 20px 18px 53px;
+        font-size: 14.5px;
+        color: var(--ink-soft);
+        border-top: 1px dashed var(--line);
+        padding-top: 14px;
+        margin: 0 0 0;
+      }
+      .pedido .cuerpo p { font-size: 14.5px; margin-bottom: 10px; }
+      .pedido .cuerpo p:last-child { margin-bottom: 0; }
+
+      .chev {
+        flex: none;
+        margin-left: auto;
+        margin-top: 6px;
+        width: 9px;
+        height: 9px;
+        border-right: 1.5px solid var(--muted);
+        border-bottom: 1.5px solid var(--muted);
+        transform: rotate(45deg);
+        transition: transform 0.15s ease;
+      }
+      .pedido[open] .chev { transform: rotate(-135deg); margin-top: 10px; }
+
+      /* --- Cómo pedir cambios --- */
+      .formato {
+        background: var(--paper-2);
+        border-radius: 8px;
+        padding: 22px 26px;
+        margin: 20px 0;
+      }
+      .formato dt {
+        font-weight: 600;
+        color: var(--olive-900);
+        font-size: 14.5px;
+        margin-top: 14px;
+      }
+      .formato dt:first-child { margin-top: 0; }
+      .formato dd {
+        margin: 2px 0 0;
+        font-size: 14.5px;
+        color: var(--ink-soft);
+      }
+
+      footer {
+        margin-top: 100px;
+        padding-top: 28px;
+        border-top: 1px solid var(--line);
+        font-size: 12.5px;
+        color: var(--muted);
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      @media (max-width: 540px) {
+        .page { padding: 48px 20px 80px; }
+        h1 { font-size: 34px; }
+        h2 { font-size: 26px; }
+        .pedido .cuerpo { padding-left: 20px; }
+      }
+
+      @media print {
+        .pedido { break-inside: avoid; }
+        details { display: block; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div class="kicker">Selecta Eventos · Guía del proyecto</div>
+        <h1>Qué hace la app,<br />y qué necesitamos de ustedes</h1>
+        <p class="lead">
+          Esta guía es para quien lleva el seguimiento del proyecto por parte de Selecta.
+          No requiere conocimiento técnico: primero recorre lo que la app ya hace, etapa por
+          etapa, y después explica qué falta de parte de Selecta para que los números que
+          muestra sean reales — y por qué cada cosa importa.
+        </p>
+        <p class="lead" style="margin-top:12px">
+          La app vive en
+          <a href="https://selecta-eventos.netlify.app" target="_blank" rel="noopener">selecta-eventos.netlify.app</a>.
+          El acceso se pide al equipo de Irrelevant o a quien administre los usuarios.
+        </p>
+      </header>
+
+      <section>
+        <div class="kicker">La idea en una frase</div>
+        <h2>Todo el negocio del evento, en un solo lugar</h2>
+        <p>
+          Hoy una cotización nace en un Excel, el evento se coordina por WhatsApp y la cocina
+          se entera por teléfono. La app junta ese recorrido completo: <strong>de la llamada del
+          cliente al plato servido</strong>, con precios que salen de un catálogo único, cada
+          cambio de dinero registrado con nombre y fecha, y cada área viendo solo lo suyo.
+        </p>
+      </section>
+
+      <section>
+        <div class="kicker">El recorrido</div>
+        <h2>De la llamada al plato servido</h2>
+        <p>
+          Cada etapa del negocio tiene su lugar en la app. Donde aparece un recuadro verde,
+          ahí hay algo que solo Selecta puede aportar.
+        </p>
+
+        <div class="etapas">
+          <div class="etapa">
+            <h3>1. Llega una oportunidad — Pipeline</h3>
+            <div class="ruta">Sección: Pipeline</div>
+            <p>
+              Un tablero tipo kanban con todas las cotizaciones organizadas por estado, de
+              prospecto a ganada. De un vistazo se ve cuánta plata hay en juego en cada columna.
+            </p>
+          </div>
+
+          <div class="etapa">
+            <h3>2. Se arma la propuesta — Cotizaciones</h3>
+            <div class="ruta">Sección: Cotizaciones</div>
+            <p>
+              Un asistente paso a paso: datos del evento, menú desde el catálogo de 393 platos,
+              personal, transporte y menaje. Soporta <strong>opciones A/B/C</strong> con precios
+              distintos para cuando el cliente pide alternativas. Genera un <strong>PDF con la
+              identidad de Selecta</strong> y un <strong>link público</strong> que el cliente abre
+              sin necesidad de cuenta. Si se negocia un precio final distinto, un administrador
+              puede fijarlo — y ese cambio queda registrado con nombre, valor y fecha.
+            </p>
+            <p>
+              En la app ya hay dos cotizaciones de ejemplo (una boda y un cóctel corporativo)
+              para explorar sin miedo: son de demostración.
+            </p>
+            <div class="aqui">
+              <span class="tag">Aquí necesitamos de Selecta</span>
+              Que el equipo comercial empiece a cotizar eventos reales acá y no en Excel.
+              Es la única forma de que el pipeline, los reportes y el historial digan la verdad.
+            </div>
+          </div>
+
+          <div class="etapa">
+            <h3>3. El cliente dice sí — Eventos</h3>
+            <div class="ruta">Sección: Eventos</div>
+            <p>
+              Al aprobar una cotización, se convierte en evento automáticamente. Ahí cada área
+              trabaja su panel: <strong>menaje</strong> (reserva de inventario con calendario, con
+              devoluciones y mermas controladas), <strong>personal</strong> (asignación de empleados
+              con pago calculado según su modalidad: por hora, jornada, nocturna…),
+              <strong>transporte</strong> y el <strong>cierre</strong> con el balance final.
+            </p>
+            <div class="aqui">
+              <span class="tag">Aquí necesitamos de Selecta</span>
+              El <strong>listado real de empleados</strong> (hay un importador desde Excel) y el
+              <strong>catálogo real de menaje con sus tarifas</strong> — el actual es de prueba, son
+              9 items con precios inventados. Sin esto, los paneles de personal y menaje calculan
+              sobre datos ficticios.
+            </div>
+          </div>
+
+          <div class="etapa">
+            <h3>4. Hay que cocinarlo — Cocina</h3>
+            <div class="ruta">Sección: Cocina · Recetario</div>
+            <p>
+              La vista que el chef abre al llegar: qué se prepara hoy o esta semana, por evento o
+              consolidado, con cada <strong>receta escalada al número real de invitados</strong>.
+              Las recetas viven en el recetario, donde una herramienta de inteligencia artificial
+              ayuda a generarlas.
+            </p>
+            <div class="aqui">
+              <span class="tag">Aquí necesitamos de Selecta</span>
+              Los <strong>costos reales de los insumos</strong>. Hoy casi todos los ingredientes
+              están en $0, así que la app no puede decir cuánto cuesta producir un plato ni qué
+              margen deja un evento. Este es el dato que más valor destraba de toda la lista.
+            </div>
+          </div>
+
+          <div class="etapa">
+            <h3>5. Llega la mercadería — Inventario</h3>
+            <div class="ruta">Sección: Inventario · Bodega</div>
+            <p>
+              Cuando llega una compra, se le toma <strong>foto a la factura y la app la lee
+              sola</strong>: extrae los productos, los cruza con el catálogo de insumos, convierte
+              presentaciones (bolsas, cajas, botellas) a la unidad correcta y deja el ingreso listo
+              para confirmar. También controla salidas por evento y mermas.
+            </p>
+          </div>
+
+          <div class="etapa">
+            <h3>6. Cada uno ve lo suyo — Usuarios y catálogos</h3>
+            <div class="ruta">Sección: Usuarios · Catálogos (solo administración)</div>
+            <p>
+              Cuatro perfiles: <strong>administración</strong> (todo), <strong>comercial</strong>
+              (ventas y cotizaciones), <strong>operaciones</strong> (eventos, menaje, transporte) y
+              <strong>cocina</strong> (recetario, inventario, producción). Cada quien ve solo su
+              parte del menú. Los catálogos son la fuente de los precios: cambiar ahí un plato o una
+              tarifa se refleja en toda cotización nueva.
+            </p>
+            <div class="aqui">
+              <span class="tag">Aquí necesitamos de Selecta</span>
+              Definir <strong>quién del equipo entra con qué perfil</strong>, para crearles las
+              cuentas y que cada área empiece a trabajar en su sección.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="pedidos">
+        <div class="kicker">La lista concreta</div>
+        <h2>Qué pedimos y por qué</h2>
+        <p>
+          Todo lo del recorrido, junto y accionable. Cada punto se puede marcar al completarse
+          (el avance queda guardado en este navegador) y se despliega para ver el detalle.
+          Ninguno requiere conocimiento técnico: son datos y decisiones del negocio.
+        </p>
+
+        <div class="progreso">
+          <span class="num"><span id="hechas">0</span> de <span id="totales">0</span></span>
+          <span class="det">completadas · el avance se guarda en este navegador</span>
+        </div>
+
+        <details class="pedido" id="p-costos">
+          <summary>
+            <input type="checkbox" aria-label="Marcar como completado" />
+            <span class="titulo">Costos reales de los insumos
+              <span class="hint">El dato que más valor destraba · formato: Excel o lista de precios del proveedor</span>
+            </span>
+            <span class="chev"></span>
+          </summary>
+          <div class="cuerpo">
+            <p><strong>Por qué:</strong> la app calcula el costo de cada plato sumando sus
+            ingredientes. Con los insumos en $0, el "margen" de un evento es ficción. Con costos
+            reales, cada cotización muestra cuánto deja de verdad.</p>
+            <p><strong>Qué sirve:</strong> cualquier lista de precios de compra por insumo
+            (Excel, factura reciente, lista del proveedor). Nosotros hacemos la carga — ya lo
+            hicimos así con los 393 platos del portafolio.</p>
+          </div>
+        </details>
+
+        <details class="pedido" id="p-menaje">
+          <summary>
+            <input type="checkbox" aria-label="Marcar como completado" />
+            <span class="titulo">Catálogo real de menaje con tarifas
+              <span class="hint">El actual es de prueba: 9 items con precios inventados</span>
+            </span>
+            <span class="chev"></span>
+          </summary>
+          <div class="cuerpo">
+            <p><strong>Por qué:</strong> el menaje se cotiza y se reserva desde este catálogo.
+            Mientras sea de prueba, toda cotización que incluya menaje sale con números irreales.</p>
+            <p><strong>Qué sirve:</strong> el listado de lo que Selecta alquila (platos, copas,
+            manteles, mobiliario…) con su tarifa por evento. Nosotros lo cargamos.</p>
+          </div>
+        </details>
+
+        <details class="pedido" id="p-huerfanos">
+          <summary>
+            <input type="checkbox" aria-label="Marcar como completado" />
+            <span class="titulo">Revisar 17 platos sin código
+              <span class="hint">Decidir: ¿descontinuados, duplicados o falta el código?</span>
+            </span>
+            <span class="chev"></span>
+          </summary>
+          <div class="cuerpo">
+            <p><strong>Por qué:</strong> al cargar el portafolio 2026 quedaron 17 platos que no
+            se pudieron cruzar con el Excel comercial. Hasta que alguien del negocio los revise,
+            están en un limbo: existen pero no se sabe si deben venderse ni a qué precio.</p>
+            <p><strong>Qué sirve:</strong> media hora con la lista (se la pasamos) marcando cada
+            uno: se queda con tal código / se elimina.</p>
+          </div>
+        </details>
+
+        <details class="pedido" id="p-beb003">
+          <summary>
+            <input type="checkbox" aria-label="Marcar como completado" />
+            <span class="titulo">Definir el precio de la gaseosa (BEB-003)
+              <span class="hint">El archivo de precios 2026 trae dos valores distintos</span>
+            </span>
+            <span class="chev"></span>
+          </summary>
+          <div class="cuerpo">
+            <p><strong>Por qué:</strong> en el Excel del portafolio este producto aparece con dos
+            precios. Es una decisión de una sola línea, pero alguien del negocio tiene que elegir
+            cuál es el vigente.</p>
+          </div>
+        </details>
+
+        <details class="pedido" id="p-decisiones">
+          <summary>
+            <input type="checkbox" aria-label="Marcar como completado" />
+            <span class="titulo">Tres decisiones de producto pendientes
+              <span class="hint">Campos obligatorios de cliente · nombres del menú · permisos de cocina</span>
+            </span>
+            <span class="chev"></span>
+          </summary>
+          <div class="cuerpo">
+            <p><strong>1.</strong> Hoy se puede crear un cliente solo con el nombre. ¿Qué campos
+            deben ser obligatorios? (Recomendamos: nombre + al menos un dato de contacto.)</p>
+            <p><strong>2.</strong> En el menú, la bodega aparece como "Menaje" y la producción
+            como "Cocina". ¿Los nombres les funcionan así o los cambiamos?</p>
+            <p><strong>3.</strong> El perfil de cocina puede crear platos nuevos en el recetario.
+            ¿Es lo que quieren, o solo administración debería poder?</p>
+          </div>
+        </details>
+
+        <details class="pedido" id="p-roster">
+          <summary>
+            <input type="checkbox" aria-label="Marcar como completado" />
+            <span class="titulo">Listado de empleados y clientes reales
+              <span class="hint">Formato: Excel · hay importador masivo para el personal</span>
+            </span>
+            <span class="chev"></span>
+          </summary>
+          <div class="cuerpo">
+            <p><strong>Por qué:</strong> el panel de personal asigna gente real a eventos reales y
+            calcula su pago según la modalidad de cada uno. Sin el listado, esa parte no arranca.
+            Los clientes se pueden ir creando a medida que se cotiza, pero si existe una base, la
+            cargamos de una vez.</p>
+          </div>
+        </details>
+
+        <details class="pedido" id="p-usuarios">
+          <summary>
+            <input type="checkbox" aria-label="Marcar como completado" />
+            <span class="titulo">Quién entra con qué perfil
+              <span class="hint">admin · comercial · operaciones · cocina</span>
+            </span>
+            <span class="chev"></span>
+          </summary>
+          <div class="cuerpo">
+            <p><strong>Por qué:</strong> las cuentas solo las crea un administrador (no hay
+            registro abierto, por seguridad). Con la lista de nombres y perfiles, las dejamos
+            creadas y cada área puede empezar el mismo día.</p>
+          </div>
+        </details>
+
+        <details class="pedido" id="p-uso">
+          <summary>
+            <input type="checkbox" aria-label="Marcar como completado" />
+            <span class="titulo">Cotizar el próximo evento real en la app
+              <span class="hint">La señal de que el proyecto está vivo</span>
+            </span>
+            <span class="chev"></span>
+          </summary>
+          <div class="cuerpo">
+            <p><strong>Por qué:</strong> todo lo anterior son insumos; esto es el objetivo. El
+            primer evento cotizado, aprobado y ejecutado dentro de la app va a levantar preguntas
+            y ajustes reales — exactamente el material de seguimiento que este rol necesita para
+            pedirnos lo correcto.</p>
+          </div>
+        </details>
+      </section>
+
+      <section>
+        <div class="kicker">El día a día del rol</div>
+        <h2>Cómo pedirnos cambios</h2>
+        <p>
+          Parte del rol de seguimiento es juntar lo que el equipo encuentra y convertirlo en
+          pedidos claros. No hace falta proponer la solución — con describir bien el problema,
+          nosotros proponemos. Dos formatos que funcionan:
+        </p>
+
+        <div class="formato">
+          <dl style="margin:0">
+            <dt>Si algo no funciona como se espera</dt>
+            <dd>Qué se estaba haciendo, qué se esperaba que pasara, qué pasó en su lugar, y en qué
+            pantalla (el link del navegador ayuda). Una captura de pantalla vale oro.</dd>
+            <dt>Si es una idea o necesidad nueva</dt>
+            <dd>Qué problema resuelve, a quién le pasa y con qué frecuencia. Con eso podemos
+            dimensionar si es un ajuste de un día o un desarrollo mayor, y priorizar juntos.</dd>
+          </dl>
+        </div>
+
+        <p>
+          Y una regla que nos sirve a todos: <strong>mejor cinco pedidos chicos y claros que un
+          documento gigante cada dos meses.</strong> El proyecto avanza al ritmo de ese ida y vuelta.
+        </p>
+      </section>
+
+      <footer>
+        <span>Selecta Eventos · guía interna del proyecto</span>
+        <span>Preparado por Irrelevant · julio 2026</span>
+      </footer>
+    </div>
+
+    <script>
+      (function () {
+        var KEY = "selecta-guia-pedidos";
+        var pedidos = Array.prototype.slice.call(document.querySelectorAll(".pedido"));
+        var hechas = document.getElementById("hechas");
+        var totales = document.getElementById("totales");
+        totales.textContent = pedidos.length;
+
+        var estado = {};
+        try { estado = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
+
+        function pintar() {
+          var n = 0;
+          pedidos.forEach(function (p) {
+            var on = !!estado[p.id];
+            p.setAttribute("data-checked", on);
+            p.querySelector('input[type="checkbox"]').checked = on;
+            if (on) n++;
+          });
+          hechas.textContent = n;
+        }
+
+        pedidos.forEach(function (p) {
+          var box = p.querySelector('input[type="checkbox"]');
+          box.addEventListener("click", function (e) {
+            e.stopPropagation();
+            estado[p.id] = box.checked;
+            try { localStorage.setItem(KEY, JSON.stringify(estado)); } catch (e2) {}
+            pintar();
+          });
+        });
+
+        pintar();
+      })();
+    </script>
+  </body>
+</html>
