@@ -160,6 +160,62 @@
         margin-bottom: 4px;
       }
 
+      /* --- Roles --- */
+      .roles {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-top: 28px;
+      }
+      .rol {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fffef9;
+        padding: 20px 22px;
+      }
+      .rol h4 {
+        font-family: "Fraunces", Georgia, serif;
+        font-weight: 500;
+        font-size: 18px;
+        margin: 0 0 2px;
+        color: var(--olive-900);
+      }
+      .rol .quien {
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 10px;
+      }
+      .rol p { font-size: 14px; margin-bottom: 8px; }
+      .rol p:last-child { margin-bottom: 0; }
+      .rol .no {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      @media (max-width: 640px) {
+        .roles { grid-template-columns: 1fr; }
+      }
+
+      .nota-roles {
+        margin-top: 18px;
+        padding: 14px 18px;
+        background: var(--paper-2);
+        border-radius: 6px;
+        font-size: 14px;
+        color: var(--ink-soft);
+      }
+
+      /* --- Video --- */
+      .video-callout {
+        margin-top: 24px;
+        padding: 18px 22px;
+        border: 1px solid var(--olive-300);
+        background: var(--olive-100);
+        border-radius: 8px;
+        font-size: 15px;
+        color: var(--olive-900);
+      }
+      .video-callout a { color: var(--olive-700); font-weight: 600; }
+
       /* --- Checklist --- */
       .progreso {
         display: flex;
@@ -311,6 +367,12 @@
           <a href="https://selecta-eventos.netlify.app" target="_blank" rel="noopener">selecta-eventos.netlify.app</a>.
           El acceso se pide al equipo de Irrelevant o a quien administre los usuarios.
         </p>
+        <!-- Cuando exista el Loom: quitar style="display:none" y pegar la URL en el href. -->
+        <div class="video-callout" style="display:none">
+          🎥 Este mismo recorrido está grabado en video (10 minutos):
+          <a href="PEGAR_LINK_DEL_LOOM_AQUI" target="_blank" rel="noopener">ver el video</a>.
+          Recomendamos verlo primero y usar esta guía como referencia después.
+        </div>
       </header>
 
       <section>
@@ -352,6 +414,11 @@
               identidad de Selecta</strong> y un <strong>link público</strong> que el cliente abre
               sin necesidad de cuenta. Si se negocia un precio final distinto, un administrador
               puede fijarlo — y ese cambio queda registrado con nombre, valor y fecha.
+            </p>
+            <p>
+              La cotización va pasando por estados — <strong>pendiente → enviada → aprobada</strong>
+              (o rechazada) — y con cada cambio se mueve sola de columna en el pipeline. Nadie
+              tiene que actualizar un Excel de seguimiento: el tablero es el seguimiento.
             </p>
             <p>
               En la app ya hay dos cotizaciones de ejemplo (una boda y un cóctel corporativo)
@@ -412,21 +479,70 @@
           </div>
 
           <div class="etapa">
-            <h3>6. Cada uno ve lo suyo — Usuarios y catálogos</h3>
-            <div class="ruta">Sección: Usuarios · Catálogos (solo administración)</div>
+            <h3>6. La fuente de los precios — Catálogos</h3>
+            <div class="ruta">Sección: Catálogos (solo administración)</div>
             <p>
-              Cuatro perfiles: <strong>administración</strong> (todo), <strong>comercial</strong>
-              (ventas y cotizaciones), <strong>operaciones</strong> (eventos, menaje, transporte) y
-              <strong>cocina</strong> (recetario, inventario, producción). Cada quien ve solo su
-              parte del menú. Los catálogos son la fuente de los precios: cambiar ahí un plato o una
-              tarifa se refleja en toda cotización nueva.
+              El master data del negocio: la lista de platos con su precio de venta, las tarifas de
+              personal y las de transporte. Cambiar algo acá se refleja en toda cotización nueva —
+              un solo lugar donde vive el precio, en vez de veinte Excel con versiones distintas.
             </p>
             <div class="aqui">
               <span class="tag">Aquí necesitamos de Selecta</span>
-              Definir <strong>quién del equipo entra con qué perfil</strong>, para crearles las
-              cuentas y que cada área empiece a trabajar en su sección.
+              Definir <strong>quién del equipo entra con qué perfil</strong> (los perfiles se
+              explican abajo), para crearles las cuentas y que cada área empiece a trabajar
+              en su sección.
             </div>
           </div>
+        </div>
+      </section>
+
+      <section id="roles">
+        <div class="kicker">Quién ve qué</div>
+        <h2>Los cuatro perfiles</h2>
+        <p>
+          Cada persona entra con un perfil, y el perfil define qué secciones ve en el menú y qué
+          botones puede usar. Así comercial no toca recetas, cocina no toca precios de venta, y
+          los cambios de dinero quedan reservados a administración.
+        </p>
+
+        <div class="roles">
+          <div class="rol">
+            <h4>Administración</h4>
+            <div class="quien">Dueños del negocio, gerencia</div>
+            <p>Ve y puede todo. Es el único perfil que <strong>fija precios finales
+            negociados</strong> (con registro de quién y cuándo), <strong>edita los
+            catálogos</strong> y <strong>crea usuarios</strong>.</p>
+          </div>
+          <div class="rol">
+            <h4>Comercial</h4>
+            <div class="quien">Ventas</div>
+            <p>Su mundo: <strong>pipeline, cotizaciones y clientes</strong>. Arma propuestas,
+            comparte el link público, hace seguimiento del tablero.</p>
+            <p class="no">No puede: cambiar catálogos ni fijar precios por fuera de ellos.</p>
+          </div>
+          <div class="rol">
+            <h4>Operaciones</h4>
+            <div class="quien">Logística y coordinación</div>
+            <p>Su mundo: <strong>los eventos ya ganados</strong> — reservar menaje, asignar
+            personal, coordinar transporte y cerrar el balance del evento. Puede consultar
+            cotizaciones para preparar la logística.</p>
+            <p class="no">No puede: crear ni editar cotizaciones, ni ver el pipeline comercial.</p>
+          </div>
+          <div class="rol">
+            <h4>Cocina</h4>
+            <div class="quien">Chef y equipo de producción</div>
+            <p>Su mundo: <strong>qué cocinar y con qué</strong> — la vista de producción con
+            recetas escaladas, el recetario y el inventario de insumos con la lectura de
+            facturas.</p>
+            <p class="no">No ve: cotizaciones ni la parte comercial.</p>
+          </div>
+        </div>
+
+        <div class="nota-roles">
+          Dos detalles útiles: una misma persona puede tener <strong>más de un perfil</strong>
+          (por ejemplo, alguien que vende y coordina). Y si alguien entra sin perfil asignado,
+          ve una pantalla de "acceso pendiente" y nada más — no hay forma de tocar datos sin que
+          un administrador lo haya habilitado.
         </div>
       </section>
 
