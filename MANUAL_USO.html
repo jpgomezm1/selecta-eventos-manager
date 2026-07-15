@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Selecta — manual de uso</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --olive-900: #2d3a1a;
+        --olive-700: #4a5d2a;
+        --olive-500: #6b7d4a;
+        --olive-300: #b3bf95;
+        --olive-100: #e8ead8;
+        --paper: #f7f5ed;
+        --paper-2: #efece1;
+        --ink: #1f1f1d;
+        --ink-soft: #4a4a45;
+        --muted: #8a8a82;
+        --line: #d9d6c7;
+      }
+
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+      @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+      body {
+        margin: 0;
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-size: 16px;
+        line-height: 1.65;
+        color: var(--ink);
+        background: var(--paper);
+        font-feature-settings: "ss01", "tnum";
+      }
+
+      .page { max-width: 760px; margin: 0 auto; padding: 72px 32px 120px; }
+
+      header { border-bottom: 1px solid var(--line); padding-bottom: 44px; margin-bottom: 56px; }
+
+      .kicker {
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--olive-700);
+      }
+
+      h1 {
+        font-family: "Fraunces", Georgia, serif;
+        font-weight: 500;
+        font-size: 44px;
+        line-height: 1.1;
+        margin: 16px 0 20px;
+        letter-spacing: -0.01em;
+        color: var(--olive-900);
+      }
+
+      .lead { font-size: 17.5px; line-height: 1.6; color: var(--ink-soft); max-width: 640px; }
+      .lead a, p a { color: var(--olive-700); text-decoration-color: var(--olive-300); text-underline-offset: 3px; }
+
+      /* Índice */
+      .indice {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 28px;
+      }
+      .indice a {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--olive-900);
+        text-decoration: none;
+        background: var(--olive-100);
+        border: 1px solid var(--olive-300);
+        border-radius: 999px;
+        padding: 5px 14px;
+      }
+      .indice a:hover { background: var(--olive-300); }
+
+      section { margin-top: 72px; scroll-margin-top: 24px; }
+
+      h2 {
+        font-family: "Fraunces", Georgia, serif;
+        font-weight: 500;
+        font-size: 30px;
+        line-height: 1.2;
+        margin: 10px 0 6px;
+        color: var(--olive-900);
+        letter-spacing: -0.01em;
+      }
+
+      h3 {
+        font-family: "Fraunces", Georgia, serif;
+        font-weight: 500;
+        font-size: 20px;
+        line-height: 1.3;
+        margin: 28px 0 8px;
+        color: var(--olive-900);
+      }
+
+      p { margin: 0 0 14px; color: var(--ink-soft); }
+      strong { color: var(--ink); font-weight: 600; }
+
+      .quien {
+        font-size: 12.5px;
+        color: var(--muted);
+        margin-bottom: 16px;
+      }
+      .quien b { color: var(--olive-700); font-weight: 600; }
+
+      ol.pasos { margin: 0 0 16px; padding-left: 22px; }
+      ol.pasos li { margin-bottom: 10px; color: var(--ink-soft); font-size: 15px; }
+      ol.pasos li::marker { color: var(--olive-700); font-weight: 600; }
+
+      ul.claves { margin: 0 0 16px; padding-left: 20px; }
+      ul.claves li { margin-bottom: 8px; color: var(--ink-soft); font-size: 15px; }
+      ul.claves li::marker { color: var(--olive-500); }
+
+      .boton {
+        display: inline-block;
+        font-size: 0.88em;
+        font-weight: 600;
+        color: var(--olive-900);
+        background: var(--olive-100);
+        border: 1px solid var(--olive-300);
+        border-radius: 5px;
+        padding: 0 7px;
+        white-space: nowrap;
+      }
+
+      .tip {
+        margin: 16px 0;
+        padding: 13px 18px;
+        background: var(--paper-2);
+        border-left: 3px solid var(--olive-500);
+        border-radius: 0 6px 6px 0;
+        font-size: 14px;
+        color: var(--ink-soft);
+      }
+      .tip b { color: var(--olive-900); }
+
+      .subir {
+        display: inline-block;
+        margin-top: 20px;
+        font-size: 12.5px;
+        color: var(--muted);
+        text-decoration: none;
+      }
+      .subir:hover { color: var(--olive-700); }
+
+      footer {
+        margin-top: 100px;
+        padding-top: 28px;
+        border-top: 1px solid var(--line);
+        font-size: 12.5px;
+        color: var(--muted);
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      @media (max-width: 540px) {
+        .page { padding: 48px 20px 80px; }
+        h1 { font-size: 32px; }
+        h2 { font-size: 25px; }
+      }
+
+      @media print {
+        .indice, .subir { display: none; }
+        section { break-inside: avoid-page; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header id="arriba">
+        <div class="kicker">Selecta Eventos · Manual de uso</div>
+        <h1>Cómo usar la app,<br />paso a paso</h1>
+        <p class="lead">
+          Instrucciones concretas por sección, para todo el equipo. Cada bloque dice quién lo
+          usa según su perfil y los pasos exactos. Se puede leer de corrido o saltar directo a
+          la sección que se necesita.
+        </p>
+        <p class="lead" style="margin-top:12px">
+          La app: <a href="https://selecta-eventos.netlify.app" target="_blank" rel="noopener">selecta-eventos.netlify.app</a>.
+          Cuenta de prueba mientras se crean las definitivas: <strong>admin@selecta.testing</strong> /
+          <strong>pruebas123</strong> (es compartida; con usuario propio, cada cambio queda a nombre de quien lo hizo).
+        </p>
+        <nav class="indice" aria-label="Índice">
+          <a href="#entrar">Entrar</a>
+          <a href="#clientes">Clientes</a>
+          <a href="#cotizar">Crear cotización</a>
+          <a href="#gestionar">Compartir y aprobar</a>
+          <a href="#pipeline">Pipeline</a>
+          <a href="#eventos">Eventos</a>
+          <a href="#cocina">Cocina</a>
+          <a href="#recetario">Recetario</a>
+          <a href="#inventario">Inventario</a>
+          <a href="#menaje">Menaje</a>
+          <a href="#personal">Personal</a>
+          <a href="#usuarios">Usuarios</a>
+        </nav>
+      </header>
+
+      <section id="entrar">
+        <div class="kicker">Lo básico</div>
+        <h2>Entrar y moverse</h2>
+        <div class="quien">Para <b>todos</b></div>
+        <ol class="pasos">
+          <li>Abrir <a href="https://selecta-eventos.netlify.app" target="_blank" rel="noopener">selecta-eventos.netlify.app</a> (funciona igual en computador y celular).</li>
+          <li>Escribir correo y contraseña y pulsar <span class="boton">Iniciar sesión</span>.</li>
+          <li>El menú lateral (en celular, el botón de menú arriba a la izquierda) muestra solo las secciones del perfil de cada quien.</li>
+        </ol>
+        <div class="tip"><b>Si al entrar aparece "acceso pendiente":</b> la cuenta existe pero nadie
+        le ha asignado perfil todavía. Pedirle a un administrador que lo asigne en Usuarios.</div>
+        <a class="subir" href="#arriba">↑ volver al índice</a>
+      </section>
+
+      <section id="clientes">
+        <div class="kicker">Comercial</div>
+        <h2>Clientes</h2>
+        <div class="quien">Para <b>administración</b> y <b>comercial</b></div>
+        <p>Los clientes se pueden crear desde la sección Clientes, o directamente mientras se arma
+        una cotización (sin salir del asistente):</p>
+        <ol class="pasos">
+          <li>En el selector de cliente, escribir el nombre. Si no existe, aparece la opción
+          <strong>Crear nuevo cliente "…"</strong>.</li>
+          <li>Elegir <span class="boton">Persona Natural</span> o <span class="boton">Empresa</span>
+          (la empresa pide NIT en lugar de cédula).</li>
+          <li>Completar teléfono y correo y pulsar <span class="boton">Crear Cliente</span>.</li>
+        </ol>
+        <a class="subir" href="#arriba">↑ volver al índice</a>
+      </section>
+
+      <section id="cotizar">
+        <div class="kicker">Comercial</div>
+        <h2>Crear una cotización</h2>
+        <div class="quien">Para <b>administración</b> y <b>comercial</b></div>
+        <p>En Cotizaciones, pulsar <span class="boton">Nueva cotización</span>. El asistente tiene
+        6 pasos; solo el primero es obligatorio, el resto se puede saltar y completar después.</p>
+        <ol class="pasos">
+          <li><strong>Información del evento</strong> — nombre de la cotización, cliente, número de
+          invitados, fecha, comercial encargado y el lugar (se puede escribir uno nuevo o elegir del
+          catálogo). Horarios de evento y montaje son opcionales.</li>
+          <li><strong>Menú y platos</strong> — buscar en el catálogo (por nombre o categoría),
+          pulsar <span class="boton">Añadir</span> en cada plato y ajustar la <strong>cantidad</strong>
+          (normalmente, el número de invitados). El total se recalcula al instante.</li>
+          <li><strong>Personal</strong> — añadir los roles necesarios (meseros, barman, capitán…)
+          y ajustar cuántas personas de cada uno. La app sugiere cantidades según los invitados.</li>
+          <li><strong>Transporte</strong> — elegir el servicio según la zona del evento y la
+          cantidad de viajes.</li>
+          <li><strong>Menaje</strong> — añadir vajilla, cristalería, mantelería con sus cantidades.</li>
+          <li><strong>Resumen</strong> — revisar la distribución de costos y el precio por invitado,
+          y pulsar <span class="boton">Guardar cotización</span>.</li>
+        </ol>
+        <div class="tip"><b>Los precios no se escriben a mano:</b> salen del catálogo. Si un precio
+        está mal, se corrige en Catálogos (administración) y aplica para las cotizaciones nuevas.</div>
+        <a class="subir" href="#arriba">↑ volver al índice</a>
+      </section>
+
+      <section id="gestionar">
+        <div class="kicker">Comercial</div>
+        <h2>Compartir, negociar y aprobar</h2>
+        <div class="quien">Para <b>administración</b> y <b>comercial</b> (aprobar precios negociados: solo administración)</div>
+
+        <h3>Opciones A/B/C</h3>
+        <p>Dentro de la cotización, <span class="boton">Añadir opción</span> crea una alternativa
+        (por ejemplo: menú premium vs. menú clásico) y <span class="boton">Duplicar</span> parte de
+        una existente para variarla. Cada opción tiene su propio total; el cliente elige una.</p>
+
+        <h3>Enviarla al cliente</h3>
+        <ol class="pasos">
+          <li>Pulsar <span class="boton">Compartir</span> y luego <span class="boton">Generar enlace</span>:
+          produce un link público que el cliente abre en su celular <strong>sin usuario ni
+          contraseña</strong>, con la propuesta siempre al día.</li>
+          <li>O generar el <strong>PDF</strong> con la identidad de Selecta para adjuntarlo.</li>
+        </ol>
+
+        <h3>El cliente dijo sí</h3>
+        <ol class="pasos">
+          <li>Pulsar <span class="boton">Aprobar</span> en la opción elegida.</li>
+          <li>Si se negoció un precio final distinto al calculado, un <strong>administrador</strong>
+          puede fijarlo en ese momento. El cambio queda en el <strong>Historial de cambios</strong>
+          de la cotización: quién, cuándo, de cuánto a cuánto.</li>
+          <li>Al confirmar, la cotización se convierte en <strong>evento</strong> automáticamente y
+          aparece en la sección Eventos.</li>
+        </ol>
+        <div class="tip"><b>Aprobar no tiene deshacer:</b> crea el evento. Conviene aprobarla solo
+        cuando el sí del cliente es en firme.</div>
+        <a class="subir" href="#arriba">↑ volver al índice</a>
+      </section>
+
+      <section id="pipeline">
+        <div class="kicker">Comercial</div>
+        <h2>Pipeline</h2>
+        <div class="quien">Para <b>administración</b> y <b>comercial</b></div>
+        <p>El tablero de seguimiento comercial. Cada cotización es una tarjeta y las columnas son
+        los estados: <strong>pendiente por aprobación → enviada → aprobada</strong> (o rechazada).
+        Las tarjetas se mueven solas cuando la cotización cambia de estado.</p>
+        <ul class="claves">
+          <li>En cada tarjeta: <span class="boton">Enviar</span> la marca como enviada al cliente,
+          <span class="boton">Rechazar</span> la saca del juego, y una rechazada se puede
+          <strong>reabrir</strong> si el cliente vuelve.</li>
+          <li>Arriba se ve el total en juego por etapa — ese es el informe comercial de un vistazo.</li>
+        </ul>
+        <a class="subir" href="#arriba">↑ volver al índice</a>
+      </section>
+
+      <section id="eventos">
+        <div class="kicker">Operación</div>
+        <h2>Eventos</h2>
+        <div class="quien">Para <b>administración</b> y <b>operaciones</b></div>
+        <p>Cada evento aprobado tiene paneles por área. Todo lo cotizado ya viene cargado; el
+        trabajo es convertirlo en logística concreta:</p>
+        <ul class="claves">
+          <li><strong>Menaje</strong> — reservar del inventario lo que el evento necesita. El
+          calendario evita prometer piezas que otro evento ya tiene reservadas ese día. Con
+          <span class="boton">Descargar PDF</span> se genera la orden de menaje para bodega.</li>
+          <li><strong>Personal</strong> — elegir empleado y pulsar <span class="boton">Asignar</span>.
+          El pago se calcula solo según la modalidad de cada uno (por hora, jornada, nocturna…).
+          Al final, <span class="boton">Liquidar</span> deja los pagos del evento listos.</li>
+          <li><strong>Transporte</strong> — confirmar rutas y costos del servicio cotizado.</li>
+          <li><strong>Orden de compra</strong> — lo que hay que comprar para el evento, con su PDF.</li>
+          <li><strong>Cierre</strong> — el balance final: lo cotizado contra lo realmente gastado.</li>
+        </ul>
+        <a class="subir" href="#arriba">↑ volver al índice</a>
+      </section>
+
+      <section id="cocina">
+        <div class="kicker">Producción</div>
+        <h2>Cocina</h2>
+        <div class="quien">Para <b>administración</b> y <b>cocina</b></div>
+        <ol class="pasos">
+          <li>Elegir <span class="boton">Día</span> o <span class="boton">Semana</span> y navegar
+          con las flechas (el botón <span class="boton">Hoy</span> regresa a la fecha actual).</li>
+          <li>Ver los platos <strong>por evento</strong> o <strong>consolidados</strong> (todo lo
+          que se cocina en el rango, sumado).</li>
+          <li>Tocar un plato para abrir su <strong>receta escalada</strong> a las porciones reales
+          del evento — cantidades de cada ingrediente ya multiplicadas.</li>
+        </ol>
+        <a class="subir" href="#arriba">↑ volver al índice</a>
+      </section>
+
+      <section id="recetario">
+        <div class="kicker">Producción</div>
+        <h2>Recetario</h2>
+        <div class="quien">Para <b>administración</b> y <b>cocina</b></div>
+        <ul class="claves">
+          <li>Cada plato tiene su ficha: categoría, precio de venta (viene del portafolio) y la
+          receta con ingredientes y cantidades por porción.</li>
+          <li><span class="boton">Generar receta con AI</span> propone la receta de un plato a
+          partir de su nombre — luego se revisa y se ajusta. Útil para los platos que aún no
+          tienen receta cargada.</li>
+          <li>Ingredientes nuevos se crean con <span class="boton">Crear ingrediente</span>,
+          con su unidad (kg, gr, lt, und…) y proveedor.</li>
+        </ul>
+        <div class="tip"><b>La receta es la que conecta todo:</b> con receta + costos de insumos,
+        la app calcula cuánto cuesta producir cada plato y qué margen deja.</div>
+        <a class="subir" href="#arriba">↑ volver al índice</a>
+      </section>
+
+      <section id="inventario">
+        <div class="kicker">Producción</div>
+        <h2>Inventario de insumos</h2>
+        <div class="quien">Para <b>administración</b> y <b>cocina</b></div>
+
+        <h3>Ingresar una compra con foto de la factura</h3>
+        <ol class="pasos">
+          <li>En la pestaña <strong>Movimientos</strong>, pulsar <span class="boton">Registrar ingreso</span>.</li>
+          <li>Arrastrar la foto o el PDF de la factura (JPG, PNG o PDF, máximo 10 MB) y pulsar
+          <span class="boton">Escanear factura</span>. La lectura tarda unos segundos.</li>
+          <li>Revisar lo que la app extrajo: proveedor, número, fecha y cada producto cruzado con
+          el catálogo, con su nivel de <strong>confianza</strong>. Corregir lo que haga falta —
+          cantidades, el ingrediente asignado, precios.</li>
+          <li>Pulsar <span class="boton">Confirmar y actualizar stock</span> (o
+          <span class="boton">Guardar Borrador</span> para terminar después).</li>
+        </ol>
+        <div class="tip"><b>La app convierte presentaciones sola:</b> "4 bolsas de hielo × 3 kg"
+        entra como 12.000 gr con el costo por gramo recalculado. Aún así, revisar antes de
+        confirmar: la foto manda.</div>
+
+        <h3>Movimientos manuales</h3>
+        <p>Con <span class="boton">Nuevo movimiento</span> se registran entradas sin factura,
+        salidas por evento o mermas. La pestaña <strong>Stock</strong> muestra existencias, costo
+        por unidad y valor total por ingrediente.</p>
+        <a class="subir" href="#arriba">↑ volver al índice</a>
+      </section>
+
+      <section id="menaje">
+        <div class="kicker">Operación</div>
+        <h2>Menaje (bodega)</h2>
+        <div class="quien">Para <b>administración</b> y <b>operaciones</b></div>
+        <ul class="claves">
+          <li>El inventario de lo que se alquila: platos, copas, mantelería, mobiliario, con
+          existencias y tarifa.</li>
+          <li>Las <strong>reservas</strong> se hacen desde el panel de menaje de cada evento y
+          quedan en el calendario de bodega.</li>
+          <li>Al volver el menaje del evento se registra la <strong>devolución</strong>, marcando
+          qué volvió completo y qué se perdió o rompió (merma). La app solo permite registrar la
+          devolución <strong>una vez</strong> por evento, para que las existencias no se dupliquen.</li>
+        </ul>
+        <a class="subir" href="#arriba">↑ volver al índice</a>
+      </section>
+
+      <section id="personal">
+        <div class="kicker">Operación</div>
+        <h2>Personal</h2>
+        <div class="quien">Para <b>administración</b> y <b>operaciones</b></div>
+        <ul class="claves">
+          <li>El roster de empleados con su rol y su <strong>modalidad de cobro</strong> (por hora,
+          jornada de 9 o 10 horas, nocturna, por evento). La modalidad define cómo se calcula el
+          pago cuando se asigna a un evento — nadie multiplica tarifas a mano.</li>
+          <li>Para cargar muchos empleados de una vez: usar la carga masiva, pulsar
+          <span class="boton">Descargar Plantilla</span>, llenarla en Excel y subirla. La app
+          valida y muestra qué filas entraron y cuáles tienen problemas.</li>
+          <li>Las <strong>liquidaciones</strong> de cada evento salen del panel de personal del
+          evento (ver la sección Eventos).</li>
+        </ul>
+        <a class="subir" href="#arriba">↑ volver al índice</a>
+      </section>
+
+      <section id="usuarios">
+        <div class="kicker">Administración</div>
+        <h2>Usuarios y perfiles</h2>
+        <div class="quien">Solo <b>administración</b></div>
+        <ol class="pasos">
+          <li>En Usuarios, crear la cuenta con el correo de la persona y una contraseña inicial
+          (se le entrega por un canal interno; no hay registro abierto al público).</li>
+          <li>Asignarle uno o más perfiles: <strong>administración</strong>, <strong>comercial</strong>,
+          <strong>operaciones</strong> o <strong>cocina</strong>. El menú de esa persona muestra
+          solo lo suyo.</li>
+          <li>Para quitar acceso, retirar el perfil: la persona pasa a ver la pantalla de
+          "acceso pendiente".</li>
+        </ol>
+        <div class="tip"><b>¿Quién puede qué?</b> El detalle de los cuatro perfiles está en la
+        guía del proyecto (GUIA_SEGUIMIENTO.html), sección "Los cuatro perfiles".</div>
+        <a class="subir" href="#arriba">↑ volver al índice</a>
+      </section>
+
+      <section>
+        <div class="kicker">Cuando algo no cuadra</div>
+        <h2>Ayuda y reportes</h2>
+        <p>
+          Si algo no funciona como se espera, anotar: qué se estaba haciendo, qué se esperaba,
+          qué pasó y en qué pantalla (el link del navegador ayuda; una captura vale oro), y
+          enviarlo a quien lleva el seguimiento del proyecto. Las ideas y necesidades nuevas,
+          igual: qué problema resuelve, a quién le pasa, con qué frecuencia.
+        </p>
+      </section>
+
+      <footer>
+        <span>Selecta Eventos · manual de uso</span>
+        <span>Preparado por Irrelevant · julio 2026</span>
+      </footer>
+    </div>
+  </body>
+</html>
