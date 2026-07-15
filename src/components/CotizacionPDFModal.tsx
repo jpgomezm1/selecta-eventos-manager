@@ -11,6 +11,8 @@ interface CotizacionVersion {
   id: string;
   nombre_opcion: string;
   is_definitiva: boolean;
+  total: number;
+  total_override?: number | null;
   items: {
     platos: Array<{ nombre: string; precio_unitario: number; cantidad: number }>;
     personal: Array<{ rol: string; tarifa_estimada_por_persona: number; cantidad: number }>;
@@ -59,12 +61,11 @@ export default function CotizacionPDFModal({
     }
   };
 
+  // Total efectivo de la versión (override del admin si existe, si no el total
+  // persistido, que ya incluye menaje y lugar). Es el mismo número que sale en
+  // el PDF — antes se recalculaba aquí sin menaje ni override y podía diferir.
   const calculateTotal = (version: CotizacionVersion) => {
-    return (
-      version.items.platos.reduce((sum, p) => sum + (p.precio_unitario * p.cantidad), 0) +
-      version.items.personal.reduce((sum, p) => sum + (p.tarifa_estimada_por_persona * p.cantidad), 0) +
-      version.items.transportes.reduce((sum, t) => sum + (t.tarifa_unitaria * t.cantidad), 0)
-    );
+    return Number(version.total_override ?? version.total) || 0;
   };
 
   return (
