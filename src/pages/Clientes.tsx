@@ -297,7 +297,7 @@ export default function ClientesPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Buscar por nombre, empresa, cedula o correo..."
+                placeholder="Buscar por nombre, empresa, cédula o correo..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 h-9"
@@ -337,7 +337,7 @@ export default function ClientesPage() {
                   <TableHead className="font-medium">Nombre</TableHead>
                   <TableHead className="font-medium">Tipo</TableHead>
                   <TableHead className="font-medium">Identificacion</TableHead>
-                  <TableHead className="font-medium">Telefono</TableHead>
+                  <TableHead className="font-medium">Teléfono</TableHead>
                   <TableHead className="font-medium">Correo</TableHead>
                   <TableHead className="w-[100px]"></TableHead>
                 </TableRow>
@@ -535,10 +535,10 @@ export default function ClientesPage() {
               <>
                 <div className="space-y-2">
                   <label className="text-sm font-medium flex items-center gap-1">
-                    <IdCard className="h-3 w-3" /> Cedula
+                    <IdCard className="h-3 w-3" /> Cédula
                   </label>
                   <Input
-                    placeholder="Numero de cedula"
+                    placeholder="Número de cédula"
                     value={form.cedula || ""}
                     onChange={(e) => setForm((p) => ({ ...p, cedula: e.target.value }))}
                     className="h-10"
@@ -547,7 +547,7 @@ export default function ClientesPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium flex items-center gap-1">
-                      <Phone className="h-3 w-3" /> Telefono
+                      <Phone className="h-3 w-3" /> Teléfono
                     </label>
                     <Input
                       placeholder="300 123 4567"
@@ -584,7 +584,7 @@ export default function ClientesPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium flex items-center gap-1">
-                      <Phone className="h-3 w-3" /> Telefono
+                      <Phone className="h-3 w-3" /> Teléfono
                     </label>
                     <Input
                       placeholder="300 123 4567"
@@ -721,7 +721,7 @@ export default function ClientesPage() {
                     />
                     <div className="grid grid-cols-2 gap-2">
                       <Input
-                        placeholder="Telefono"
+                        placeholder="Teléfono"
                         value={contactoForm.telefono}
                         onChange={(e) => setContactoForm((p) => ({ ...p, telefono: e.target.value }))}
                         className="h-9 bg-white"
