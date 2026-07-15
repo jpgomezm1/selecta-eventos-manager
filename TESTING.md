@@ -8,7 +8,7 @@ Documento para una pasada manual completa antes de entregar al cliente. Diseñad
 
 ### URLs
 - **Local (dev):** http://localhost:4000/
-- **Producción (Netlify):** _[completar con la URL real antes de testear contra prod]_
+- **Producción (Netlify):** https://selecta-eventos.netlify.app
 - **Supabase project:** `xvvbxyjcieckbbdcuoge` (Selecta-Personal)
 
 <!-- ### Credenciales -->

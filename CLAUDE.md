@@ -23,7 +23,7 @@ npm run preview     # preview built bundle
 
 No test runner is configured. No typecheck script — use `npx tsc --noEmit -p tsconfig.app.json` if needed.
 
-Deployment target is **Netlify** (`netlify.toml` — publish `dist/`). SPA redirects are commented out in netlify.toml; if direct URL navigation 404s in prod, that's why.
+Deployment target is **Netlify** (`netlify.toml` — publish `dist/`), prod URL `https://selecta-eventos.netlify.app`. SPA redirects are handled by `public/_redirects` (the netlify.toml block stays commented on purpose) — direct URL navigation and refresh work in prod.
 
 ## Environment
 
@@ -78,7 +78,7 @@ Excel import lives in [src/components/Forms/CargaMasivaPersonal.tsx](src/compone
 
 ### PDF generation
 
-Multiple generators in `src/lib/` (`pdf-generator.ts`, `premium-pdf-generator.ts`, `selecta-premium-pdf.ts`, `orden-compra-pdf.ts`, `orden-menaje-pdf.ts`). They use `jspdf` + `html2canvas`. When adding a new document type, match the existing pattern (function returning a `Blob`/saving directly) rather than introducing a new PDF lib.
+Three generators in `src/lib/` (`selecta-premium-pdf.ts`, `orden-compra-pdf.ts`, `orden-menaje-pdf.ts`). They use pure `jspdf` (programmatic drawing, no html2canvas). The only network dependency is the Selecta logo fetched from `storage.googleapis.com` — if it fails, the PDF is generated without the logo. When adding a new document type, match the existing pattern (function returning a `Blob`/saving directly) rather than introducing a new PDF lib.
 
 ### Database migrations
 
