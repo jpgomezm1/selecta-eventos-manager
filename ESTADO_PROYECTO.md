@@ -37,7 +37,7 @@ Ambas en estado **Pendiente** a propósito: permiten demostrar en vivo el compar
 5. **Gaseosa BEB-003 con 2 precios distintos** en el archivo fuente — decisión pendiente.
 
 ### Tests
-6. **Cuenta sin rol** — único test menor pendiente (bloqueado por el clasificador de permisos; requiere confirmación explícita para crear un usuario QA temporal en prod).
+6. ~~Cuenta sin rol~~ — **CERRADO 2026-07-15**: usuario QA temporal creado en prod con autorización explícita; una cuenta autenticada sin rol es redirigida a `/sin-acceso` (también al navegar por URL directa a rutas protegidas) y `generate-recipe` le responde 403 con mensaje claro. Usuario QA eliminado al terminar. **No queda ningún test pendiente.**
 
 ### Descartado / pospuesto (decisión de Tomás)
 - Acciones de dashboard Supabase (rotar service role key, Postgres upgrade, OTP 30 min, leaked password protection, límite de gasto Anthropic) — **descartadas el 2026-07-15**. Riesgo residual asumido: la service role key actual sigue vigente y los advisors de Supabase seguirán marcando estos puntos.
