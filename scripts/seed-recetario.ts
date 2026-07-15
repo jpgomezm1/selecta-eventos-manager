@@ -7,14 +7,19 @@
  *   2. npm install (ensure @supabase/supabase-js is available)
  *
  * Usage:
- *   npx ts-node scripts/seed-recetario.ts
+ *   SUPABASE_SERVICE_ROLE_KEY=<key> npx ts-node scripts/seed-recetario.ts
  */
 
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = "https://xvvbxyjcieckbbdcuoge.supabase.co";
-const SUPABASE_SERVICE_ROLE_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2dmJ4eWpjaWVja2JiZGN1b2dlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTYzNjg3NywiZXhwIjoyMDY3MjEyODc3fQ.D9ZxxX9PU4788j9OGNwfqbUmFqACEXT4C6bJgaKUDYs";
+// La service role key salta RLS: nunca hardcodearla (una versión vieja de este
+// script la tenía en el código y quedó en el historial de git — fue rotada).
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+if (!SUPABASE_SERVICE_ROLE_KEY) {
+  console.error("Falta SUPABASE_SERVICE_ROLE_KEY en el entorno. Uso: SUPABASE_SERVICE_ROLE_KEY=<key> npx ts-node scripts/seed-recetario.ts");
+  process.exit(1);
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 

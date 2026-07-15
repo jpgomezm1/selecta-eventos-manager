@@ -250,6 +250,10 @@ export default function CotizacionEditorPage() {
         cls: "text-warning border-warning-soft",
         label: "Pendiente",
       },
+      Enviada: {
+        cls: "text-accent-foreground border-accent",
+        label: "Enviada",
+      },
       "Cotización Aprobada": {
         cls: "text-primary border-primary/40",
         label: "Aprobada",
@@ -377,7 +381,8 @@ export default function CotizacionEditorPage() {
                 {/* Version tabs */}
                 <TabsList className="flex overflow-x-auto gap-1 mb-6">
                   {versiones.map((v) => {
-                    const vTotal = Number(v.total) || 0;
+                    // total efectivo: override del admin si existe (es lo que ven cliente/PDF/cabecera)
+                    const vTotal = Number(v.total_override ?? v.total) || 0;
 
                     return (
                       <TabsTrigger
@@ -586,11 +591,11 @@ export default function CotizacionEditorPage() {
                   <span className="text-muted-foreground text-sm">Rango</span>
                   <div className="text-right text-sm tabular-nums">
                     <span className="font-semibold text-foreground">
-                      ${Math.min(...versiones.map((v) => Number(v.total))).toLocaleString()}
+                      ${Math.min(...versiones.map((v) => Number(v.total_override ?? v.total))).toLocaleString()}
                     </span>
                     <span className="text-muted-foreground/60 mx-1">–</span>
                     <span className="font-semibold text-foreground">
-                      ${Math.max(...versiones.map((v) => Number(v.total))).toLocaleString()}
+                      ${Math.max(...versiones.map((v) => Number(v.total_override ?? v.total))).toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -721,9 +726,10 @@ export default function CotizacionEditorPage() {
           versionName={
             versiones.find((v) => v.id === approvalVersionId)?.nombre_opcion ?? ""
           }
-          versionTotal={Number(
-            versiones.find((v) => v.id === approvalVersionId)?.total ?? 0
-          )}
+          versionTotal={(() => {
+            const v = versiones.find((x) => x.id === approvalVersionId);
+            return Number(v?.total_override ?? v?.total ?? 0);
+          })()}
           items={versiones.find((v) => v.id === approvalVersionId)?.items}
           onConfirm={() => marcarDef(approvalVersionId)}
           isPending={aprobando}
