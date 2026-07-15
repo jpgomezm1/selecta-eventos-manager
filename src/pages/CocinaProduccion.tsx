@@ -69,7 +69,7 @@ export default function CocinaProduccionPage() {
       <PageHeader
         kicker="Cocina"
         title="Producción"
-        description="Platos a preparar para los próximos eventos. Seleccioná día o semana para ver qué hay que cocinar."
+        description="Platos a preparar para los próximos eventos. Vista por día o por semana de lo que hay que cocinar."
         actions={
           <ToggleGroup
             type="single"
@@ -103,7 +103,7 @@ export default function CocinaProduccionPage() {
           <ToggleGroupItem value="semana">Semana</ToggleGroupItem>
         </ToggleGroup>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="ghost" size="sm" onClick={handlePrev} aria-label="Anterior">
             <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
           </Button>
