@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 import { FunnelStats } from "@/components/Pipeline/FunnelStats";
 import { PipelineBoard } from "@/components/Pipeline/PipelineBoard";
+import { AnaliticaComerciales } from "@/components/Pipeline/AnaliticaComerciales";
 import { RechazoDialog } from "@/components/Pipeline/RechazoDialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/Layout/PageHeader";
 import { PageSkeleton } from "@/components/ui/skeletons";
 
@@ -97,13 +99,26 @@ export default function PipelinePage() {
 
       <FunnelStats cotizaciones={cotizaciones} />
 
-      <PipelineBoard
-        cotizaciones={cotizaciones}
-        onMarcarEnviada={(id) => enviarMutation.mutate(id)}
-        onRechazar={(id, nombre) => setRechazoDialog({ open: true, cotizacionId: id, cotizacionName: nombre })}
-        onReabrir={(id) => reabrirMutation.mutate(id)}
-        onNavigateToEditor={(id) => nav(`/cotizaciones/${id}`)}
-      />
+      <Tabs defaultValue="tablero">
+        <TabsList>
+          <TabsTrigger value="tablero">Tablero</TabsTrigger>
+          <TabsTrigger value="comerciales">Comerciales</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="tablero" className="mt-6">
+          <PipelineBoard
+            cotizaciones={cotizaciones}
+            onMarcarEnviada={(id) => enviarMutation.mutate(id)}
+            onRechazar={(id, nombre) => setRechazoDialog({ open: true, cotizacionId: id, cotizacionName: nombre })}
+            onReabrir={(id) => reabrirMutation.mutate(id)}
+            onNavigateToEditor={(id) => nav(`/cotizaciones/${id}`)}
+          />
+        </TabsContent>
+
+        <TabsContent value="comerciales" className="mt-6">
+          <AnaliticaComerciales cotizaciones={cotizaciones} />
+        </TabsContent>
+      </Tabs>
 
       <RechazoDialog
         open={rechazoDialog.open}

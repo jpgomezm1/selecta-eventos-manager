@@ -631,6 +631,50 @@ export type Database = {
         }
         Relationships: []
       }
+      evento_costos: {
+        Row: {
+          categoria: string
+          created_at: string | null
+          descripcion: string | null
+          estado_pago: string
+          evento_id: string
+          id: string
+          monto: number
+          proveedor: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          categoria: string
+          created_at?: string | null
+          descripcion?: string | null
+          estado_pago?: string
+          evento_id: string
+          id?: string
+          monto?: number
+          proveedor?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          categoria?: string
+          created_at?: string | null
+          descripcion?: string | null
+          estado_pago?: string
+          evento_id?: string
+          id?: string
+          monto?: number
+          proveedor?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evento_costos_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evento_orden_compra: {
         Row: {
           created_at: string | null
@@ -981,6 +1025,7 @@ export type Database = {
           fecha_evento: string
           fecha_liquidacion: string | null
           id: string
+          imprevisto_pct: number
           nombre_evento: string
           ubicacion: string
           updated_at: string | null
@@ -993,6 +1038,7 @@ export type Database = {
           fecha_evento: string
           fecha_liquidacion?: string | null
           id?: string
+          imprevisto_pct?: number
           nombre_evento: string
           ubicacion: string
           updated_at?: string | null
@@ -1005,6 +1051,7 @@ export type Database = {
           fecha_evento?: string
           fecha_liquidacion?: string | null
           id?: string
+          imprevisto_pct?: number
           nombre_evento?: string
           ubicacion?: string
           updated_at?: string | null
@@ -1891,6 +1938,10 @@ export type Database = {
           stock_total: number
           unidad: string
         }[]
+      }
+      fn_bulk_upsert_costos_proveedor: {
+        Args: { p_payload: Json }
+        Returns: Json
       }
       fn_set_proveedor_principal: {
         Args: { p_ingrediente_id: string; p_proveedor_id: string }

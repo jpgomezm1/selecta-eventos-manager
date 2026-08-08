@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "./types";
 import type {
   PlatoCatalogo,
   TransporteTarifa,
@@ -1049,6 +1050,32 @@ export async function setProveedorPrincipal(
     p_proveedor_id: proveedorId,
   });
   if (error) throw error;
+}
+
+export type CostoProveedorBulkRow = {
+  ingrediente_id: string;
+  proveedor: string;
+  presentacion_cantidad: number;
+  presentacion_unidad: string;
+  precio_presentacion: number;
+  costo_por_unidad_base: number;
+};
+
+/**
+ * Carga masiva de costos (Excel). Delega en `fn_bulk_upsert_costos_proveedor`,
+ * que hace todo el lote en una transacción: por cada fila crea o actualiza el
+ * proveedor, lo marca principal y sincroniza `ingredientes_catalogo.costo_por_unidad`.
+ * Si una fila falla, no queda nada aplicado.
+ */
+export async function bulkUpsertCostosProveedor(
+  rows: CostoProveedorBulkRow[]
+): Promise<{ creados: number; actualizados: number }> {
+  const { data, error } = await supabase.rpc("fn_bulk_upsert_costos_proveedor", {
+    p_payload: rows as unknown as Json,
+  });
+  if (error) throw error;
+  const res = (data ?? {}) as { creados?: number; actualizados?: number };
+  return { creados: res.creados ?? 0, actualizados: res.actualizados ?? 0 };
 }
 
 /** =====================

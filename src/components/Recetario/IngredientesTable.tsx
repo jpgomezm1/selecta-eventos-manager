@@ -49,9 +49,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { Search, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronRight, ChevronLeft, Star, TrendingDown } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronRight, ChevronLeft, Star, TrendingDown, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { CargaMasivaCostos } from "@/components/Forms/CargaMasivaCostos";
 
 const UNIDADES_BASE = ["gr", "kg", "ml", "lt", "und", "lb", "oz"];
 const UNIDADES_PRESENTACION = ["gr", "kg", "ml", "lt", "und", "lb", "oz"];
@@ -78,6 +79,7 @@ export default function IngredientesTable() {
   const [editValues, setEditValues] = useState<Partial<IngredienteCatalogo>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [cargaCostosOpen, setCargaCostosOpen] = useState(false);
 
   const [page, setPage] = useState(0);
   const pageSize = 20;
@@ -158,11 +160,17 @@ export default function IngredientesTable() {
         />
       </div>
 
-      {/* Botón nuevo ingrediente + Dialog */}
-      <Button onClick={() => setDialogOpen(true)} size="sm">
-        <Plus className="h-4 w-4 mr-1" /> Nuevo ingrediente
-      </Button>
+      {/* Botón nuevo ingrediente + carga masiva de costos */}
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={() => setDialogOpen(true)} size="sm">
+          <Plus className="h-4 w-4 mr-1" /> Nuevo ingrediente
+        </Button>
+        <Button onClick={() => setCargaCostosOpen(true)} size="sm" variant="outline">
+          <FileSpreadsheet className="h-4 w-4 mr-1" /> Actualizar costos con Excel
+        </Button>
+      </div>
       <NuevoIngredienteDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <CargaMasivaCostos isOpen={cargaCostosOpen} onClose={() => setCargaCostosOpen(false)} />
 
       {/* Tabla */}
       <div className="rounded-md border overflow-auto">

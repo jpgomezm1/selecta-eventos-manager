@@ -24,6 +24,7 @@ import { KPI } from "@/components/Layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useCan } from "@/hooks/useCan";
 import PlatoDetailSheet from "./PlatoDetailSheet";
+import { construirCostoPorPlato } from "@/lib/rentabilidadEvento";
 
 const CATEGORIAS = ["Todas", "Bebida", "Entrada", "Fuerte", "Guarnición", "Pasaboca"];
 
@@ -47,15 +48,11 @@ export default function PlatosTable() {
     queryFn: getAllPlatoIngredientes,
   });
 
-  // Compute cost per plato
-  const costByPlato = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const pi of allIngredientes) {
-      const cost = pi.cantidad * (pi.ingrediente?.costo_por_unidad ?? 0);
-      map.set(pi.plato_id, (map.get(pi.plato_id) ?? 0) + cost);
-    }
-    return map;
-  }, [allIngredientes]);
+  // Compute cost per plato (misma fórmula que usa la rentabilidad del evento)
+  const costByPlato = useMemo(
+    () => construirCostoPorPlato(allIngredientes),
+    [allIngredientes]
+  );
 
   const filtered = useMemo(() => {
     return platos.filter((p) => {
