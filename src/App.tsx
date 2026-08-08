@@ -23,6 +23,7 @@ import CocinaProduccionPage from "./pages/CocinaProduccion";
 import InventarioPage from "./pages/Inventario";
 import ClientesPage from "./pages/Clientes";
 import CotizacionPublica from "./pages/CotizacionPublica";
+import CargaDatos from "./pages/CargaDatos";
 import CatalogosPage from "./pages/Catalogos";
 import PipelinePage from "./pages/Pipeline";
 import TransportePage from "./pages/Transporte";
@@ -83,6 +84,9 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/compartido/:token" element={<CotizacionPublica />} />
+            {/* Pública a propósito: se le manda al cliente para que baje las
+                plantillas de carga, y no tiene usuario en la app. */}
+            <Route path="/carga" element={<CargaDatos />} />
             <Route path="/" element={<Navigate to="/panorama" replace />} />
 
             {/* Pantalla cuando el usuario está logueado pero no tiene rol asignado */}
