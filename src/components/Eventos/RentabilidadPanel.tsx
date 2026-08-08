@@ -70,9 +70,10 @@ export default function RentabilidadPanel({ eventoId }: Props) {
   const [nuevo, setNuevo] = useState({ ...FILA_VACIA });
   const [pctInput, setPctInput] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["rentabilidad-evento", eventoId],
     queryFn: () => getDatosRentabilidad(eventoId),
+    retry: false,
   });
 
   const { data: platoIngredientes = [] } = useQuery({
@@ -127,11 +128,27 @@ export default function RentabilidadPanel({ eventoId }: Props) {
       toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  if (isLoading || !rent || !data) {
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center gap-3 py-10">
         <div className="h-8 w-8 animate-pulse rounded-full bg-muted/70" />
         <p className="text-sm italic text-muted-foreground">Calculando rentabilidad…</p>
+      </div>
+    );
+  }
+
+  // Sin las migraciones de rentabilidad corridas, la consulta falla. Lo decimos
+  // en vez de dejar el panel girando: el resto del tab Financiero sí funciona.
+  if (error || !rent || !data) {
+    return (
+      <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/40 p-4 text-sm">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
+        <div>
+          <span className="font-medium">No se pudo calcular la rentabilidad.</span>{" "}
+          <span className="text-muted-foreground">
+            {(error as Error)?.message ?? "No hay datos disponibles para este evento."}
+          </span>
+        </div>
       </div>
     );
   }
