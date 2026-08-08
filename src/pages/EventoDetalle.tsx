@@ -28,6 +28,7 @@ import TransportePanel from "@/components/Eventos/TransportePanel";
 import OrdenCompraPanel from "@/components/Eventos/OrdenCompraPanel";
 import EventoChecklist from "@/components/Eventos/EventoChecklist";
 import CierreEventoPanel from "@/components/Eventos/CierreEventoPanel";
+import RentabilidadPanel from "@/components/Eventos/RentabilidadPanel";
 import { cn } from "@/lib/utils";
 
 type EventoHead = {
@@ -325,7 +326,19 @@ export default function EventoDetallePage() {
           <TransportePanel eventoId={head.id} onChanged={() => refetchChecklist()} />
         </TabsContent>
 
-        <TabsContent value="financiero" className="mt-5">
+        <TabsContent value="financiero" className="mt-5 space-y-5">
+          <Card className="overflow-hidden border-border shadow-soft">
+            <div className="border-b border-border px-5 py-4">
+              <span className="kicker">Rentabilidad</span>
+              <h2 className="mt-1 font-serif text-[18px] tracking-tight text-foreground">
+                Ingresos, costos y margen del evento
+              </h2>
+            </div>
+            <div className="p-5">
+              <RentabilidadPanel eventoId={head.id} />
+            </div>
+          </Card>
+
           <Card className="overflow-hidden border-border shadow-soft">
             <div className="border-b border-border px-5 py-4">
               <span className="kicker">Cierre</span>
