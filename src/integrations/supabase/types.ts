@@ -61,6 +61,7 @@ export type Database = {
           correo: string | null
           created_at: string | null
           empresa: string | null
+          empresa_emisora_id: string | null
           id: string
           nit: string | null
           nombre: string
@@ -74,6 +75,7 @@ export type Database = {
           correo?: string | null
           created_at?: string | null
           empresa?: string | null
+          empresa_emisora_id?: string | null
           id?: string
           nit?: string | null
           nombre: string
@@ -87,6 +89,7 @@ export type Database = {
           correo?: string | null
           created_at?: string | null
           empresa?: string | null
+          empresa_emisora_id?: string | null
           id?: string
           nit?: string | null
           nombre?: string
@@ -606,6 +609,144 @@ export type Database = {
             columns: ["contacto_id"]
             isOneToOne: false
             referencedRelation: "cliente_contactos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      empresas_emisoras: {
+        Row: {
+          activo: boolean
+          created_at: string
+          id: string
+          nit: string | null
+          nombre: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nit?: string | null
+          nombre: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nit?: string | null
+          nombre?: string
+        }
+        Relationships: []
+      }
+      factura_abonos: {
+        Row: {
+          created_at: string
+          factura_id: string
+          fecha: string
+          id: string
+          metodo: string | null
+          monto: number
+          notas: string | null
+          referencia: string | null
+          registrado_por: string | null
+          soporte_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          factura_id: string
+          fecha?: string
+          id?: string
+          metodo?: string | null
+          monto: number
+          notas?: string | null
+          referencia?: string | null
+          registrado_por?: string | null
+          soporte_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          factura_id?: string
+          fecha?: string
+          id?: string
+          metodo?: string | null
+          monto?: number
+          notas?: string | null
+          referencia?: string | null
+          registrado_por?: string | null
+          soporte_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factura_abonos_factura_id_fkey"
+            columns: ["factura_id"]
+            isOneToOne: false
+            referencedRelation: "facturas_venta"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facturas_venta: {
+        Row: {
+          anulada: boolean
+          cliente_id: string
+          created_at: string
+          dias_credito: number
+          empresa_emisora_id: string
+          evento_id: string | null
+          fecha_emision: string
+          id: string
+          notas: string | null
+          numero: string
+          updated_at: string
+          valor_total: number
+        }
+        Insert: {
+          anulada?: boolean
+          cliente_id: string
+          created_at?: string
+          dias_credito?: number
+          empresa_emisora_id: string
+          evento_id?: string | null
+          fecha_emision: string
+          id?: string
+          notas?: string | null
+          numero: string
+          updated_at?: string
+          valor_total: number
+        }
+        Update: {
+          anulada?: boolean
+          cliente_id?: string
+          created_at?: string
+          dias_credito?: number
+          empresa_emisora_id?: string
+          evento_id?: string | null
+          fecha_emision?: string
+          id?: string
+          notas?: string | null
+          numero?: string
+          updated_at?: string
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facturas_venta_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facturas_venta_empresa_emisora_id_fkey"
+            columns: ["empresa_emisora_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_emisoras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facturas_venta_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
             referencedColumns: ["id"]
           },
         ]
@@ -1830,6 +1971,31 @@ export type Database = {
       }
     }
     Views: {
+      v_cartera_facturas: {
+        Row: {
+          abonado: number | null
+          anulada: boolean | null
+          cliente_documento: string | null
+          cliente_id: string | null
+          cliente_nombre: string | null
+          created_at: string | null
+          dias_credito: number | null
+          dias_mora: number | null
+          edad_dias: number | null
+          emisora: string | null
+          empresa_emisora_id: string | null
+          evento_id: string | null
+          fecha_emision: string | null
+          fecha_vencimiento: string | null
+          id: string | null
+          notas: string | null
+          numero: string | null
+          saldo: number | null
+          tramo: string | null
+          valor_total: number | null
+        }
+        Relationships: []
+      }
       v_menaje_reservas_cal: {
         Row: {
           estado: string | null
@@ -1953,6 +2119,28 @@ export type Database = {
       fn_update_version_cotizacion_atomic: {
         Args: { p_payload: Json }
         Returns: undefined
+      }
+      fn_cartera_importar: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
+      fn_cartera_resumen: {
+        Args: { p_empresa_id?: string; p_fecha_corte?: string }
+        Returns: Json
+      }
+      fn_cartera_tramo: {
+        Args: { p_dias_credito?: number; p_edad_dias: number }
+        Returns: string
+      }
+      fn_cartera_tramos_a_corte: {
+        Args: { p_fecha_corte?: string }
+        Returns: {
+          edad_dias: number
+          emisora: string
+          numero: string
+          saldo: number
+          tramo: string
+        }[]
       }
       fn_carga_publica_costo_directo: {
         Args: { p_costo: number; p_ingrediente_id: string; p_token: string }

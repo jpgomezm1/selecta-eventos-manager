@@ -8,6 +8,7 @@ import {
   Warehouse,
   UserCircle,
   SlidersHorizontal,
+  Wallet,
   TrendingUp,
   Truck,
   LayoutDashboard,
@@ -47,6 +48,12 @@ export const navSections: NavSection[] = [
       { title: "Personal", url: "/personal", icon: Users, match: /^\/personal/, roles: ["admin", "operaciones"] },
       { title: "Clientes", url: "/clientes", icon: UserCircle, match: /^\/clientes/, roles: ["admin", "comercial"] },
       { title: "Transporte", url: "/transporte", icon: Truck, match: /^\/transporte/, roles: ["admin", "operaciones"] },
+    ],
+  },
+  {
+    label: "Finanzas",
+    items: [
+      { title: "Cartera", url: "/cartera", icon: Wallet, match: /^\/cartera/, roles: ["admin", "comercial"] },
     ],
   },
   {
