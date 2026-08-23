@@ -193,6 +193,27 @@ export async function guardarProveedor(
   };
 }
 
+/**
+ * Fija el costo por unidad base a mano, sin proveedor.
+ *
+ * Solo vale para insumos SIN proveedores: con proveedor el costo es derivado
+ * del principal, y un valor puesto a mano lo pisaría el próximo guardado. El
+ * SQL lo rechaza en ese caso. `costo = 0` lo borra.
+ */
+export async function guardarCostoDirecto(
+  token: string,
+  ingredienteId: string,
+  costo: number
+): Promise<number> {
+  const { data, error } = await supabase.rpc("fn_carga_publica_costo_directo", {
+    p_token: token,
+    p_ingrediente_id: ingredienteId,
+    p_costo: costo,
+  });
+  if (error) throw error;
+  return num(data);
+}
+
 /** Cambia cuál proveedor define el costo vigente del insumo. */
 export async function hacerProveedorPrincipal(
   token: string,

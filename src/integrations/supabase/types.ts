@@ -1954,6 +1954,10 @@ export type Database = {
         Args: { p_payload: Json }
         Returns: undefined
       }
+      fn_carga_publica_costo_directo: {
+        Args: { p_costo: number; p_ingrediente_id: string; p_token: string }
+        Returns: number
+      }
       fn_carga_publica_datos: {
         Args: { p_token: string }
         Returns: Json

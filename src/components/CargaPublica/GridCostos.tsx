@@ -13,6 +13,7 @@ import { normalizarTexto } from "@/lib/mapeoExcelPersonal";
 import {
   borrarProveedor,
   crearInsumo,
+  guardarCostoDirecto,
   guardarProveedor,
   hacerProveedorPrincipal,
   type CargaIngrediente,
@@ -29,7 +30,11 @@ import type { IngredienteCatalogo } from "@/types/cotizador";
  *
  * 1. Un insumo puede tener varios proveedores. El esquema siempre lo soportó
  *    (`es_principal` marca cuál define el costo vigente); la grilla plana no.
- * 2. Se pueden crear insumos que no estén en el catálogo.
+ * 2. Se pueden crear insumos que no estén en el catálogo, y cargarles el
+ *    precio SIN nombrar proveedor. Esto último no es un estado nuevo: de los
+ *    55 insumos que ya tenían costo, 40 no tienen ninguna fila de proveedor.
+ *    El costo vive en `ingredientes_catalogo.costo_por_unidad` y la fila de
+ *    proveedor es opcional — cuando existe, manda ella.
  * 3. Guardar es un botón, no un efecto de perder el foco. El autoguardado
  *    ahorra clics pero deja al que llena sin saber si su dato entró — y en una
  *    página que se usa sin acompañamiento eso vale más que los clics.
@@ -240,6 +245,58 @@ export default function GridCostos({ token, ingredientes, onCambio }: Props) {
     }
   };
 
+  /**
+   * Precio sin proveedor. La pantalla igual pide presentación y precio para
+   * hacer la división ella misma —que escriban "25 kg por $120.000" y no
+   * "$4.800"— pero lo que queda persistido es solo el costo por unidad base:
+   * las columnas de presentación viven en la fila de proveedor, que acá no hay.
+   */
+  const guardarDirecto = async (ing: CargaIngrediente) => {
+    const validado = validarCosto(
+      {
+        nombre: ing.nombre,
+        // `validarCosto` exige proveedor porque valida filas de Excel, donde sí
+        // es obligatorio. Acá el nombre no se usa: solo interesan la conversión
+        // de unidades y el costo que devuelve.
+        proveedor: "—",
+        presentacion: form.presentacion,
+        unidad: form.unidad,
+        precio: form.precio,
+      },
+      indice
+    );
+    if (validado.errores.length > 0) {
+      setErrores(validado.errores);
+      return;
+    }
+
+    setGuardando(true);
+    try {
+      const costo = await guardarCostoDirecto(token, ing.id, validado.costo_por_unidad_base);
+      reemplazar({ ...ing, costo_por_unidad: costo });
+      setEditando(null);
+      setForm(FORM_VACIO);
+      toast.success(`${ing.nombre}: ${fmtCosto(costo, ing.unidad)}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "No se pudo guardar";
+      setErrores([msg]);
+      toast.error("No se pudo guardar el precio", { description: msg });
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const quitarDirecto = async (ing: CargaIngrediente) => {
+    try {
+      await guardarCostoDirecto(token, ing.id, 0);
+      reemplazar({ ...ing, costo_por_unidad: 0 });
+      toast.success(`${ing.nombre} quedó sin costo`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "No se pudo quitar";
+      toast.error("No se pudo quitar el precio", { description: msg });
+    }
+  };
+
   const usarEste = async (ing: CargaIngrediente, p: CargaProveedor) => {
     try {
       await hacerProveedorPrincipal(token, ing.id, p.id);
@@ -395,6 +452,103 @@ export default function GridCostos({ token, ingredientes, onCambio }: Props) {
             <Button size="sm" disabled={guardando} onClick={() => void guardar(ing)}>
               {guardando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Guardar proveedor
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const formDirecto = (ing: CargaIngrediente) => {
+    const costo = previa(ing);
+    return (
+      <div className="rounded-md border border-primary/40 bg-primary/5 p-4">
+        <p className="mb-3 text-sm text-muted-foreground">
+          Solo el precio. Si después quieren registrar a quién le compran, agréguenle un
+          proveedor y ese pasa a mandar.
+          {ing.costo_por_unidad > 0 && (
+            <>
+              {" "}
+              Hoy está en{" "}
+              <strong className="font-semibold text-foreground tabular-nums">
+                {fmtCosto(ing.costo_por_unidad, ing.unidad)}
+              </strong>
+              .
+            </>
+          )}
+        </p>
+        <div className="grid gap-3 sm:grid-cols-[90px_90px_minmax(0,1fr)]">
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Viene de</label>
+            <Input
+              autoFocus
+              value={form.presentacion}
+              onChange={(e) => setForm({ ...form, presentacion: e.target.value })}
+              placeholder="25"
+              inputMode="decimal"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Unidad</label>
+            <select
+              value={form.unidad}
+              onChange={(e) => setForm({ ...form, unidad: e.target.value })}
+              className="h-10 w-full rounded-md border border-input bg-background px-2 text-sm"
+            >
+              <option value="">—</option>
+              {UNIDADES.map((u) => (
+                <option key={u} value={u}>
+                  {u}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Y cuesta</label>
+            <Input
+              value={form.precio}
+              onChange={(e) => setForm({ ...form, precio: e.target.value })}
+              placeholder="120000"
+              inputMode="numeric"
+            />
+          </div>
+        </div>
+
+        {errores.length > 0 && (
+          <ul className="mt-3 space-y-0.5 text-sm text-destructive">
+            {errores.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ul>
+        )}
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            {costo !== null ? (
+              <>
+                Les sale a{" "}
+                <strong className="font-semibold text-foreground tabular-nums">
+                  {fmtCosto(costo, ing.unidad)}
+                </strong>
+              </>
+            ) : (
+              `Llenen los tres campos y les mostramos el costo por ${ing.unidad}`
+            )}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setEditando(null);
+                setErrores([]);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button size="sm" disabled={guardando} onClick={() => void guardarDirecto(ing)}>
+              {guardando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Guardar precio
             </Button>
           </div>
         </div>
@@ -616,13 +770,55 @@ export default function GridCostos({ token, ingredientes, onCambio }: Props) {
                     )
                   )}
 
+                  {/* Precio sin proveedor: solo existe mientras no haya ninguno.
+                      En cuanto entra un proveedor, el costo lo define él. */}
+                  {ing.proveedores.length === 0 &&
+                    ing.costo_por_unidad > 0 &&
+                    editando !== "directo" && (
+                      <div className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-background px-3 py-2.5">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[15px]">Precio sin proveedor</p>
+                          <p className="text-xs tabular-nums text-muted-foreground">
+                            <strong className="font-semibold text-foreground">
+                              {fmtCosto(ing.costo_por_unidad, ing.unidad)}
+                            </strong>{" "}
+                            · no quedó registrado a quién le compran
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => abrirForm("directo")}>
+                            Editar
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Quitar el precio de ${ing.nombre}`}
+                            onClick={() => void quitarDirecto(ing)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                  {editando === "directo" && formDirecto(ing)}
+
                   {editando === "nuevo" ? (
                     formProveedor(ing)
                   ) : (
-                    <Button variant="outline" size="sm" onClick={() => abrirForm("nuevo")}>
-                      <Plus className="mr-1.5 h-4 w-4" />
-                      {ing.proveedores.length === 0 ? "Agregar proveedor" : "Otro proveedor"}
-                    </Button>
+                    editando !== "directo" && (
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" size="sm" onClick={() => abrirForm("nuevo")}>
+                          <Plus className="mr-1.5 h-4 w-4" />
+                          {ing.proveedores.length === 0 ? "Agregar proveedor" : "Otro proveedor"}
+                        </Button>
+                        {ing.proveedores.length === 0 && ing.costo_por_unidad === 0 && (
+                          <Button variant="ghost" size="sm" onClick={() => abrirForm("directo")}>
+                            Solo el precio, sin proveedor
+                          </Button>
+                        )}
+                      </div>
+                    )
                   )}
 
                   {ing.proveedores.length > 1 && (
