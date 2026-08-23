@@ -1587,6 +1587,7 @@ export type Database = {
           porciones_receta: number | null
           precio: number
           rendimiento: string | null
+          sin_insumos: boolean
           temperatura_coccion: string | null
           tiempo_preparacion: string | null
           tipo_menu: string
@@ -1602,6 +1603,7 @@ export type Database = {
           porciones_receta?: number | null
           precio: number
           rendimiento?: string | null
+          sin_insumos?: boolean
           temperatura_coccion?: string | null
           tiempo_preparacion?: string | null
           tipo_menu: string
@@ -1617,6 +1619,7 @@ export type Database = {
           porciones_receta?: number | null
           precio?: number
           rendimiento?: string | null
+          sin_insumos?: boolean
           temperatura_coccion?: string | null
           tiempo_preparacion?: string | null
           tipo_menu?: string
@@ -1950,6 +1953,30 @@ export type Database = {
       fn_update_version_cotizacion_atomic: {
         Args: { p_payload: Json }
         Returns: undefined
+      }
+      fn_carga_publica_costos: {
+        Args: { p_payload: Json; p_token: string }
+        Returns: Json
+      }
+      fn_carga_publica_datos: {
+        Args: { p_token: string }
+        Returns: Json
+      }
+      fn_carga_publica_menaje: {
+        Args: { p_fila: Json; p_token: string }
+        Returns: Json
+      }
+      fn_carga_publica_menaje_baja: {
+        Args: { p_id: string; p_token: string }
+        Returns: undefined
+      }
+      fn_carga_publica_receta: {
+        Args: { p_items: Json; p_plato_id: string; p_token: string }
+        Returns: undefined
+      }
+      fn_carga_publica_sin_insumos: {
+        Args: { p_plato_ids: string[]; p_token: string; p_valor: boolean }
+        Returns: number
       }
       fn_upsert_plato_ingredientes_atomic: {
         Args: { p_items: Json; p_plato_id: string }

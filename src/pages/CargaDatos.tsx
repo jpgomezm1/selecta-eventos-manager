@@ -202,6 +202,14 @@ export default function CargaDatos() {
             cocina y bodega. Los dos primeros ya vienen con su catálogo adentro.
           </p>
 
+          <p className="mt-5 max-w-[70ch] rounded-r-sm border-l-[3px] border-primary bg-muted/50 px-5 py-4 text-[15px] leading-relaxed">
+            <strong className="font-semibold">
+              ¿Les mandamos un link con un código al final?
+            </strong>{" "}
+            Úsenlo mejor que esto. Es la misma información, pero se llena en la pantalla y queda
+            guardada al momento — sin descargar, sin devolvernos nada por correo.
+          </p>
+
           <div className="mt-8 grid gap-6 md:grid-cols-2">
             {PLANTILLAS.map((p) => (
               <TarjetaPlantilla key={p.archivo} p={p} />

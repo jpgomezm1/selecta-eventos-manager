@@ -162,32 +162,33 @@ function leerColumna(fila: Record<string, unknown>, nombres: string[]): string {
   return "";
 }
 
-export function procesarFilaCosto(
-  fila: Record<string, unknown>,
-  numeroFila: number,
+/**
+ * Los cinco campos de una fila de costo, ya extraídos de donde vinieran.
+ *
+ * El Excel los saca de columnas con nombres variables; la página `/carga/:token`
+ * los tiene tipados desde el formulario. Lo que NO puede variar entre las dos
+ * rutas son las reglas de validación y la conversión de unidades — por eso
+ * viven una sola vez, en `validarCosto`.
+ */
+export interface CamposCosto {
+  nombre: string;
+  proveedor: string;
+  presentacion: string;
+  unidad: string;
+  precio: string;
+}
+
+export type CostoValidado = Omit<CostoExcelProcesado, "fila_excel">;
+
+export function validarCosto(
+  campos: CamposCosto,
   indice: IndiceIngredientes
-): CostoExcelProcesado {
-  const nombreExcel = leerColumna(fila, ["INGREDIENTE", "INSUMO", "NOMBRE", "PRODUCTO"]);
-  const proveedor = leerColumna(fila, ["PROVEEDOR", "PROVEEDORES"]);
-  const presentacionRaw = leerColumna(fila, [
-    "PRESENTACION",
-    "CANTIDAD",
-    "CANTIDAD PRESENTACION",
-    "PRESENTACION CANTIDAD",
-  ]);
-  const unidadRaw = leerColumna(fila, [
-    "UNIDAD",
-    "UNIDAD PRESENTACION",
-    "PRESENTACION UNIDAD",
-    "UND",
-  ]);
-  const precioRaw = leerColumna(fila, [
-    "PRECIO",
-    "PRECIO PRESENTACION",
-    "VALOR",
-    "COSTO",
-    "PRECIO UNITARIO",
-  ]);
+): CostoValidado {
+  const nombreExcel = campos.nombre;
+  const proveedor = campos.proveedor;
+  const presentacionRaw = campos.presentacion;
+  const unidadRaw = campos.unidad;
+  const precioRaw = campos.precio;
 
   const errores: string[] = [];
 
@@ -245,7 +246,6 @@ export function procesarFilaCosto(
   }
 
   return {
-    fila_excel: numeroFila,
     nombre_excel: nombreExcel,
     ingrediente_id: ingrediente?.id ?? null,
     ingrediente_nombre: ingrediente?.nombre ?? null,
@@ -258,6 +258,41 @@ export function procesarFilaCosto(
     costo_anterior: ingrediente ? Number(ingrediente.costo_por_unidad) : null,
     errores,
   };
+}
+
+/** Envoltura para el importador de Excel: saca los campos y delega. */
+export function procesarFilaCosto(
+  fila: Record<string, unknown>,
+  numeroFila: number,
+  indice: IndiceIngredientes
+): CostoExcelProcesado {
+  const validado = validarCosto(
+    {
+      nombre: leerColumna(fila, ["INGREDIENTE", "INSUMO", "NOMBRE", "PRODUCTO"]),
+      proveedor: leerColumna(fila, ["PROVEEDOR", "PROVEEDORES"]),
+      presentacion: leerColumna(fila, [
+        "PRESENTACION",
+        "CANTIDAD",
+        "CANTIDAD PRESENTACION",
+        "PRESENTACION CANTIDAD",
+      ]),
+      unidad: leerColumna(fila, [
+        "UNIDAD",
+        "UNIDAD PRESENTACION",
+        "PRESENTACION UNIDAD",
+        "UND",
+      ]),
+      precio: leerColumna(fila, [
+        "PRECIO",
+        "PRECIO PRESENTACION",
+        "VALOR",
+        "COSTO",
+        "PRECIO UNITARIO",
+      ]),
+    },
+    indice
+  );
+  return { ...validado, fila_excel: numeroFila };
 }
 
 /**

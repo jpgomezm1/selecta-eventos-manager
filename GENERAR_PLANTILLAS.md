@@ -1,4 +1,63 @@
-# Las plantillas de carga (`/carga`)
+# La carga de datos del cliente (`/carga`)
+
+Hay dos caminos para lo mismo, y el primero es el bueno:
+
+| Ruta | Qué es | Cuándo |
+|---|---|---|
+| **`/carga/:token`** | Editor web: el cliente escribe en la pantalla y se guarda al momento | Es el que hay que mandar |
+| `/carga` | Las cinco plantillas .xlsx para descargar | Fallback, para quien prefiera Excel |
+
+## El editor web
+
+Se abre sin sesión, igual que `/compartido/:token`. Lo que autoriza a escribir
+es el token de la URL, que validan por dentro las funciones
+`fn_carga_publica_*` (SECURITY DEFINER, migración
+`supabase/migrations/20260823000000_carga_publica.sql`). La página nunca toca
+las tablas: si hace falta un dato nuevo, se agrega al jsonb que arma
+`fn_carga_publica_datos` — no un query nuevo en el front.
+
+Cubre costos, recetas y menaje. Clientes y personal quedan fuera a propósito:
+los datos de clientes son personales y no van detrás de un link sin login, y
+personal ya tiene su importador dentro de la app.
+
+**Para sacar el link:**
+
+```sql
+select token from public.carga_tokens where is_active;
+-- https://selecta-eventos.netlify.app/carga/<token>
+```
+
+**Para revocarlo** (se vence el acceso sin tocar código ni deploy):
+
+```sql
+update public.carga_tokens set is_active = false where token = '...';
+```
+
+**Para saber si entraron:** `carga_tokens.ultima_actividad` se actualiza en cada
+llamada. Es la forma barata de contestar "¿lo están usando?" sin preguntar.
+
+Después de aplicar la migración, correr la prueba end-to-end —usa la anon key,
+o sea que prueba exactamente lo que puede hacer el navegador, y revierte todo lo
+que escribe:
+
+```sh
+python scripts-plantillas/probar_carga_publica.py
+```
+
+### Platos que no llevan insumos
+
+`platos_catalogo.sin_insumos`. Hasta que existió esta columna, "no tiene receta"
+y "no lleva insumos" eran el mismo estado (cero filas en `plato_ingredientes`),
+así que una botella de agua iba a figurar como pendiente para siempre. Son 51 de
+los 209 platos sin receta: vinos, gaseosas, cócteles e "IMPLEMENTOS PARA EL
+SERVICIO". El editor deja marcar una categoría entera de un golpe.
+
+La marca se cae sola si después se le carga una receta al plato, y no se puede
+poner sobre un plato que ya tiene una — eso lo refuerza el SQL, no solo la UI.
+
+---
+
+# Las plantillas de Excel (`/carga`)
 
 La página pública `/carga` sirve cinco Excel desde `public/plantillas/`. **No se
 generan en el navegador**: la página es anónima y las tablas de catálogo exigen

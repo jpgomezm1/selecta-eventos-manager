@@ -142,7 +142,18 @@ export default function PlatosTable() {
                     ) : <span className="text-slate-300">—</span>}
                   </TableCell>
                   <TableCell className="text-right">{p.precio > 0 ? fmt(p.precio) : <span className="text-slate-300">—</span>}</TableCell>
-                  <TableCell className="text-right">{costo > 0 ? fmt(costo) : <span className="text-slate-300">—</span>}</TableCell>
+                  <TableCell className="text-right">
+                    {costo > 0 ? (
+                      fmt(costo)
+                    ) : p.sin_insumos ? (
+                      // Costo 0 con explicación: el cliente ya respondió que
+                      // este plato no lleva insumos. Sin esta marca se ve igual
+                      // que una receta que falta cargar.
+                      <span className="text-xs text-muted-foreground">no lleva insumos</span>
+                    ) : (
+                      <span className="text-slate-300">—</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">{p.porciones_receta ?? <span className="text-slate-300">—</span>}</TableCell>
                   <TableCell>
                     <Button size="icon" variant="ghost" className="h-10 w-10 sm:h-7 sm:w-7" onClick={(e) => { e.stopPropagation(); openDetail(p.id); }}>
