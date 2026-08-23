@@ -50,6 +50,13 @@ export interface IngredienteCatalogo {
     rendimiento?: string | null;
     notas?: string | null;
     margen_ganancia?: number | null;
+    /**
+     * true = el plato no lleva insumos y nunca los va a llevar (un vino, una
+     * gaseosa). Distingue "ya lo respondieron" de "falta cargarlo": sin esto,
+     * ambos casos son cero filas en plato_ingredientes. Lo marca el cliente
+     * desde `/carga/:token`.
+     */
+    sin_insumos?: boolean;
     ingredientes?: PlatoIngrediente[];
   }
   

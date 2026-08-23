@@ -24,6 +24,7 @@ import InventarioPage from "./pages/Inventario";
 import ClientesPage from "./pages/Clientes";
 import CotizacionPublica from "./pages/CotizacionPublica";
 import CargaDatos from "./pages/CargaDatos";
+import CargaEditor from "./pages/CargaEditor";
 import CatalogosPage from "./pages/Catalogos";
 import PipelinePage from "./pages/Pipeline";
 import TransportePage from "./pages/Transporte";
@@ -84,9 +85,15 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/compartido/:token" element={<CotizacionPublica />} />
-            {/* Pública a propósito: se le manda al cliente para que baje las
-                plantillas de carga, y no tiene usuario en la app. */}
+            {/* Públicas a propósito: se le mandan al cliente para que complete
+                su catálogo, y no tiene usuario en la app.
+                  /carga         → las plantillas .xlsx para descargar
+                  /carga/:token  → el editor que escribe directo a la base
+                Lo que autoriza a escribir en el editor es el token, que validan
+                por dentro las funciones fn_carga_publica_* (SECURITY DEFINER).
+                Ver supabase/migrations/20260823000000_carga_publica.sql. */}
             <Route path="/carga" element={<CargaDatos />} />
+            <Route path="/carga/:token" element={<CargaEditor />} />
             <Route path="/" element={<Navigate to="/panorama" replace />} />
 
             {/* Pantalla cuando el usuario está logueado pero no tiene rol asignado */}

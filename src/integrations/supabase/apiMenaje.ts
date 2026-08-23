@@ -14,10 +14,17 @@ import type {
 /* =========================
  *      CATÁLOGO CRUD
  * ========================= */
+/**
+ * Solo el menaje activo. `activo = false` es baja lógica: se usa en vez de
+ * DELETE porque un artículo puede estar amarrado a una reserva o a una
+ * cotización vieja (FK RESTRICT) y borrarlo rompería el histórico. Lo aplica
+ * el cliente desde `/carga/:token` al sacar los artículos de ejemplo.
+ */
 export async function menajeCatalogoList(): Promise<MenajeCatalogo[]> {
   const { data, error } = await supabase
     .from("menaje_catalogo")
     .select("*")
+    .eq("activo", true)
     .order("categoria")
     .order("nombre");
   if (error) throw error;
