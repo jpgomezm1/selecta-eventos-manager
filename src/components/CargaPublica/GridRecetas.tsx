@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
-import { Check, ChevronDown, Loader2, Plus, Search, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, ChevronDown, Loader2, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import BarraFiltros, { type EstadoFiltro } from "@/components/CargaPublica/BarraFiltros";
 import {
   guardarReceta,
   marcarSinInsumos,
@@ -51,25 +52,88 @@ function estadoDe(p: CargaPlato): EstadoPlato {
 
 const fmt = (n: number) => `$ ${Math.round(n).toLocaleString("es-CO")}`;
 
-/** Buscador de insumo para una línea: input + lista filtrada, sin dropdown pesado. */
+/**
+ * Elige un insumo del catálogo para una línea de receta.
+ *
+ * Tres cosas que la primera versión no hacía y volvían lento el llenado:
+ *
+ * - Abre la lista al enfocar, sin escribir. Quien llena una receta muchas veces
+ *   no recuerda cómo se llama el insumo en el catálogo ("Aceite Vegetal" o
+ *   "Aceite de Girasol"), y un input vacío que no muestra nada no ayuda.
+ * - Esconde los que ya están en esta receta. Elegirlos dos veces se rechaza al
+ *   guardar; mejor que no aparezcan.
+ * - Se maneja con teclado (flechas + Enter), que es como se llena una lista
+ *   larga sin soltar las manos.
+ *
+ * Va con input + lista propia y no con el Command de shadcn porque hay una de
+ * estas por línea de receta y el popover de Radix pesa de más para esto.
+ */
+const MAX_OPCIONES = 50;
+
 function SelectorInsumo({
   ingredientes,
   valor,
+  excluir,
   onCambio,
 }: {
   ingredientes: CargaIngrediente[];
   valor: string;
+  /** Ids ya usados en esta receta: no se ofrecen de nuevo. */
+  excluir: string[];
   onCambio: (id: string) => void;
 }) {
   const elegido = ingredientes.find((i) => i.id === valor);
   const [query, setQuery] = useState("");
   const [abierto, setAbierto] = useState(false);
+  const [resaltado, setResaltado] = useState(0);
+  const listaRef = useRef<HTMLUListElement>(null);
+
+  const disponibles = useMemo(() => {
+    const fuera = new Set(excluir);
+    return ingredientes.filter((i) => !fuera.has(i.id));
+  }, [ingredientes, excluir]);
 
   const opciones = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return [];
-    return ingredientes.filter((i) => i.nombre.toLowerCase().includes(q)).slice(0, 8);
-  }, [ingredientes, query]);
+    const base = q ? disponibles.filter((i) => i.nombre.toLowerCase().includes(q)) : disponibles;
+    return base.slice(0, MAX_OPCIONES);
+  }, [disponibles, query]);
+
+  const sobrantes = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const total = q ? disponibles.filter((i) => i.nombre.toLowerCase().includes(q)).length : disponibles.length;
+    return total - opciones.length;
+  }, [disponibles, query, opciones.length]);
+
+  // El resaltado se sale de rango cuando cambia el filtro.
+  useEffect(() => setResaltado(0), [query, abierto]);
+
+  useEffect(() => {
+    listaRef.current?.children[resaltado]?.scrollIntoView({ block: "nearest" });
+  }, [resaltado]);
+
+  const elegir = (id: string) => {
+    onCambio(id);
+    setQuery("");
+    setAbierto(false);
+  };
+
+  const teclas = (e: React.KeyboardEvent) => {
+    if (!abierto) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setResaltado((r) => Math.min(r + 1, opciones.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setResaltado((r) => Math.max(r - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const o = opciones[resaltado];
+      if (o) elegir(o.id);
+    } else if (e.key === "Escape") {
+      setAbierto(false);
+    }
+  };
 
   if (elegido) {
     return (
@@ -102,32 +166,53 @@ function SelectorInsumo({
           setAbierto(true);
         }}
         onFocus={() => setAbierto(true)}
-        // El click en una opción dispara blur antes que el onMouseDown del item;
+        onKeyDown={teclas}
+        // El click en una opción dispara blur antes que el onClick del item;
         // el delay deja que la selección gane.
         onBlur={() => setTimeout(() => setAbierto(false), 150)}
-        placeholder="Escriban el insumo…"
+        placeholder="Elijan un insumo…"
         aria-label="Buscar insumo"
+        autoComplete="off"
       />
-      {abierto && opciones.length > 0 && (
-        <ul className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border border-border bg-popover shadow-md">
-          {opciones.map((o) => (
-            <li key={o.id}>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  onCambio(o.id);
-                  setQuery("");
-                  setAbierto(false);
-                }}
-                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
-              >
-                <span className="truncate">{o.nombre}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">{o.unidad}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+      {abierto && (
+        <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border border-border bg-popover shadow-md">
+          {opciones.length > 0 ? (
+            <>
+              <ul ref={listaRef} className="max-h-64 overflow-y-auto">
+                {opciones.map((o, idx) => (
+                  <li key={o.id}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onMouseEnter={() => setResaltado(idx)}
+                      onClick={() => elegir(o.id)}
+                      className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm ${
+                        idx === resaltado ? "bg-accent" : ""
+                      }`}
+                    >
+                      <span className="truncate">{o.nombre}</span>
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {o.unidad}
+                        {o.costo_por_unidad === 0 && " · sin costo"}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {sobrantes > 0 && (
+                <p className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
+                  y {sobrantes} más — escriban para filtrar
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="px-3 py-3 text-sm text-muted-foreground">
+              {query.trim()
+                ? `No hay ningún insumo que se llame «${query.trim()}». Créenlo en la pestaña de Costos de insumos y vuelvan.`
+                : "Ya agregaron todos los insumos del catálogo a esta receta."}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );
@@ -142,7 +227,7 @@ export default function GridRecetas({
 }: Props) {
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState("");
-  const [soloPendientes, setSoloPendientes] = useState(true);
+  const [filtro, setFiltro] = useState<EstadoFiltro>("faltan");
   const [visibles, setVisibles] = useState(POR_PAGINA);
   const [abierto, setAbierto] = useState<string | null>(null);
   const [lineas, setLineas] = useState<LineaBorrador[]>([]);
@@ -157,14 +242,19 @@ export default function GridRecetas({
   const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
     return platos.filter((p) => {
-      if (soloPendientes && estadoDe(p) !== "sin_resolver") return false;
+      const resuelto = estadoDe(p) !== "sin_resolver";
+      if (filtro === "hechos" && !resuelto) return false;
+      if (filtro === "faltan" && resuelto) return false;
       if (categoria && p.categoria !== categoria) return false;
       if (q && !p.nombre.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [platos, busqueda, categoria, soloPendientes]);
+  }, [platos, busqueda, categoria, filtro]);
 
-  const pendientes = platos.filter((p) => estadoDe(p) === "sin_resolver").length;
+  const conteos = useMemo(() => {
+    const hechos = platos.filter((p) => estadoDe(p) !== "sin_resolver").length;
+    return { todos: platos.length, hechos, faltan: platos.length - hechos };
+  }, [platos]);
 
   /** Los de la categoría elegida que siguen sin resolver: el lote del botón. */
   const loteCategoria = useMemo(() => {
@@ -238,50 +328,38 @@ export default function GridRecetas({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-1 flex-col gap-3 sm:flex-row">
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={busqueda}
-              onChange={(e) => {
-                setBusqueda(e.target.value);
-                setVisibles(POR_PAGINA);
-              }}
-              placeholder="Buscar un plato…"
-              className="pl-9"
-            />
-          </div>
-          <select
-            value={categoria}
-            onChange={(e) => {
-              setCategoria(e.target.value);
-              setVisibles(POR_PAGINA);
-            }}
-            aria-label="Filtrar por categoría"
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm sm:w-56"
-          >
-            <option value="">Todas las categorías</option>
-            {categorias.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </div>
-        <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={soloPendientes}
-            onChange={(e) => {
-              setSoloPendientes(e.target.checked);
-              setVisibles(POR_PAGINA);
-            }}
-            className="h-4 w-4 accent-primary"
-          />
-          Ver solo los {pendientes} sin resolver
-        </label>
-      </div>
+      <BarraFiltros
+        busqueda={busqueda}
+        onBusqueda={(v) => {
+          setBusqueda(v);
+          setVisibles(POR_PAGINA);
+        }}
+        placeholder="Buscar un plato…"
+        estado={filtro}
+        onEstado={(e) => {
+          setFiltro(e);
+          setVisibles(POR_PAGINA);
+        }}
+        etiquetas={{ hechos: "Resueltos", faltan: "Sin resolver" }}
+        conteos={conteos}
+      >
+        <select
+          value={categoria}
+          onChange={(e) => {
+            setCategoria(e.target.value);
+            setVisibles(POR_PAGINA);
+          }}
+          aria-label="Filtrar por categoría"
+          className="h-10 shrink-0 rounded-md border border-input bg-background px-3 text-sm sm:w-56"
+        >
+          <option value="">Todas las categorías</option>
+          {categorias.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+      </BarraFiltros>
 
       {loteCategoria.length > 1 && (
         <div className="rounded-md border border-primary/30 bg-primary/5 px-4 py-3">
@@ -364,6 +442,10 @@ export default function GridRecetas({
                       <SelectorInsumo
                         ingredientes={ingredientes}
                         valor={l.ingrediente_id}
+                        excluir={lineas
+                          .filter((_, i) => i !== idx)
+                          .map((x) => x.ingrediente_id)
+                          .filter(Boolean)}
                         onCambio={(id) =>
                           setLineas((prev) =>
                             prev.map((x, i) => (i === idx ? { ...x, ingrediente_id: id } : x))
@@ -432,7 +514,7 @@ export default function GridRecetas({
 
       {filtrados.length === 0 && (
         <p className="py-10 text-center text-muted-foreground">
-          {soloPendientes
+          {filtro === "faltan"
             ? "No queda ningún plato sin resolver con ese filtro."
             : "Ningún plato coincide con la búsqueda."}
         </p>

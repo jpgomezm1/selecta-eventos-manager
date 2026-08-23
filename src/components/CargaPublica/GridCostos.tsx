@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { Check, ChevronDown, Loader2, Plus, Search, Star, Trash2 } from "lucide-react";
+import { Check, ChevronDown, Loader2, Plus, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import BarraFiltros, { type EstadoFiltro } from "@/components/CargaPublica/BarraFiltros";
 import {
   construirIndiceIngredientes,
   validarCosto,
@@ -101,7 +102,7 @@ function parecidos(nombre: string, ingredientes: CargaIngrediente[]): CargaIngre
 
 export default function GridCostos({ token, ingredientes, onCambio }: Props) {
   const [busqueda, setBusqueda] = useState("");
-  const [soloFaltantes, setSoloFaltantes] = useState(true);
+  const [filtro, setFiltro] = useState<EstadoFiltro>("faltan");
   const [visibles, setVisibles] = useState(POR_PAGINA);
   const [abierto, setAbierto] = useState<string | null>(null);
 
@@ -132,13 +133,18 @@ export default function GridCostos({ token, ingredientes, onCambio }: Props) {
   const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
     return ingredientes.filter((i) => {
-      if (soloFaltantes && i.costo_por_unidad > 0) return false;
+      const tiene = i.costo_por_unidad > 0;
+      if (filtro === "hechos" && !tiene) return false;
+      if (filtro === "faltan" && tiene) return false;
       if (q && !i.nombre.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [ingredientes, busqueda, soloFaltantes]);
+  }, [ingredientes, busqueda, filtro]);
 
-  const pendientes = ingredientes.filter((i) => i.costo_por_unidad === 0).length;
+  const conteos = useMemo(() => {
+    const hechos = ingredientes.filter((i) => i.costo_por_unidad > 0).length;
+    return { todos: ingredientes.length, hechos, faltan: ingredientes.length - hechos };
+  }, [ingredientes]);
   const similares = useMemo(
     () => (nuevoNombre.trim() ? parecidos(nuevoNombre, ingredientes) : []),
     [nuevoNombre, ingredientes]
@@ -558,38 +564,30 @@ export default function GridCostos({ token, ingredientes, onCambio }: Props) {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="relative w-full lg:max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={busqueda}
-            onChange={(e) => {
-              setBusqueda(e.target.value);
-              setVisibles(POR_PAGINA);
-            }}
-            placeholder="Buscar un insumo…"
-            className="pl-9"
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-4">
-          <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={soloFaltantes}
-              onChange={(e) => {
-                setSoloFaltantes(e.target.checked);
-                setVisibles(POR_PAGINA);
-              }}
-              className="h-4 w-4 accent-primary"
-            />
-            Ver solo los {pendientes} sin costo
-          </label>
-          <Button variant="outline" size="sm" onClick={() => setCreando((v) => !v)}>
-            <Plus className="mr-1.5 h-4 w-4" />
-            Insumo nuevo
-          </Button>
-        </div>
-      </div>
+      <BarraFiltros
+        busqueda={busqueda}
+        onBusqueda={(v) => {
+          setBusqueda(v);
+          setVisibles(POR_PAGINA);
+        }}
+        placeholder="Buscar un insumo…"
+        estado={filtro}
+        onEstado={(e) => {
+          setFiltro(e);
+          setVisibles(POR_PAGINA);
+        }}
+        etiquetas={{ hechos: "Con costo", faltan: "Sin costo" }}
+        conteos={conteos}
+      >
+        <Button
+          variant="outline"
+          className="shrink-0"
+          onClick={() => setCreando((v) => !v)}
+        >
+          <Plus className="mr-1.5 h-4 w-4" />
+          Insumo nuevo
+        </Button>
+      </BarraFiltros>
 
       {creando && (
         <div className="rounded-md border border-border bg-card p-4">
@@ -643,7 +641,7 @@ export default function GridCostos({ token, ingredientes, onCambio }: Props) {
                       type="button"
                       onClick={() => {
                         setBusqueda(s.nombre);
-                        setSoloFaltantes(false);
+                        setFiltro("todos");
                         setAbierto(s.id);
                         setCreando(false);
                         setNuevoNombre("");
@@ -837,7 +835,7 @@ export default function GridCostos({ token, ingredientes, onCambio }: Props) {
       {filtrados.length === 0 && (
         <div className="py-10 text-center">
           <p className="text-muted-foreground">
-            {soloFaltantes
+            {filtro === "faltan"
               ? "No queda ningún insumo sin costo con ese filtro."
               : "Ningún insumo coincide con la búsqueda."}
           </p>

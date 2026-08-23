@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { Check, Loader2, Plus, Search, Trash2 } from "lucide-react";
+import { Check, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import BarraFiltros, { type EstadoFiltro } from "@/components/CargaPublica/BarraFiltros";
 import {
   bajaMenaje,
   guardarMenaje,
@@ -72,6 +73,7 @@ function filaVacia(categoriaSugerida: string): Fila {
 
 export default function GridMenaje({ token, menaje, onCambio }: Props) {
   const [busqueda, setBusqueda] = useState("");
+  const [filtro, setFiltro] = useState<EstadoFiltro>("todos");
   const [nuevas, setNuevas] = useState<Fila[]>([]);
   const [editadas, setEditadas] = useState<Record<string, Fila>>({});
   const [estados, setEstados] = useState<Record<string, Estado>>({});
@@ -85,9 +87,23 @@ export default function GridMenaje({ token, menaje, onCambio }: Props) {
   const existentes = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
     return menaje
-      .filter((m) => !q || m.nombre.toLowerCase().includes(q) || m.categoria.toLowerCase().includes(q))
+      .filter((m) => {
+        // «Con alquiler» es lo más cerca de «ya tiene la información» que hay
+        // acá: nombre, categoría y stock son obligatorios al guardar, así que
+        // el precio es el único campo que puede quedar en cero. Ojo: cero es
+        // válido — hay menaje que solo se usa para servir y no se alquila.
+        const tiene = m.precio_alquiler > 0;
+        if (filtro === "hechos" && !tiene) return false;
+        if (filtro === "faltan" && tiene) return false;
+        return !q || m.nombre.toLowerCase().includes(q) || m.categoria.toLowerCase().includes(q);
+      })
       .map((m) => editadas[m.id] ?? aFila(m));
-  }, [menaje, busqueda, editadas]);
+  }, [menaje, busqueda, filtro, editadas]);
+
+  const conteos = useMemo(() => {
+    const hechos = menaje.filter((m) => m.precio_alquiler > 0).length;
+    return { todos: menaje.length, hechos, faltan: menaje.length - hechos };
+  }, [menaje]);
 
   const escribir = (fila: Fila, campo: keyof Fila, valor: string) => {
     const actualizada = { ...fila, [campo]: valor };
@@ -285,15 +301,15 @@ export default function GridMenaje({ token, menaje, onCambio }: Props) {
         ))}
       </datalist>
 
-      <div className="relative w-full sm:max-w-xs">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="Buscar en el inventario…"
-          className="pl-9"
-        />
-      </div>
+      <BarraFiltros
+        busqueda={busqueda}
+        onBusqueda={setBusqueda}
+        placeholder="Buscar artículo o categoría…"
+        estado={filtro}
+        onEstado={setFiltro}
+        etiquetas={{ hechos: "Con alquiler", faltan: "Sin alquiler" }}
+        conteos={conteos}
+      />
 
       <div className="hidden gap-3 border-b border-border pb-2 text-xs uppercase tracking-wide text-muted-foreground md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_110px_100px_120px_72px]">
         <span>Artículo</span>
