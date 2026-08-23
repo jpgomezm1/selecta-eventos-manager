@@ -3,27 +3,38 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * Carga de datos desde la página pública `/carga/:token`.
  *
- * Todo pasa por funciones SECURITY DEFINER (migración
- * `20260823000000_carga_publica.sql`) que validan el token por dentro. Este
- * módulo NO hace `.from("...")` a propósito: la página se abre sin sesión y las
- * tablas de catálogo exigen rol, así que un select directo devolvería vacío y
- * un insert fallaría. Si hace falta un dato nuevo en la página, se agrega al
- * jsonb que arma `fn_carga_publica_datos`, no un query nuevo acá.
+ * Todo pasa por funciones SECURITY DEFINER (migraciones
+ * `20260823000000_carga_publica.sql` y `20260823000300_carga_publica_insumos.sql`)
+ * que validan el token por dentro. Este módulo NO hace `.from("...")` a
+ * propósito: la página se abre sin sesión y las tablas de catálogo exigen rol,
+ * así que un select directo devolvería vacío y un insert fallaría. Si hace
+ * falta un dato nuevo en la página, se agrega al jsonb que arma
+ * `fn_carga_publica_datos`, no un query nuevo acá.
  *
- * Los errores que lanzan las funciones (link vencido, tope de filas, plato
- * inexistente) llegan como `error.message` en español y son mostrables tal cual.
+ * Los errores que lanzan las funciones (link vencido, insumo repetido, precio
+ * en cero) llegan como `error.message` en español y son mostrables tal cual.
  */
+
+export interface CargaProveedor {
+  id: string;
+  proveedor: string;
+  /** Cómo se compra: 25 kg, 20 lt, 500 und. */
+  presentacion_cantidad: number;
+  presentacion_unidad: string;
+  precio_presentacion: number;
+  /** Ya dividido a la unidad base del insumo. Es lo que cuesta cocinarlo. */
+  costo_por_unidad_base: number;
+  /** El principal define el costo vigente del insumo. Solo uno por insumo. */
+  es_principal: boolean;
+}
 
 export interface CargaIngrediente {
   id: string;
   nombre: string;
   unidad: string;
+  /** Espejo del costo del proveedor principal; 0 si no tiene ninguno. */
   costo_por_unidad: number;
-  /** Del proveedor principal, si ya tiene uno. Es lo que se precarga en la fila. */
-  proveedor: string | null;
-  presentacion_cantidad: number | null;
-  presentacion_unidad: string | null;
-  precio_presentacion: number | null;
+  proveedores: CargaProveedor[];
 }
 
 export interface CargaPlatoItem {
@@ -55,26 +66,23 @@ export interface CargaDatos {
   menaje: CargaMenaje[];
 }
 
-/** Fila lista para escribir, tal como la espera `fn_bulk_upsert_costos_proveedor`. */
-export interface FilaCostoGuardable {
-  ingrediente_id: string;
-  proveedor: string;
-  presentacion_cantidad: number;
-  presentacion_unidad: string;
-  precio_presentacion: number;
-  costo_por_unidad_base: number;
-}
-
 /** Los números vienen de `numeric` vía jsonb; blindamos contra null y string. */
 function num(valor: unknown): number {
   const n = Number(valor);
   return Number.isFinite(n) ? n : 0;
 }
 
-function numOrNull(valor: unknown): number | null {
-  if (valor === null || valor === undefined || valor === "") return null;
-  const n = Number(valor);
-  return Number.isFinite(n) ? n : null;
+function mapProveedor(x: unknown): CargaProveedor {
+  const p = x as Record<string, unknown>;
+  return {
+    id: String(p.id),
+    proveedor: String(p.proveedor ?? ""),
+    presentacion_cantidad: num(p.presentacion_cantidad),
+    presentacion_unidad: String(p.presentacion_unidad ?? ""),
+    precio_presentacion: num(p.precio_presentacion),
+    costo_por_unidad_base: num(p.costo_por_unidad_base),
+    es_principal: Boolean(p.es_principal),
+  };
 }
 
 export async function getCargaDatos(token: string): Promise<CargaDatos> {
@@ -97,10 +105,7 @@ export async function getCargaDatos(token: string): Promise<CargaDatos> {
         nombre: String(i.nombre),
         unidad: String(i.unidad),
         costo_por_unidad: num(i.costo_por_unidad),
-        proveedor: (i.proveedor as string) ?? null,
-        presentacion_cantidad: numOrNull(i.presentacion_cantidad),
-        presentacion_unidad: (i.presentacion_unidad as string) ?? null,
-        precio_presentacion: numOrNull(i.precio_presentacion),
+        proveedores: ((i.proveedores ?? []) as unknown[]).map(mapProveedor),
       };
     }),
     platos: (raw.platos ?? []).map((x) => {
@@ -134,17 +139,89 @@ export async function getCargaDatos(token: string): Promise<CargaDatos> {
   };
 }
 
-export async function guardarCostos(
+/* =========================
+ *         INSUMOS
+ * ========================= */
+
+/** Crea el insumo sin proveedor: el costo se carga después, con uno o varios. */
+export async function crearInsumo(
   token: string,
-  filas: FilaCostoGuardable[]
-): Promise<void> {
-  if (filas.length === 0) return;
-  const { error } = await supabase.rpc("fn_carga_publica_costos", {
+  nombre: string,
+  unidad: string
+): Promise<{ id: string; nombre: string; unidad: string }> {
+  const { data, error } = await supabase.rpc("fn_carga_publica_insumo_crear", {
     p_token: token,
-    p_payload: filas as unknown as never,
+    p_nombre: nombre,
+    p_unidad: unidad,
+  });
+  if (error) throw error;
+  const r = (data ?? {}) as { id?: string; nombre?: string; unidad?: string };
+  return {
+    id: String(r.id),
+    nombre: String(r.nombre ?? nombre),
+    unidad: String(r.unidad ?? unidad),
+  };
+}
+
+export interface ProveedorGuardable {
+  /** Vacío para dar de alta uno nuevo. */
+  id?: string;
+  ingrediente_id: string;
+  proveedor: string;
+  presentacion_cantidad: number;
+  presentacion_unidad: string;
+  precio_presentacion: number;
+  costo_por_unidad_base: number;
+  /** Si es el primero del insumo, el SQL lo marca principal aunque llegue false. */
+  es_principal?: boolean;
+}
+
+export async function guardarProveedor(
+  token: string,
+  fila: ProveedorGuardable
+): Promise<{ id: string; accion: "creado" | "actualizado"; es_principal: boolean }> {
+  const { data, error } = await supabase.rpc("fn_carga_publica_proveedor_guardar", {
+    p_token: token,
+    p_payload: fila as unknown as never,
+  });
+  if (error) throw error;
+  const r = (data ?? {}) as { id?: string; accion?: string; es_principal?: boolean };
+  return {
+    id: String(r.id),
+    accion: r.accion === "creado" ? "creado" : "actualizado",
+    es_principal: Boolean(r.es_principal),
+  };
+}
+
+/** Cambia cuál proveedor define el costo vigente del insumo. */
+export async function hacerProveedorPrincipal(
+  token: string,
+  ingredienteId: string,
+  proveedorId: string
+): Promise<void> {
+  const { error } = await supabase.rpc("fn_carga_publica_proveedor_principal", {
+    p_token: token,
+    p_ingrediente_id: ingredienteId,
+    p_proveedor_id: proveedorId,
   });
   if (error) throw error;
 }
+
+/**
+ * Si el borrado deja al insumo sin principal, el SQL asciende a otro; si no
+ * queda ninguno, el insumo vuelve a costo 0.
+ */
+export async function borrarProveedor(token: string, id: string): Promise<void> {
+  const { error } = await supabase.rpc("fn_carga_publica_proveedor_borrar", {
+    p_token: token,
+    p_id: id,
+  });
+  if (error) throw error;
+}
+
+/* =========================
+ *      RECETAS Y MENAJE
+ * ========================= */
 
 /**
  * Reemplaza la receta completa del plato. Un array vacío la borra — es la forma

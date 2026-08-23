@@ -10,6 +10,7 @@ import GridMenaje from "@/components/CargaPublica/GridMenaje";
 import {
   getCargaDatos,
   type CargaDatos,
+  type CargaIngrediente,
   type CargaMenaje,
   type CargaPlato,
 } from "@/integrations/supabase/apiCargaPublica";
@@ -68,17 +69,8 @@ export default function CargaEditor() {
     refetchOnWindowFocus: false,
   });
 
-  const marcarCosto = useCallback((ingredienteId: string, costo: number) => {
-    setDatos((prev) =>
-      prev
-        ? {
-            ...prev,
-            ingredientes: prev.ingredientes.map((i) =>
-              i.id === ingredienteId ? { ...i, costo_por_unidad: costo } : i
-            ),
-          }
-        : prev
-    );
+  const cambiarIngredientes = useCallback((ingredientes: CargaIngrediente[]) => {
+    setDatos((prev) => (prev ? { ...prev, ingredientes } : prev));
   }, []);
 
   const actualizarPlato = useCallback((plato: CargaPlato) => {
@@ -163,9 +155,9 @@ export default function CargaEditor() {
             Completen su catálogo acá mismo
           </h1>
           <p className="mt-4 max-w-[63ch] text-lg leading-relaxed text-muted-foreground">
-            Lo que escriban se guarda solo, al pasar a la siguiente fila. No hay que
-            descargar nada, no hay que mandarnos nada, y pueden cerrar la página y volver
-            cuando quieran.
+            Se guarda al momento, acá mismo. No hay que descargar nada, no hay que
+            mandarnos nada, y pueden cerrar la página y volver cuando quieran: lo que ya
+            guardaron queda.
           </p>
 
           {resumen && (
@@ -204,13 +196,14 @@ export default function CargaEditor() {
             <p className="mb-6 max-w-[70ch] rounded-r-sm border-l-[3px] border-primary bg-muted/50 px-5 py-4 text-[15px] leading-relaxed">
               <strong className="font-semibold">Escriban cómo compran, no cómo cocinan.</strong>{" "}
               Si el arroz les llega en bultos de 25&nbsp;kg y el bulto vale $120.000, eso es lo
-              que va: presentación 25, unidad kg, precio 120000. El sistema hace la división y
-              saca el costo por kilo solo.
+              que va — el sistema hace la división y saca el costo por kilo solo. Si a un insumo
+              le compran a dos proveedores, cárguenlos los dos y elijan cuál manda; si les falta
+              un insumo en la lista, créenlo.
             </p>
             <GridCostos
               token={token}
               ingredientes={datos.ingredientes}
-              onGuardado={marcarCosto}
+              onCambio={cambiarIngredientes}
             />
           </TabsContent>
 

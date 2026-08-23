@@ -1954,13 +1954,25 @@ export type Database = {
         Args: { p_payload: Json }
         Returns: undefined
       }
-      fn_carga_publica_costos: {
-        Args: { p_payload: Json; p_token: string }
-        Returns: Json
-      }
       fn_carga_publica_datos: {
         Args: { p_token: string }
         Returns: Json
+      }
+      fn_carga_publica_insumo_crear: {
+        Args: { p_nombre: string; p_token: string; p_unidad: string }
+        Returns: Json
+      }
+      fn_carga_publica_proveedor_borrar: {
+        Args: { p_id: string; p_token: string }
+        Returns: undefined
+      }
+      fn_carga_publica_proveedor_guardar: {
+        Args: { p_payload: Json; p_token: string }
+        Returns: Json
+      }
+      fn_carga_publica_proveedor_principal: {
+        Args: { p_ingrediente_id: string; p_proveedor_id: string; p_token: string }
+        Returns: undefined
       }
       fn_carga_publica_menaje: {
         Args: { p_fila: Json; p_token: string }
