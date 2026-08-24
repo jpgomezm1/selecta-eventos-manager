@@ -5,7 +5,14 @@ export type MenajeCatalogo = {
     categoria: string;
     unidad: string;
     stock_total: number;
+    /** Lo que se le cobra al cliente por usarlo en un evento. */
     precio_alquiler: number;
+    /**
+     * Lo que cuesta reponerlo. Es lo que se factura cuando algo se rompe o no
+     * vuelve — distinto del alquiler, y sin esto el reporte de facturación
+     * valoriza las pérdidas en cero.
+     */
+    costo_reposicion: number;
     activo: boolean;
   };
   

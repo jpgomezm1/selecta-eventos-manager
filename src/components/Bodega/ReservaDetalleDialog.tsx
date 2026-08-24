@@ -38,6 +38,8 @@ type DevolucionItem = {
   cantidad_despachada: number;
   cantidad_devuelta: number;
   merma: number;
+  /** Por qué se perdieron unidades. Roto y extraviado se cobran distinto. */
+  causa: "roto" | "perdido" | "otro" | "";
   nota: string;
 };
 
@@ -156,6 +158,7 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
           cantidad_despachada: i.cantidad_despachada,
           cantidad_devuelta: i.cantidad_despachada,
           merma: 0,
+          causa: "",
           nota: "",
         }))
       );
@@ -195,6 +198,7 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
           cantidad_despachada: it.cantidad_despachada,
           cantidad_devuelta: it.cantidad_devuelta,
           merma: it.merma,
+          causa: it.causa || undefined,
           nota: it.nota || undefined,
         }))
       );
@@ -398,6 +402,7 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
                       <TableHead className="text-center font-medium text-xs">Devuelto</TableHead>
                       <TableHead className="text-center font-medium text-xs">Merma</TableHead>
                       <TableHead className="text-center font-medium text-xs">Faltante</TableHead>
+                      <TableHead className="font-medium text-xs">Causa</TableHead>
                       <TableHead className="font-medium text-xs">Nota</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -454,6 +459,32 @@ export default function ReservaDetalleDialog({ open, onOpenChange, reservaCal, o
                               </span>
                             ) : (
                               <span className="text-slate-400 text-sm">0</span>
+                            )}
+                          </TableCell>
+                          {/* La causa solo aplica si algo se perdio; pedirla
+                              siempre agrega ruido a la fila que volvio completa. */}
+                          <TableCell>
+                            {needsNota ? (
+                              <select
+                                value={di.causa}
+                                onChange={(e) =>
+                                  setDevolucionItems((prev) =>
+                                    prev.map((p, i) =>
+                                      i === idx
+                                        ? { ...p, causa: e.target.value as DevolucionItem["causa"] }
+                                        : p
+                                    )
+                                  )
+                                }
+                                className="h-7 rounded-md border border-input bg-background px-1.5 text-sm"
+                              >
+                                <option value="">—</option>
+                                <option value="roto">Roto</option>
+                                <option value="perdido">Perdido</option>
+                                <option value="otro">Otro</option>
+                              </select>
+                            ) : (
+                              <span className="text-sm text-slate-400">—</span>
                             )}
                           </TableCell>
                           <TableCell>
