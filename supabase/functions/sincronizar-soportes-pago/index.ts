@@ -167,12 +167,6 @@ Deno.serve(async (req) => {
     return json({ error: "Solo el cron puede disparar la sincronización" }, 403);
   }
 
-  const apiKey = Deno.env.get("AGENTMAIL_API_KEY");
-  if (!apiKey) {
-    // Falla cerrada: sin key no hay nada que sincronizar y es mejor gritarlo
-    // que quedarse corriendo en silencio sin traer nada.
-    return json({ error: "Falta AGENTMAIL_API_KEY" }, 500);
-  }
   const inboxId = Deno.env.get("AGENTMAIL_INBOX_ID") ?? INBOX_DEFAULT;
 
   const admin = createClient(
@@ -180,6 +174,23 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     { auth: { persistSession: false } }
   );
+
+  // La key vive en el Vault, junto a la service role key que usa el cron: los
+  // secrets de edge function solo se cargan por dashboard o Management API, y
+  // tener las dos credenciales en el mismo sitio es una cosa menos que
+  // recordar al rotarlas. La variable de entorno gana si existe, para que
+  // cargarla por dashboard siga funcionando sin tocar código.
+  let apiKey = Deno.env.get("AGENTMAIL_API_KEY") ?? null;
+  if (!apiKey) {
+    const { data, error } = await admin.rpc("fn_agentmail_key");
+    if (error) console.error("[soportes] no se pudo leer la key del Vault:", error.message);
+    apiKey = data ? String(data) : null;
+  }
+  if (!apiKey) {
+    // Falla cerrada: sin key no hay nada que sincronizar y es mejor gritarlo
+    // que quedarse corriendo en silencio sin traer nada.
+    return json({ error: "Falta la API key de AgentMail (ni env ni Vault)" }, 500);
+  }
 
   // ---------------------------------------------------------------- desde
   const { data: ultimo } = await admin

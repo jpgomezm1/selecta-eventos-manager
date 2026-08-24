@@ -31,7 +31,7 @@ Regresión: `scripts-plantillas/probar_carga_publica.py` — 56 chequeos contra 
 | **Cartera** (`/cartera`) | Operativo. 128 facturas de los dos libros (Selecta + Isabela) importadas, $350.056.023. |
 | **Bodega — reporte para facturar** | Operativo. Valoriza lo roto y lo perdido a costo de reposición. |
 | **Consumos durante el evento** | Operativo. Panel mobile-first, hora editable para que el registro tardío no se castigue. |
-| **Soportes de pago por correo** | Buzón `selecta@agentmail.to` creado, cron cada 10 min activo. **Falta cargar `AGENTMAIL_API_KEY`** — ver `AGENTMAIL.md`. |
+| **Soportes de pago por correo** | Operativo. Buzón `selecta@agentmail.to`, cron cada 10 min, verificado de punta a punta. Ver `AGENTMAIL.md`. |
 
 Notas de diseño que conviene no perder:
 
@@ -51,9 +51,9 @@ Ambas en estado **Pendiente** a propósito: permiten demostrar en vivo el compar
 ## Qué falta
 
 ### Lo que bloquea
-1. **`AGENTMAIL_API_KEY` en los secrets de Supabase.** Es lo único que falta para que los soportes de pago empiecen a entrar solos. Pasos en `AGENTMAIL.md`.
-2. **Nadie ha revisado visualmente** `/cartera`, el panel de Cierre del evento ni el de Consumos. Solo `/carga/:token` se abrió y se miró.
-3. **Los tres clientes con plazo dudoso** de la cartera (arriba). Es un campo, no un rediseño.
+1. **Nadie ha revisado visualmente** `/cartera`, el panel de Cierre del evento ni el de Consumos. Solo `/carga/:token` se abrió y se miró.
+2. **Los tres clientes con plazo dudoso** de la cartera (arriba). Es un campo, no un rediseño.
+3. **Rotar la API key de AgentMail**: se compartió por chat el 2026-08-24. Se rota con `vault.update_secret` (ver `AGENTMAIL.md`), sin tocar código.
 
 ### El riesgo real: adopción
 4. **Hay 0 eventos en el sistema.** Los cuatro módulos cuelgan del evento — bodega, consumos y el reporte de facturación nacen vacíos hasta que uno real recorra el ciclo completo. Sigue siendo cierto lo que decía este documento en julio: *la adopción es el riesgo principal del proyecto, no la técnica*.

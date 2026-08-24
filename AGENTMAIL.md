@@ -6,21 +6,34 @@ Reemplaza el WhatsApp donde hoy se pierden.
 
 **Buzón:** `selecta@agentmail.to`
 
-**Falta un solo paso**: cargar `AGENTMAIL_API_KEY` en Supabase.
+**Está funcionando.** No queda ningún paso pendiente.
 
-## El único paso pendiente
+## Estado
 
-Dashboard de Supabase → Project Settings → Edge Functions → Secrets → añadir:
-
-| Secret | Valor |
+| Pieza | Estado |
 |---|---|
-| `AGENTMAIL_API_KEY` | la API key de AgentMail |
+| Buzón | `selecta@agentmail.to` |
+| Edge function | `sincronizar-soportes-pago`, desplegada |
+| Cron | `sync-soportes-pago`, cada 10 min, activo |
+| Credenciales | API key de AgentMail y service role key, ambas en el Vault |
 
-Opcional: `AGENTMAIL_INBOX_ID` si algún día se cambia de buzón. Sin ella se usa
-`selecta@agentmail.to`.
+Verificado de punta a punta: el cron dispara solo (se vio la corrida de las
+17:30 en `net._http_response`), la función responde `200 ok` y la prueba pasa
+14 de 14.
 
-Ya está hecho todo lo demás: la edge function desplegada, el cron programado
-cada 10 minutos y la service role key cargada en el Vault.
+Las dos credenciales viven en el **Vault**, no en variables de entorno: los
+secrets de edge function solo se cargan por dashboard o Management API, y tener
+ambas en el mismo sitio es una cosa menos que recordar al rotarlas. Para
+rotarlas:
+
+```sql
+select vault.update_secret(
+  (select id from vault.secrets where name = 'agentmail_api_key'),
+  '<nueva key>');
+```
+
+Si algún día se carga `AGENTMAIL_API_KEY` como secret de edge function, esa gana
+sobre el Vault y no hay que tocar código.
 
 ## Por qué cron y no webhook
 
@@ -34,7 +47,7 @@ vale nada y la pérdida silenciosa sí cuesta:
 - **No hay endpoint público sin autenticar.** El webhook obligaba a exponer una
   función con `verify_jwt = false` que escribía en la tabla de cobranza. La
   sincronización solo la puede disparar el cron.
-- **Un secreto en vez de dos.** No hace falta el `whsec_` de Svix.
+- **Un secreto menos.** No hace falta el `whsec_` de Svix.
 - **Un solo camino de escritura** hacia `soportes_pago`. Dos caminos
   escribiendo la misma tabla es el problema que se acaba de cerrar en el
   inventario de menaje.
@@ -51,8 +64,8 @@ python scripts-plantillas/probar_soportes_pago.py
 
 Comprueba que solo el cron pueda disparar la sincronización, que correrla dos
 veces no duplique, y que conciliar cree el abono y baje la cartera sin dejar
-conciliar dos veces. Hoy pasa 9 de 9; con la key cargada agrega los chequeos de
-la sincronización real.
+conciliar dos veces. Hoy pasa 14 de 14, incluida la sincronización real
+contra el buzón.
 
 Estado del cron, desde el SQL Editor:
 
