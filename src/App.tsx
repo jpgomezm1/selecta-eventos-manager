@@ -22,6 +22,7 @@ import RecetarioPage from "./pages/Recetario";
 import CocinaProduccionPage from "./pages/CocinaProduccion";
 import InventarioPage from "./pages/Inventario";
 import ClientesPage from "./pages/Clientes";
+import CarteraPage from "./pages/Cartera";
 import CotizacionPublica from "./pages/CotizacionPublica";
 import CargaDatos from "./pages/CargaDatos";
 import CargaEditor from "./pages/CargaEditor";
@@ -189,6 +190,16 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["admin", "comercial"]}>
                   <PipelinePage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Cartera */}
+            <Route
+              path="/cartera"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "comercial"]}>
+                  <CarteraPage />
                 </ProtectedRoute>
               }
             />
