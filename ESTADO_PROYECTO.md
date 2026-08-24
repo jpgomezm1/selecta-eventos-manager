@@ -31,7 +31,7 @@ Regresión: `scripts-plantillas/probar_carga_publica.py` — 56 chequeos contra 
 | **Cartera** (`/cartera`) | Operativo. 128 facturas de los dos libros (Selecta + Isabela) importadas, $350.056.023. |
 | **Bodega — reporte para facturar** | Operativo. Valoriza lo roto y lo perdido a costo de reposición. |
 | **Consumos durante el evento** | Operativo. Panel mobile-first, hora editable para que el registro tardío no se castigue. |
-| **Soportes de pago por correo** | Código completo y desplegado. **Falta conectar la cuenta de AgentMail** — ver `AGENTMAIL.md`. |
+| **Soportes de pago por correo** | Buzón `selecta@agentmail.to` creado, cron cada 10 min activo. **Falta cargar `AGENTMAIL_API_KEY`** — ver `AGENTMAIL.md`. |
 
 Notas de diseño que conviene no perder:
 
@@ -51,7 +51,7 @@ Ambas en estado **Pendiente** a propósito: permiten demostrar en vivo el compar
 ## Qué falta
 
 ### Lo que bloquea
-1. **Los dos secrets de AgentMail** (`AGENTMAIL_WEBHOOK_SECRET`, `AGENTMAIL_API_KEY`). La edge function falla cerrada sin ellos: rechaza todo. Pasos en `AGENTMAIL.md`.
+1. **`AGENTMAIL_API_KEY` en los secrets de Supabase.** Es lo único que falta para que los soportes de pago empiecen a entrar solos. Pasos en `AGENTMAIL.md`.
 2. **Nadie ha revisado visualmente** `/cartera`, el panel de Cierre del evento ni el de Consumos. Solo `/carga/:token` se abrió y se miró.
 3. **Los tres clientes con plazo dudoso** de la cartera (arriba). Es un campo, no un rediseño.
 
