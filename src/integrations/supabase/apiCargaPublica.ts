@@ -58,6 +58,11 @@ export interface CargaMenaje {
   unidad: string;
   stock_total: number;
   precio_alquiler: number;
+  /**
+   * Lo que cuesta reponer una pieza. No es el precio de alquiler: con esto el
+   * reporte de bodega valoriza lo roto y lo perdido para pasarlo a la factura.
+   */
+  costo_reposicion: number;
 }
 
 export interface CargaDatos {
@@ -134,6 +139,7 @@ export async function getCargaDatos(token: string): Promise<CargaDatos> {
         unidad: String(m.unidad ?? ""),
         stock_total: num(m.stock_total),
         precio_alquiler: num(m.precio_alquiler),
+        costo_reposicion: num(m.costo_reposicion),
       };
     }),
   };

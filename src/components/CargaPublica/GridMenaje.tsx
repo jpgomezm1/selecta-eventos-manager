@@ -35,6 +35,7 @@ interface Fila {
   unidad: string;
   stock_total: string;
   precio_alquiler: string;
+  costo_reposicion: string;
   /** Clave estable de React: el id no sirve porque las filas nuevas no tienen. */
   key: string;
 }
@@ -55,6 +56,7 @@ function aFila(m: CargaMenaje): Fila {
     unidad: m.unidad,
     stock_total: String(m.stock_total),
     precio_alquiler: String(Math.round(m.precio_alquiler)),
+    costo_reposicion: m.costo_reposicion ? String(Math.round(m.costo_reposicion)) : "",
     key: m.id,
   };
 }
@@ -67,6 +69,7 @@ function filaVacia(categoriaSugerida: string): Fila {
     unidad: "unidad",
     stock_total: "",
     precio_alquiler: "",
+    costo_reposicion: "",
     key: `nueva-${Math.random().toString(36).slice(2)}`,
   };
 }
@@ -88,11 +91,10 @@ export default function GridMenaje({ token, menaje, onCambio }: Props) {
     const q = busqueda.trim().toLowerCase();
     return menaje
       .filter((m) => {
-        // «Con alquiler» es lo más cerca de «ya tiene la información» que hay
-        // acá: nombre, categoría y stock son obligatorios al guardar, así que
-        // el precio es el único campo que puede quedar en cero. Ojo: cero es
-        // válido — hay menaje que solo se usa para servir y no se alquila.
-        const tiene = m.precio_alquiler > 0;
+        // El filtro mira el COSTO DE REPOSICIÓN, no el alquiler: el alquiler ya
+        // está cargado en todo el catálogo, y la reposición es la que falta y
+        // la que deja la factura de un evento incompleta cuando se rompe algo.
+        const tiene = m.costo_reposicion > 0;
         if (filtro === "hechos" && !tiene) return false;
         if (filtro === "faltan" && tiene) return false;
         return !q || m.nombre.toLowerCase().includes(q) || m.categoria.toLowerCase().includes(q);
@@ -101,7 +103,7 @@ export default function GridMenaje({ token, menaje, onCambio }: Props) {
   }, [menaje, busqueda, filtro, editadas]);
 
   const conteos = useMemo(() => {
-    const hechos = menaje.filter((m) => m.precio_alquiler > 0).length;
+    const hechos = menaje.filter((m) => m.costo_reposicion > 0).length;
     return { todos: menaje.length, hechos, faltan: menaje.length - hechos };
   }, [menaje]);
 
@@ -123,7 +125,10 @@ export default function GridMenaje({ token, menaje, onCambio }: Props) {
     if (!vigente) return;
 
     const vacia =
-      !vigente.nombre.trim() && !vigente.stock_total.trim() && !vigente.precio_alquiler.trim();
+      !vigente.nombre.trim() &&
+      !vigente.stock_total.trim() &&
+      !vigente.precio_alquiler.trim() &&
+      !vigente.costo_reposicion.trim();
     if (vacia) return;
 
     const stock = Number(vigente.stock_total);
@@ -149,6 +154,7 @@ export default function GridMenaje({ token, menaje, onCambio }: Props) {
     setEstados((prev) => ({ ...prev, [fila.key]: "guardando" }));
     try {
       const precio = Number(vigente.precio_alquiler) || 0;
+      const reposicion = Number(vigente.costo_reposicion) || 0;
       const { id, accion } = await guardarMenaje(token, {
         id: vigente.id || undefined,
         nombre: vigente.nombre.trim(),
@@ -156,6 +162,7 @@ export default function GridMenaje({ token, menaje, onCambio }: Props) {
         unidad: vigente.unidad.trim() || "unidad",
         stock_total: stock,
         precio_alquiler: precio,
+        costo_reposicion: reposicion,
       });
 
       const guardado: CargaMenaje = {
@@ -165,6 +172,7 @@ export default function GridMenaje({ token, menaje, onCambio }: Props) {
         unidad: vigente.unidad.trim() || "unidad",
         stock_total: stock,
         precio_alquiler: precio,
+        costo_reposicion: reposicion,
       };
 
       // Una fila nueva cuyo nombre ya existía vuelve como "actualizado": se
@@ -230,7 +238,7 @@ export default function GridMenaje({ token, menaje, onCambio }: Props) {
               : "border-border bg-card"
         }`}
       >
-        <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_110px_100px_120px_72px] md:items-center">
+        <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1.1fr)_100px_90px_110px_120px_72px] md:items-center">
           <Input
             value={fila.nombre}
             onChange={(e) => escribir(fila, "nombre", e.target.value)}
@@ -273,6 +281,13 @@ export default function GridMenaje({ token, menaje, onCambio }: Props) {
             inputMode="numeric"
             aria-label="Precio de alquiler"
           />
+          <Input
+            value={fila.costo_reposicion}
+            onChange={(e) => escribir(fila, "costo_reposicion", e.target.value)}
+            placeholder="25000"
+            inputMode="numeric"
+            aria-label="Costo de reposición"
+          />
           <div className="flex items-center justify-end gap-1">
             {estado === "guardando" && (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -307,16 +322,17 @@ export default function GridMenaje({ token, menaje, onCambio }: Props) {
         placeholder="Buscar artículo o categoría…"
         estado={filtro}
         onEstado={setFiltro}
-        etiquetas={{ hechos: "Con alquiler", faltan: "Sin alquiler" }}
+        etiquetas={{ hechos: "Con reposición", faltan: "Falta reposición" }}
         conteos={conteos}
       />
 
-      <div className="hidden gap-3 border-b border-border pb-2 text-xs uppercase tracking-wide text-muted-foreground md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_110px_100px_120px_72px]">
+      <div className="hidden gap-3 border-b border-border pb-2 text-xs uppercase tracking-wide text-muted-foreground md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,1.1fr)_100px_90px_110px_120px_72px]">
         <span>Artículo</span>
         <span>Categoría</span>
         <span>Unidad</span>
         <span>Stock total</span>
         <span>Alquiler</span>
+        <span>Reposición</span>
         <span />
       </div>
 

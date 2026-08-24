@@ -234,6 +234,15 @@ export default function CargaEditor() {
               Si tienen 300 copas y hay 80 prestadas en un evento, son 300. El sistema descuenta
               las reservadas en cada fecha. Lo que hay cargado ahora lo pusimos nosotros de
               ejemplo: cámbienlo o quítenlo.
+              <br />
+              <br />
+              <strong className="font-semibold">
+                Reposición no es lo mismo que alquiler.
+              </strong>{" "}
+              El alquiler es lo que le cobran al cliente por usar la copa; la reposición es lo que
+              les cuesta comprarla de nuevo cuando se rompe. Ese es el valor que sale en la factura
+              del evento por lo roto y lo que no volvió — si queda en cero, esas pérdidas se
+              facturan en cero.
             </p>
             <GridMenaje token={token} menaje={datos.menaje} onCambio={cambiarMenaje} />
           </TabsContent>
