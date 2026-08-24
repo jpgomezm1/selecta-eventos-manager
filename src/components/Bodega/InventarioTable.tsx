@@ -46,6 +46,7 @@ export default function InventarioTable() {
     unidad: "unidad",
     stock_total: 0,
     precio_alquiler: 0,
+    costo_reposicion: 0,
     activo: true,
   });
 
@@ -75,7 +76,7 @@ export default function InventarioTable() {
     mutationFn: () => menajeCatalogoCreate(newItem as Omit<MenajeCatalogo, "id" | "created_at">),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["menaje-catalogo"] });
-      setNewItem({ nombre: "", categoria: "", unidad: "unidad", stock_total: 0, precio_alquiler: 0, activo: true });
+      setNewItem({ nombre: "", categoria: "", unidad: "unidad", stock_total: 0, precio_alquiler: 0, costo_reposicion: 0, activo: true });
       setIsCreateOpen(false);
       toast({
         title: "Elemento creado",
@@ -93,6 +94,7 @@ export default function InventarioTable() {
       unidad: item.unidad,
       stock_total: item.stock_total,
       precio_alquiler: item.precio_alquiler,
+      costo_reposicion: item.costo_reposicion ?? 0,
     });
   };
 
@@ -250,6 +252,21 @@ export default function InventarioTable() {
                     }
                   />
                 </div>
+                <div className="space-y-1.5">
+                  <label className="kicker text-muted-foreground">Costo reposición</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={newItem.costo_reposicion ?? 0}
+                    onChange={(e) =>
+                      setNewItem((p) => ({ ...p, costo_reposicion: Number(e.target.value) }))
+                    }
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Lo que cuesta reponerlo. Es lo que se le cobra al cliente si se rompe o no vuelve.
+                  </p>
+                </div>
               </div>
 
               <DialogFooter>
@@ -279,6 +296,7 @@ export default function InventarioTable() {
                 <TableHead className="kicker text-muted-foreground">Unidad</TableHead>
                 <TableHead className="kicker text-center text-muted-foreground">Stock</TableHead>
                 <TableHead className="kicker text-right text-muted-foreground">Precio alquiler</TableHead>
+                <TableHead className="kicker text-right text-muted-foreground">Reposición</TableHead>
                 <TableHead className="kicker text-center text-muted-foreground">Estado</TableHead>
                 <TableHead className="kicker text-right text-muted-foreground">Acciones</TableHead>
               </TableRow>
@@ -399,6 +417,28 @@ export default function InventarioTable() {
                           <span className="font-mono text-sm tabular-nums text-foreground/80">
                             ${item.precio_alquiler.toLocaleString()}
                           </span>
+                        )}
+                      </TableCell>
+
+                      {/* Sin este valor el reporte de facturacion valoriza en
+                          cero lo que se rompe: se ve vacio, no roto. */}
+                      <TableCell className="text-right">
+                        {isEditing ? (
+                          <Input
+                            type="number"
+                            min="0"
+                            value={editValues.costo_reposicion ?? 0}
+                            onChange={(e) =>
+                              setEditValues((v) => ({ ...v, costo_reposicion: Number(e.target.value) }))
+                            }
+                            className="w-24 text-right"
+                          />
+                        ) : item.costo_reposicion > 0 ? (
+                          <span className="font-mono text-sm tabular-nums text-foreground/80">
+                            ${item.costo_reposicion.toLocaleString()}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-warning">sin cargar</span>
                         )}
                       </TableCell>
 

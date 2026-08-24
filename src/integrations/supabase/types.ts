@@ -1404,6 +1404,7 @@ export type Database = {
         Row: {
           activo: boolean
           categoria: string
+          costo_reposicion: number
           created_at: string | null
           id: string
           nombre: string
@@ -1414,6 +1415,7 @@ export type Database = {
         Insert: {
           activo?: boolean
           categoria: string
+          costo_reposicion?: number
           created_at?: string | null
           id?: string
           nombre: string
@@ -1424,6 +1426,7 @@ export type Database = {
         Update: {
           activo?: boolean
           categoria?: string
+          costo_reposicion?: number
           created_at?: string | null
           id?: string
           nombre?: string
@@ -1436,6 +1439,8 @@ export type Database = {
       menaje_mov_items: {
         Row: {
           cantidad: number
+          causa: string | null
+          faltante: number
           id: string
           menaje_id: string
           merma: number
@@ -1444,6 +1449,8 @@ export type Database = {
         }
         Insert: {
           cantidad: number
+          causa?: string | null
+          faltante?: number
           id?: string
           menaje_id: string
           merma?: number
@@ -1452,6 +1459,8 @@ export type Database = {
         }
         Update: {
           cantidad?: number
+          causa?: string | null
+          faltante?: number
           id?: string
           menaje_id?: string
           merma?: number
@@ -2110,6 +2119,10 @@ export type Database = {
       }
       fn_bulk_upsert_costos_proveedor: {
         Args: { p_payload: Json }
+        Returns: Json
+      }
+      fn_reporte_facturacion_evento: {
+        Args: { p_evento_id: string }
         Returns: Json
       }
       fn_set_proveedor_principal: {

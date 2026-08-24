@@ -28,7 +28,12 @@ export async function menajeCatalogoList(): Promise<MenajeCatalogo[]> {
     .order("categoria")
     .order("nombre");
   if (error) throw error;
-  return (data ?? []).map((d) => ({ ...d, stock_total: Number(d.stock_total), precio_alquiler: Number(d.precio_alquiler ?? 0) }));
+  return (data ?? []).map((d) => ({
+    ...d,
+    stock_total: Number(d.stock_total),
+    precio_alquiler: Number(d.precio_alquiler ?? 0),
+    costo_reposicion: Number(d.costo_reposicion ?? 0),
+  }));
 }
 
 export async function menajeCatalogoCreate(

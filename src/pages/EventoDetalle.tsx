@@ -347,12 +347,10 @@ export default function EventoDetallePage() {
               </h2>
             </div>
             <div className="p-5">
-              <CierreEventoPanel
-                eventoId={head.id}
-                totalRequerimiento={totalRequerimiento}
-                estadoLiquidacion={head.estado_liquidacion}
-                costoLugar={req.lugar?.precio ?? 0}
-              />
+              {/* El reporte trae todo desde fn_reporte_facturacion_evento: el
+                  total cotizado sale de cotizaciones.total_cotizado (que
+                  respeta descuentos y lugar), no de sumar los requerimientos. */}
+              <CierreEventoPanel eventoId={head.id} />
             </div>
           </Card>
         </TabsContent>
