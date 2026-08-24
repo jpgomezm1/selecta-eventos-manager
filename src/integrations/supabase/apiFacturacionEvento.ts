@@ -38,6 +38,16 @@ export interface EstadoReporte {
   ya_facturado: boolean;
 }
 
+export interface CargoEnReporte {
+  id: string;
+  concepto: string;
+  cantidad: number;
+  precio_unitario: number;
+  subtotal: number;
+  ocurrido_at: string;
+  notas: string | null;
+}
+
 export interface ReporteFacturacion {
   evento: {
     id: string;
@@ -49,8 +59,11 @@ export interface ReporteFacturacion {
   cliente: { nombre: string | null; documento: string | null } | null;
   cotizado: number;
   menaje_perdido: number;
+  /** Lo que se consumió de más durante el evento. */
+  consumos_adicionales: number;
   total_a_facturar: number;
   menaje: RenglonMenajePerdido[];
+  cargos: CargoEnReporte[];
   estado: EstadoReporte;
 }
 
@@ -73,6 +86,7 @@ export async function getReporteFacturacion(eventoId: string): Promise<ReporteFa
     cliente: (raw.cliente ?? null) as ReporteFacturacion["cliente"],
     cotizado: num(raw.cotizado),
     menaje_perdido: num(raw.menaje_perdido),
+    consumos_adicionales: num(raw.consumos_adicionales),
     total_a_facturar: num(raw.total_a_facturar),
     menaje: ((raw.menaje ?? []) as Record<string, unknown>[]).map((m) => ({
       menaje_id: String(m.menaje_id),
@@ -87,6 +101,15 @@ export async function getReporteFacturacion(eventoId: string): Promise<ReporteFa
       valor_perdido: num(m.valor_perdido),
       causas: (m.causas as string) ?? null,
       notas: (m.notas as string) ?? null,
+    })),
+    cargos: ((raw.cargos ?? []) as Record<string, unknown>[]).map((c) => ({
+      id: String(c.id),
+      concepto: String(c.concepto),
+      cantidad: num(c.cantidad),
+      precio_unitario: num(c.precio_unitario),
+      subtotal: num(c.subtotal),
+      ocurrido_at: String(c.ocurrido_at),
+      notas: (c.notas as string) ?? null,
     })),
     estado: {
       hubo_despacho: Boolean(est.hubo_despacho),

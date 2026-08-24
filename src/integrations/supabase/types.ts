@@ -772,6 +772,61 @@ export type Database = {
         }
         Relationships: []
       }
+      evento_cargos_adicionales: {
+        Row: {
+          cantidad: number
+          concepto: string
+          evento_id: string
+          id: string
+          notas: string | null
+          ocurrido_at: string
+          plato_id: string | null
+          precio_unitario: number
+          registrado_at: string
+          registrado_por: string | null
+          subtotal: number
+        }
+        Insert: {
+          cantidad: number
+          concepto: string
+          evento_id: string
+          id?: string
+          notas?: string | null
+          ocurrido_at?: string
+          plato_id?: string | null
+          precio_unitario: number
+          registrado_at?: string
+          registrado_por?: string | null
+        }
+        Update: {
+          cantidad?: number
+          concepto?: string
+          evento_id?: string
+          id?: string
+          notas?: string | null
+          ocurrido_at?: string
+          plato_id?: string | null
+          precio_unitario?: number
+          registrado_at?: string
+          registrado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evento_cargos_adicionales_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_cargos_adicionales_plato_id_fkey"
+            columns: ["plato_id"]
+            isOneToOne: false
+            referencedRelation: "platos_catalogo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evento_costos: {
         Row: {
           categoria: string
