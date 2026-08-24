@@ -1,6 +1,6 @@
 # Estado del proyecto — Selecta Eventos Manager
 
-> Actualizado: 2026-07-15. Documento interno de seguimiento. Complementa `README.md` y el dossier de presentación.
+> Actualizado: 2026-08-24. Documento interno de seguimiento. Complementa `README.md` y el dossier de presentación.
 
 ## Dónde estamos
 
@@ -10,13 +10,36 @@ La app está **funcional y verificada de punta a punta en producción** (`https:
 
 - **Cotizador**: wizard completo (evento, menú, personal, transporte, menaje), múltiples opciones por versión, override de total por admin con audit log (email + timestamp), link público compartible sin sesión, PDF con paleta editorial.
 - **Eventos y pipeline**: aprobación crea evento, visible en /eventos, /pipeline y /cocina con recetas escaladas a porciones del evento.
-- **Cocina**: vista de producción por día/semana, responsive a 375px (fix voseo + wrap desplegado hoy, `c53eaa2`).
-- **Inventario + factura AI**: escáner de facturas (imagen/PDF) contra Anthropic vía edge function — probado hoy en vivo: extracción y matching contra catálogo impecables, conversiones de presentación (bolsas×kg, botellas×L) correctas, servicios no alimentarios excluidos.
-- **Rate-limit del edge function**: verificado hoy en prod — límite 20/min texto (la llamada 21 devuelve 429 con Retry-After), 5/min con adjuntos. Gating por rol (solo admin/cocina consumen tokens).
-- **Seguridad de app**: rutas gateadas por rol (`/sin-acceso` para cuentas sin rol), RPCs atómicos (ingredientes, devolución de menaje idempotente), creación de usuarios solo por admin vía edge function.
-- **Catálogo**: 393 platos con precio de portafolio 2026 (ajuste +15-18% aplicado), modelo precio = manual / costo = derivado.
+- **Cocina**: vista de producción por día/semana, responsive a 375px.
+- **Inventario + factura AI**: escáner de facturas (imagen/PDF) contra Anthropic vía edge function — extracción y matching contra catálogo verificados, conversiones de presentación (bolsas×kg, botellas×L) correctas.
+- **Rate-limit del edge function**: 20/min texto (la llamada 21 devuelve 429 con Retry-After), 5/min con adjuntos. Gating por rol.
+- **Seguridad de app**: rutas gateadas por rol (`/sin-acceso` para cuentas sin rol), RPCs atómicos, creación de usuarios solo por admin vía edge function.
+- **Catálogo**: 393 platos con precio de portafolio 2026, modelo precio = manual / costo = derivado.
 
-**Datos de demo en prod (creados hoy, NO borrar):**
+### Carga pública del catálogo — `/carga/:token` (2026-08-23)
+
+Reemplaza el ida y vuelta de plantillas de Excel: el cliente completa insumos, recetas y menaje en el navegador y se guarda al momento. Escritura anónima por token vía RPC `security definer` (mismo patrón que `/compartido/:token`).
+
+Cubre lo que el Excel no podía: varios proveedores por insumo con uno principal, precio directo sin proveedor, recetas que no llevan insumos (una botella de agua), asociar ingredientes ya creados, filtros por estado y búsqueda por pestaña.
+
+Regresión: `scripts-plantillas/probar_carga_publica.py` — 56 chequeos contra prod, revierte todo lo que escribe.
+
+### Los cuatro módulos que pidió el cliente (2026-08-23 / 24)
+
+| Módulo | Estado |
+|---|---|
+| **Cartera** (`/cartera`) | Operativo. 128 facturas de los dos libros (Selecta + Isabela) importadas, $350.056.023. |
+| **Bodega — reporte para facturar** | Operativo. Valoriza lo roto y lo perdido a costo de reposición. |
+| **Consumos durante el evento** | Operativo. Panel mobile-first, hora editable para que el registro tardío no se castigue. |
+| **Soportes de pago por correo** | Código completo y desplegado. **Falta conectar la cuenta de AgentMail** — ver `AGENTMAIL.md`. |
+
+Notas de diseño que conviene no perder:
+
+- **Los tramos de mora se dedujeron de los datos del cliente**, no se inventaron: bandas sobre la EDAD de la factura, corte 2026-08-07, frontera estricta. Isabela cuadra exacto en los cuatro totales; Selecta cuadra en total, en crítica >60d y en los 22 clientes críticos, con una diferencia de $227.484 (0,08%) trazable a 4 facturas (NUVANT FECP4836, EL COLOMBIANO FECP4587 y FECP4658, MICROPLAST FECP4580) — **pendiente confirmar con el cliente si esos tienen plazo distinto a 30 días**.
+- **La IA propone, no concilia.** El lector de comprobantes sugiere monto, fecha y referencia; el abono solo nace cuando una persona confirma. Un comprobante mal leído que se aplicara solo movería el saldo de una factura sin que nadie lo note.
+- **El ingreso de un evento es `cotizaciones.total_cotizado`**, nunca la suma de los `evento_requerimiento_*`: esa suma ignora el precio del lugar y el `total_override`. Todo módulo nuevo debe leer de ahí.
+
+**Datos de demo en prod (NO borrar):**
 
 | Cotización | Cliente | Total |
 |---|---|---|
@@ -27,26 +50,30 @@ Ambas en estado **Pendiente** a propósito: permiten demostrar en vivo el compar
 
 ## Qué falta
 
-### Antes de / durante la reunión con el cliente
-1. **Decisiones del cliente** pendientes desde la agenda de mayo (H1/H3/H5 + datos). El cliente aún no ha usado la app — la adopción es el riesgo principal del proyecto, no la técnica.
+### Lo que bloquea
+1. **Los dos secrets de AgentMail** (`AGENTMAIL_WEBHOOK_SECRET`, `AGENTMAIL_API_KEY`). La edge function falla cerrada sin ellos: rechaza todo. Pasos en `AGENTMAIL.md`.
+2. **Nadie ha revisado visualmente** `/cartera`, el panel de Cierre del evento ni el de Consumos. Solo `/carga/:token` se abrió y se miró.
+3. **Los tres clientes con plazo dudoso** de la cartera (arriba). Es un campo, no un rediseño.
 
-### Datos (bloquean valor real, no funcionalidad)
-2. **Costos de ingredientes casi todos en $0** — de 325 ingredientes, la gran mayoría no tiene `costo_por_unidad` (solo 43 se actualizaron en F3a). Sin esto, el costo derivado de los platos y el margen no significan nada.
-3. **Catálogo de menaje es seed** — solo 9 items con precios de prueba (ej. plato base $25.000/alquiler). Revisar items y tarifas reales antes de cotizar menaje en serio.
-4. **17 platos huérfanos sin código** desde la carga del catálogo (F2).
-5. **Gaseosa BEB-003 con 2 precios distintos** en el archivo fuente — decisión pendiente.
+### El riesgo real: adopción
+4. **Hay 0 eventos en el sistema.** Los cuatro módulos cuelgan del evento — bodega, consumos y el reporte de facturación nacen vacíos hasta que uno real recorra el ciclo completo. Sigue siendo cierto lo que decía este documento en julio: *la adopción es el riesgo principal del proyecto, no la técnica*.
 
-### Tests
-6. ~~Cuenta sin rol~~ — **CERRADO 2026-07-15**: usuario QA temporal creado en prod con autorización explícita; una cuenta autenticada sin rol es redirigida a `/sin-acceso` (también al navegar por URL directa a rutas protegidas) y `generate-recipe` le responde 403 con mensaje claro. Usuario QA eliminado al terminar. **No queda ningún test pendiente.**
+### Datos (bloquean valor, no funcionalidad)
+5. **Costos de insumos**: 55 de 325 tienen `costo_por_unidad`. Sin esto el costo derivado de los platos y el margen no significan nada — el panel de rentabilidad lo advierte en pantalla en vez de mostrar un margen falso.
+6. **Recetas**: 184 de 393 platos resueltos (con insumos o marcados como "sin insumos").
+7. **Costo de reposición del menaje**: 0 de 9. Mientras esté en cero, el reporte de bodega valoriza en cero lo roto y lo perdido. Ya se pide en `/carga/:token` → Menaje.
+8. **17 platos huérfanos sin código** desde la carga del catálogo (F2).
+9. **Gaseosa BEB-003 con 2 precios distintos** en el archivo fuente — decisión pendiente.
 
 ### Descartado / pospuesto (decisión de Tomás)
-- Acciones de dashboard Supabase (rotar service role key, Postgres upgrade, OTP 30 min, leaked password protection, límite de gasto Anthropic) — **descartadas el 2026-07-15**. Riesgo residual asumido: la service role key actual sigue vigente y los advisors de Supabase seguirán marcando estos puntos.
+- Acciones de dashboard Supabase (rotar service role key, Postgres upgrade, OTP 30 min, leaked password protection, límite de gasto Anthropic) — **descartadas el 2026-07-15**. Riesgo residual asumido.
 - Telegram clock-in/out — pospuesto.
-- Backlog de producto (reportes, notificaciones, onboarding) — requiere conversación con el cliente post-reunión.
+- Backlog de producto (reportes, notificaciones, onboarding) — requiere conversación con el cliente.
 
 ## Convenciones operativas (recordatorio)
 
 - Nunca commitear directo a `main`: rama + merge tras validación. Cada push a `main` dispara deploy en Netlify.
-- Typecheck (`npx tsc --noEmit -p tsconfig.app.json`) + `npm run lint` obligatorios tras cambios. No introducir `any` nuevos.
+- Typecheck (`npx tsc --noEmit -p tsconfig.app.json`) + `npm run lint` obligatorios tras cambios. Hay 6 errores preexistentes de `jspdf` (`getNumberOfPages`) — no deben crecer. No introducir `any` nuevos.
 - UI en español neutro (sin voseo). Migraciones se corren a mano en el SQL Editor de Supabase y se registran en `supabase/migrations/`.
+- **Toda función nueva del esquema `public` nace con `execute` concedido a `anon` y `authenticated`**, y `revoke ... from public` NO se los quita: hay que nombrar a `anon` explícitamente. Ya se coló dos veces.
 - Credenciales QA: `admin@selecta.testing` / `pruebas123`.
