@@ -20,6 +20,7 @@ import {
   ShoppingCart,
   DollarSign,
   Building2,
+  PlusCircle,
 } from "lucide-react";
 import { parseLocalDate, formatLocalDate } from "@/lib/dateLocal";
 import PersonalPanel from "@/components/Eventos/PersonalPanel";
@@ -28,6 +29,7 @@ import TransportePanel from "@/components/Eventos/TransportePanel";
 import OrdenCompraPanel from "@/components/Eventos/OrdenCompraPanel";
 import EventoChecklist from "@/components/Eventos/EventoChecklist";
 import CierreEventoPanel from "@/components/Eventos/CierreEventoPanel";
+import ConsumosPanel from "@/components/Eventos/ConsumosPanel";
 import RentabilidadPanel from "@/components/Eventos/RentabilidadPanel";
 import { cn } from "@/lib/utils";
 
@@ -213,6 +215,7 @@ export default function EventoDetallePage() {
           <EditorialTab value="menaje" icon={UtensilsCrossed} label="Menaje" />
           <EditorialTab value="compras" icon={ShoppingCart} label="Compras" />
           <EditorialTab value="transporte" icon={Truck} label="Transporte" />
+          <EditorialTab value="consumos" icon={PlusCircle} label="Consumos" />
           <EditorialTab value="financiero" icon={DollarSign} label="Financiero" />
         </TabsList>
 
@@ -324,6 +327,17 @@ export default function EventoDetallePage() {
 
         <TabsContent value="transporte" className="mt-5">
           <TransportePanel eventoId={head.id} onChanged={() => refetchChecklist()} />
+        </TabsContent>
+
+        {/* Pestaña propia y no dentro de Financiero: el comercial la abre
+            durante el evento, con el celular, y no debería tener que pasar por
+            la pantalla de márgenes para registrar dos botellas de vino. */}
+        <TabsContent value="consumos" className="mt-5">
+          <Card className="overflow-hidden border-border shadow-soft">
+            <div className="p-5">
+              <ConsumosPanel eventoId={head.id} />
+            </div>
+          </Card>
         </TabsContent>
 
         <TabsContent value="financiero" className="mt-5 space-y-5">

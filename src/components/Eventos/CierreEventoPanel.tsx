@@ -108,10 +108,20 @@ export default function CierreEventoPanel({ eventoId }: Props) {
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Card className="p-4">
           <p className="kicker mb-1 text-muted-foreground">Cotizado al cliente</p>
           <p className="text-xl font-semibold tabular-nums">{money(r.cotizado)}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="kicker mb-1 text-muted-foreground">Consumos adicionales</p>
+          <p
+            className={`text-xl font-semibold tabular-nums ${
+              r.consumos_adicionales > 0 ? "text-foreground" : "text-muted-foreground"
+            }`}
+          >
+            {r.consumos_adicionales > 0 ? `+ ${money(r.consumos_adicionales)}` : money(0)}
+          </p>
         </Card>
         <Card className="p-4">
           <p className="kicker mb-1 text-muted-foreground">Menaje no devuelto</p>
@@ -219,6 +229,32 @@ export default function CierreEventoPanel({ eventoId }: Props) {
                 })}
               </TableBody>
             </Table>
+          </div>
+        </Card>
+      )}
+
+      {r.cargos.length > 0 && (
+        <Card className="overflow-hidden">
+          <div className="border-b border-border px-4 py-3">
+            <h4 className="kicker text-muted-foreground">
+              Consumos adicionales · {r.cargos.length}
+            </h4>
+          </div>
+          <div className="divide-y divide-border">
+            {r.cargos.map((c) => (
+              <div key={c.id} className="flex items-center gap-3 px-4 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{c.concepto}</p>
+                  <p className="text-xs tabular-nums text-muted-foreground">
+                    {c.cantidad} × {money(c.precio_unitario)}
+                    {c.notas && ` · ${c.notas}`}
+                  </p>
+                </div>
+                <span className="shrink-0 text-sm font-semibold tabular-nums">
+                  {money(c.subtotal)}
+                </span>
+              </div>
+            ))}
           </div>
         </Card>
       )}

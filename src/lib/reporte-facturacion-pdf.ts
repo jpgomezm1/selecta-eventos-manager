@@ -98,11 +98,14 @@ export async function generateReporteFacturacionPDF(r: ReporteFacturacion): Prom
     pdf.text(valor, x + 5, y + 15.5);
   };
 
-  const anchoBloque = (pageWidth - 30 - 8) / 3;
+  const anchoBloque = (pageWidth - 30 - 12) / 4;
   bloque('Cotizado', formatCurrency(r.cotizado), 15, anchoBloque);
-  bloque('Menaje perdido', formatCurrency(r.menaje_perdido), 15 + anchoBloque + 4, anchoBloque);
+  bloque('Consumos extra', formatCurrency(r.consumos_adicionales),
+         15 + anchoBloque + 4, anchoBloque);
+  bloque('Menaje perdido', formatCurrency(r.menaje_perdido),
+         15 + (anchoBloque + 4) * 2, anchoBloque);
   bloque('Total a facturar', formatCurrency(r.total_a_facturar),
-         15 + (anchoBloque + 4) * 2, anchoBloque, true);
+         15 + (anchoBloque + 4) * 3, anchoBloque, true);
   y += 30;
 
   // ── Advertencias ─────────────────────────────────────────────────────
@@ -126,6 +129,33 @@ export async function generateReporteFacturacionPDF(r: ReporteFacturacion): Prom
     pdf.setTextColor(...colors.alerta);
     avisos.forEach((a, i) => pdf.text(a, 20, y + 8 + i * 5));
     y += 12 + avisos.length * 5;
+  }
+
+  // ── Consumos adicionales ─────────────────────────────────────────────
+  if (r.cargos.length > 0) {
+    pdf.setFont('times', 'bold');
+    pdf.setFontSize(12);
+    pdf.setTextColor(...colors.darkText);
+    pdf.text('Consumos adicionales', 15, y);
+    y += 7;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    for (const c of r.cargos) {
+      if (y > pageHeight - 40) { pdf.addPage(); createHeader(); y = 56; }
+      pdf.setTextColor(...colors.darkText);
+      pdf.text(c.concepto.slice(0, 50), 18, y + 5);
+      pdf.setTextColor(...colors.lightText);
+      pdf.text(`${c.cantidad} × ${formatCurrency(c.precio_unitario)}`, 120, y + 5, { align: 'right' });
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(...colors.darkText);
+      pdf.text(formatCurrency(c.subtotal), pageWidth - 18, y + 5, { align: 'right' });
+      pdf.setFont('helvetica', 'normal');
+      y += 7;
+      pdf.setDrawColor(...colors.border);
+      pdf.setLineWidth(0.1);
+      pdf.line(15, y, pageWidth - 15, y);
+    }
+    y += 8;
   }
 
   // ── Detalle de menaje ────────────────────────────────────────────────
