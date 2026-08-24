@@ -4,34 +4,36 @@ Los comerciales mandan los comprobantes a un buzón; el CRM los recibe, los deja
 en una bandeja y alguien los concilia contra una factura. Reemplaza el WhatsApp
 donde hoy se pierden.
 
-**Todo el código está desplegado.** Lo único que falta es conectar la cuenta:
-tres pasos y dos secrets.
+**Todo el código está desplegado.** Lo único que falta es conectar la cuenta.
 
-## 1. Crear el buzón
+## 1. Crear el buzón ✅
 
-Con la API key de AgentMail:
+Hecho: **`selecta@agentmail.to`**
 
-```python
-from agentmail import AgentMail
-client = AgentMail()                       # lee AGENTMAIL_API_KEY del entorno
-
-inbox = client.inboxes.create(
-    username="pagos",                      # queda pagos@<tu-dominio>.agentmail.to
-    client_id="selecta-pagos",             # idempotente: no duplica si se repite
-)
-print(inbox.inbox_id)
-```
+No hay que configurar esa dirección en ningún lado. La edge function no está
+amarrada a un buzón: registra el `inbox_id` que venga en cada webhook, así que
+si mañana se agrega un segundo buzón, entra igual.
 
 ## 2. Suscribir el webhook
 
-```python
-webhook = client.webhooks.create(
-    url="https://xvvbxyjcieckbbdcuoge.supabase.co/functions/v1/recibir-soporte-pago",
-    event_types=["message.received"],
-    client_id="selecta-pagos-webhook",
-)
-print(webhook.secret)                      # empieza con whsec_ — es el de abajo
+Desde el dashboard de AgentMail, o con la API key en la mano:
+
+```sh
+curl -s -X POST https://api.agentmail.to/v0/webhooks \
+  -H "Authorization: Bearer $AGENTMAIL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://xvvbxyjcieckbbdcuoge.supabase.co/functions/v1/recibir-soporte-pago",
+    "event_types": ["message.received"],
+    "client_id": "selecta-pagos-webhook"
+  }'
 ```
+
+Devuelve un `secret` que empieza con `whsec_`. Ese es el del paso 3 — **se
+muestra una sola vez**, cópialo antes de cerrar.
+
+El `client_id` lo hace idempotente: si corres el comando dos veces no quedan dos
+webhooks mandando el mismo correo por duplicado.
 
 ## 3. Cargar los dos secrets en Supabase
 
@@ -59,7 +61,7 @@ script no cubre: la descarga del adjunto, que necesita un thread de verdad.
 ## Cómo funciona
 
 ```
-correo → AgentMail → webhook firmado (Svix)
+selecta@agentmail.to → AgentMail → webhook firmado (Svix)
                           ↓
               recibir-soporte-pago (edge function, sin JWT)
                   verifica firma · baja el adjunto · guarda en storage
