@@ -234,6 +234,16 @@ export async function movimientoCreate(
     .insert(payload)
     .select("*")
     .single();
+  // Una reserva admite una sola salida y una sola devolución (índice
+  // menaje_movimientos_uno_por_reserva_y_tipo). El error crudo de Postgres no
+  // le dice nada a quien está en bodega, así que lo traducimos.
+  if (error?.code === "23505" && error.message.includes("uno_por_reserva_y_tipo")) {
+    throw new Error(
+      payload.tipo === "salida"
+        ? "Esta reserva ya tiene un despacho registrado. Ábrelo desde la reserva para corregirlo."
+        : "Esta reserva ya tiene una devolución registrada. Ábrela desde la reserva para corregirla."
+    );
+  }
   if (error) throw error;
 
   if (items.length) {

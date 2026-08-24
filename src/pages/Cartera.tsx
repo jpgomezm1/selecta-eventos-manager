@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FileSpreadsheet, LayoutList, Plus, Table2, Upload } from "lucide-react";
+import { FileSpreadsheet, LayoutList, Mail, Plus, Table2, Upload } from "lucide-react";
 
 import { PageHeader } from "@/components/Layout/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,6 +19,7 @@ import TablaFacturas from "@/components/Cartera/TablaFacturas";
 import AbonoDialog from "@/components/Cartera/AbonoDialog";
 import FacturaDialog from "@/components/Cartera/FacturaDialog";
 import ImportarCarteraDialog from "@/components/Cartera/ImportarCarteraDialog";
+import BandejaSoportes from "@/components/Cartera/BandejaSoportes";
 import { hoyISO } from "@/components/Cartera/formato";
 
 /**
@@ -127,7 +128,7 @@ export default function CarteraPage() {
       </div>
 
       <Tabs defaultValue="resumen" className="w-full">
-        <TabsList className="grid w-full max-w-2xl grid-cols-3 bg-muted/60 p-1">
+        <TabsList className="grid w-full max-w-3xl grid-cols-4 bg-muted/60 p-1">
           <TabsTrigger
             value="resumen"
             className="flex items-center gap-2 text-[12.5px] font-medium data-[state=active]:bg-card data-[state=active]:shadow-soft"
@@ -145,6 +146,12 @@ export default function CarteraPage() {
             className="flex items-center gap-2 text-[12.5px] font-medium data-[state=active]:bg-card data-[state=active]:shadow-soft"
           >
             <FileSpreadsheet className="h-3.5 w-3.5" strokeWidth={1.75} /> Facturas
+          </TabsTrigger>
+          <TabsTrigger
+            value="soportes"
+            className="flex items-center gap-2 text-[12.5px] font-medium data-[state=active]:bg-card data-[state=active]:shadow-soft"
+          >
+            <Mail className="h-3.5 w-3.5" strokeWidth={1.75} /> Soportes
           </TabsTrigger>
         </TabsList>
 
@@ -176,6 +183,12 @@ export default function CarteraPage() {
               puedeAbonar={puedeAbonar}
             />
           )}
+        </TabsContent>
+
+        {/* La bandeja vive dentro de Cartera y no como pantalla aparte porque
+            necesita las facturas para empatar cada comprobante contra un saldo. */}
+        <TabsContent value="soportes" className="mt-6">
+          <BandejaSoportes facturas={facturas} />
         </TabsContent>
       </Tabs>
 

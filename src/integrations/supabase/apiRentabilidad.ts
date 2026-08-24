@@ -13,6 +13,10 @@ export interface DatosRentabilidad {
   pagosPersonal: Array<{ pago_calculado: number | null }>;
   costosManuales: EventoCosto[];
   imprevistoPct: number;
+  /** `cotizaciones.total_cotizado`: lo que de verdad se le cobró al cliente. */
+  totalCotizado: number;
+  /** Precio del lugar, que no se copia a las tablas de requerimiento. */
+  precioLugar: number;
 }
 
 export async function getDatosRentabilidad(eventoId: string): Promise<DatosRentabilidad> {
@@ -30,7 +34,21 @@ export async function getDatosRentabilidad(eventoId: string): Promise<DatosRenta
       .select("*")
       .eq("evento_id", eventoId)
       .order("created_at", { ascending: true }),
-    supabase.from("eventos").select("imprevisto_pct").eq("id", eventoId).single(),
+    // El total cotizado y el lugar viven en la cotización congelada, no en el
+    // evento. Mismo join que usa getEventoRequerimiento en apiCotizador.
+    supabase
+      .from("eventos")
+      .select(
+        `imprevisto_pct,
+         cotizacion_versiones (
+           cotizaciones (
+             total_cotizado,
+             cotizacion_lugares ( precio_referencia, es_seleccionado, orden )
+           )
+         )`
+      )
+      .eq("id", eventoId)
+      .single(),
   ]);
 
   const primerError =
@@ -43,7 +61,24 @@ export async function getDatosRentabilidad(eventoId: string): Promise<DatosRenta
     evento.error;
   if (primerError) throw primerError;
 
+  type LugarRow = { precio_referencia?: number | null; es_seleccionado?: boolean; orden?: number };
+  type EventoRow = {
+    imprevisto_pct?: number | null;
+    cotizacion_versiones?: {
+      cotizaciones?: { total_cotizado?: number | null; cotizacion_lugares?: LugarRow[] };
+    };
+  };
+  const cot = (evento.data as EventoRow | null)?.cotizacion_versiones?.cotizaciones;
+  const lugares = cot?.cotizacion_lugares ?? [];
+  // Mismo criterio que el cotizador: el marcado, y si ninguno lo está, el primero.
+  const lugarSel =
+    lugares.find((l) => l.es_seleccionado) ??
+    [...lugares].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))[0] ??
+    null;
+
   return {
+    totalCotizado: Number(cot?.total_cotizado ?? 0),
+    precioLugar: Number(lugarSel?.precio_referencia ?? 0),
     platos: (platos.data ?? []).map((p) => ({
       plato_id: p.plato_id,
       cantidad: Number(p.cantidad),

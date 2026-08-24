@@ -92,6 +92,8 @@ export default function RentabilidadPanel({ eventoId }: Props) {
       pagosPersonal: data.pagosPersonal,
       costosManuales: data.costosManuales,
       imprevistoPct: data.imprevistoPct,
+      totalCotizado: data.totalCotizado,
+      precioLugar: data.precioLugar,
     });
   }, [data, platoIngredientes]);
 
@@ -219,6 +221,19 @@ export default function RentabilidadPanel({ eventoId }: Props) {
         </div>
       )}
 
+      {rent.ingresoSinCotizacion && (
+        <div className="flex items-start gap-3 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" strokeWidth={1.75} />
+          <div>
+            <span className="font-medium">El ingreso es una estimación.</span>{" "}
+            <span className="text-muted-foreground">
+              La cotización de este evento no tiene total registrado, así que se está sumando
+              línea por línea. Si hubo descuento, el margen sale más alto de lo real.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Desglose */}
       <div className="grid gap-8 md:grid-cols-2">
         <div>
@@ -229,12 +244,39 @@ export default function RentabilidadPanel({ eventoId }: Props) {
               ["Personal", rent.ingresos.personal],
               ["Menaje", rent.ingresos.menaje],
               ["Transporte", rent.ingresos.transporte],
+              ...(rent.ingresos.lugar > 0
+                ? ([["Lugar", rent.ingresos.lugar]] as Array<[string, number]>)
+                : []),
             ].map(([label, valor]) => (
               <div key={label as string} className="flex justify-between border-b border-border pb-2">
                 <dt className="text-muted-foreground">{label}</dt>
                 <dd className="tabular-nums">{fmt(valor as number)}</dd>
               </div>
             ))}
+
+            {/* El ajuste se muestra en vez de esconderse: si el total no cuadra
+                con la suma de arriba, quien mira tiene derecho a saber por qué. */}
+            {Math.round(rent.ingresos.ajuste) !== 0 && (
+              <div className="flex justify-between border-b border-border pb-2">
+                <dt className="text-muted-foreground">
+                  {rent.ingresos.ajuste < 0 ? "Descuento" : "Ajuste"}{" "}
+                  <span className="text-xs">· sobre la cotización</span>
+                </dt>
+                <dd
+                  className={cn(
+                    "tabular-nums",
+                    rent.ingresos.ajuste < 0 && "text-destructive"
+                  )}
+                >
+                  {fmt(rent.ingresos.ajuste)}
+                </dd>
+              </div>
+            )}
+
+            <div className="flex justify-between pt-1 font-medium">
+              <dt>Total cotizado</dt>
+              <dd className="tabular-nums">{fmt(rent.ingresos.total)}</dd>
+            </div>
           </dl>
         </div>
 

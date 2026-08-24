@@ -1,8 +1,11 @@
 /**
  * Rentabilidad de un evento.
  *
- * Ingresos = lo que se le cobra al cliente, que ya vive en las tablas
- * evento_requerimiento_* (platos, personal, menaje, transporte).
+ * Ingresos = lo que se le cobra al cliente, que es `cotizaciones.total_cotizado`
+ * de la versión congelada del evento. Las tablas evento_requerimiento_* sirven
+ * para el desglose por concepto, pero su suma NO es el ingreso: no incluye el
+ * precio del lugar y no refleja el `total_override`, así que en un evento con
+ * descuento da un número que nadie facturó.
  *
  * Costos = tres fuentes distintas, y la distinción importa porque no todas
  * tienen la misma confianza:
@@ -56,6 +59,15 @@ export interface IngresosEvento {
   personal: number;
   menaje: number;
   transporte: number;
+  /** El lugar no se copia al evento: se lee de la cotización congelada. */
+  lugar: number;
+  /**
+   * Diferencia entre el total cotizado y la suma de las líneas. Es el descuento
+   * o el `total_override` que se le aplicó a la cotización. Se muestra en vez de
+   * esconderse: si no, las columnas no suman y nadie sabe por qué.
+   */
+  ajuste: number;
+  /** Lo que realmente se le cobró al cliente: `cotizaciones.total_cotizado`. */
   total: number;
 }
 
@@ -79,6 +91,11 @@ export interface Rentabilidad {
   margen: number | null;
   /** true si hay platos en el evento pero su costo derivado es 0. */
   costoAlimentosIncompleto: boolean;
+  /**
+   * true cuando la cotización no tiene `total_cotizado` y hubo que caer a la
+   * suma de las líneas. El margen sigue siendo util, pero ignora descuentos.
+   */
+  ingresoSinCotizacion: boolean;
   semaforo: "verde" | "amarillo" | "rojo" | "sin-datos";
 }
 
@@ -127,16 +144,34 @@ export function calcularRentabilidad(input: {
   pagosPersonal: Array<{ pago_calculado?: number | null }>;
   costosManuales: EventoCosto[];
   imprevistoPct: number;
+  /** `cotizaciones.total_cotizado` de la versión congelada del evento. */
+  totalCotizado: number;
+  /** Precio del lugar seleccionado, que no vive en las tablas de requerimiento. */
+  precioLugar: number;
 }): Rentabilidad {
-  const ingresos: IngresosEvento = {
+  const lineas = {
     platos: sumarSubtotales(input.platos),
     personal: sumarSubtotales(input.personal),
     menaje: sumarSubtotales(input.menaje),
     transporte: sumarSubtotales(input.transporte),
-    total: 0,
+    lugar: Number(input.precioLugar) || 0,
   };
-  ingresos.total =
-    ingresos.platos + ingresos.personal + ingresos.menaje + ingresos.transporte;
+  const sumaLineas =
+    lineas.platos + lineas.personal + lineas.menaje + lineas.transporte + lineas.lugar;
+
+  // El ingreso del evento es lo que se le COBRÓ al cliente, y eso vive en
+  // `cotizaciones.total_cotizado`: respeta el total_override (descuentos) y el
+  // precio del lugar. Sumar los subtotales de evento_requerimiento_* da otro
+  // numero, y era el que mostraba este panel — con un descuento, el margen
+  // salia inflado y no cuadraba con el reporte de facturacion.
+  const usaCotizado = Number(input.totalCotizado) > 0;
+  const total = usaCotizado ? Number(input.totalCotizado) : sumaLineas;
+
+  const ingresos: IngresosEvento = {
+    ...lineas,
+    ajuste: total - sumaLineas,
+    total,
+  };
 
   const alimentos = input.platos.reduce((s, p) => {
     const unitario = input.costoPorPlato.get(p.plato_id) ?? 0;
@@ -166,6 +201,7 @@ export function calcularRentabilidad(input: {
   const margen = ingresos.total > 0 ? (utilidad / ingresos.total) * 100 : null;
 
   const costoAlimentosIncompleto = input.platos.length > 0 && alimentos === 0;
+  const ingresoSinCotizacion = !usaCotizado && sumaLineas > 0;
 
   let semaforo: Rentabilidad["semaforo"];
   if (margen === null || costos.total === 0) {
@@ -178,5 +214,13 @@ export function calcularRentabilidad(input: {
     semaforo = "rojo";
   }
 
-  return { ingresos, costos, utilidad, margen, costoAlimentosIncompleto, semaforo };
+  return {
+    ingresos,
+    costos,
+    utilidad,
+    margen,
+    costoAlimentosIncompleto,
+    ingresoSinCotizacion,
+    semaforo,
+  };
 }
