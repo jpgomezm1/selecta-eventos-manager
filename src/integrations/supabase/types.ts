@@ -1920,6 +1920,96 @@ export type Database = {
           },
         ]
       }
+      soportes_pago: {
+        Row: {
+          abono_id: string | null
+          archivo_nombre: string | null
+          archivo_url: string | null
+          asunto: string | null
+          attachment_id: string | null
+          banco_detectado: string | null
+          conciliado_at: string | null
+          conciliado_por: string | null
+          created_at: string
+          cuerpo: string | null
+          estado: string
+          factura_id: string | null
+          fecha_detectada: string | null
+          id: string
+          inbox_id: string | null
+          message_id: string | null
+          monto_detectado: number | null
+          notas: string | null
+          recibido_at: string
+          referencia_detectada: string | null
+          remitente: string | null
+          thread_id: string | null
+        }
+        Insert: {
+          abono_id?: string | null
+          archivo_nombre?: string | null
+          archivo_url?: string | null
+          asunto?: string | null
+          attachment_id?: string | null
+          banco_detectado?: string | null
+          conciliado_at?: string | null
+          conciliado_por?: string | null
+          created_at?: string
+          cuerpo?: string | null
+          estado?: string
+          factura_id?: string | null
+          fecha_detectada?: string | null
+          id?: string
+          inbox_id?: string | null
+          message_id?: string | null
+          monto_detectado?: number | null
+          notas?: string | null
+          recibido_at?: string
+          referencia_detectada?: string | null
+          remitente?: string | null
+          thread_id?: string | null
+        }
+        Update: {
+          abono_id?: string | null
+          archivo_nombre?: string | null
+          archivo_url?: string | null
+          asunto?: string | null
+          attachment_id?: string | null
+          banco_detectado?: string | null
+          conciliado_at?: string | null
+          conciliado_por?: string | null
+          created_at?: string
+          cuerpo?: string | null
+          estado?: string
+          factura_id?: string | null
+          fecha_detectada?: string | null
+          id?: string
+          inbox_id?: string | null
+          message_id?: string | null
+          monto_detectado?: number | null
+          notas?: string | null
+          recibido_at?: string
+          referencia_detectada?: string | null
+          remitente?: string | null
+          thread_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "soportes_pago_abono_id_fkey"
+            columns: ["abono_id"]
+            isOneToOne: false
+            referencedRelation: "factura_abonos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "soportes_pago_factura_id_fkey"
+            columns: ["factura_id"]
+            isOneToOne: false
+            referencedRelation: "facturas_venta"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transporte_ordenes: {
         Row: {
           contacto_nombre: string | null
@@ -2187,6 +2277,17 @@ export type Database = {
       fn_update_version_cotizacion_atomic: {
         Args: { p_payload: Json }
         Returns: undefined
+      }
+      fn_conciliar_soporte_pago: {
+        Args: {
+          p_factura_id: string
+          p_fecha?: string
+          p_metodo?: string
+          p_monto: number
+          p_referencia?: string
+          p_soporte_id: string
+        }
+        Returns: string
       }
       fn_cartera_importar: {
         Args: { p_payload: Json }

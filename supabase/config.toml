@@ -1,1 +1,7 @@
 project_id = "xvvbxyjcieckbbdcuoge"
+
+# Webhook de AgentMail: lo llama el proveedor de correo, no un usuario, asi que
+# no puede exigir JWT. Lo que autoriza es la firma Svix del webhook, que la
+# funcion verifica contra AGENTMAIL_WEBHOOK_SECRET.
+[functions.recibir-soporte-pago]
+verify_jwt = false
