@@ -1,7 +1,7 @@
 project_id = "xvvbxyjcieckbbdcuoge"
 
-# Webhook de AgentMail: lo llama el proveedor de correo, no un usuario, asi que
-# no puede exigir JWT. Lo que autoriza es la firma Svix del webhook, que la
-# funcion verifica contra AGENTMAIL_WEBHOOK_SECRET.
-[functions.recibir-soporte-pago]
-verify_jwt = false
+# Todas las funciones exigen JWT (el default). No hay ningún endpoint público
+# sin autenticar: los soportes de pago se sincronizan por cron desde
+# `sincronizar-soportes-pago`, que además comprueba que quien llama traiga la
+# service role key — `verify_jwt` por sí solo deja pasar la anon key, que viaja
+# en el bundle del frontend.
