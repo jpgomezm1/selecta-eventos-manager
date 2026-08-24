@@ -1933,6 +1933,7 @@ export type Database = {
           created_at: string
           cuerpo: string | null
           estado: string
+          etiquetas: string[]
           factura_id: string | null
           fecha_detectada: string | null
           id: string
@@ -1957,6 +1958,7 @@ export type Database = {
           created_at?: string
           cuerpo?: string | null
           estado?: string
+          etiquetas?: string[]
           factura_id?: string | null
           fecha_detectada?: string | null
           id?: string
@@ -1981,6 +1983,7 @@ export type Database = {
           created_at?: string
           cuerpo?: string | null
           estado?: string
+          etiquetas?: string[]
           factura_id?: string | null
           fecha_detectada?: string | null
           id?: string

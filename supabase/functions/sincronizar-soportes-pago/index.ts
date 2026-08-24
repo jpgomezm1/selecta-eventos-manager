@@ -59,8 +59,12 @@ interface MensajeLista {
   subject?: string;
   preview?: string;
   from?: string | string[];
+  labels?: string[];
   attachments?: AdjuntoMeta[];
 }
+
+/** Etiquetas por las que el correo entra pero con advertencia en la bandeja. */
+const ETIQUETAS_SOSPECHOSAS = ["spam", "blocked", "unauthenticated"];
 
 function encabezados(apiKey: string) {
   return { Authorization: `Bearer ${apiKey}` };
@@ -214,6 +218,17 @@ Deno.serve(async (req) => {
       limit: "100",
       ascending: "true",
       after: desde.toISOString(),
+      // AgentMail excluye estos del listado por defecto. Un correo corporativo
+      // que salga por un gateway que no firma SPF/DKIM como espera el receptor
+      // queda etiquetado `unauthenticated` y no aparece nunca: se pierde en
+      // silencio, que es justo lo que este modulo existe para evitar. Se traen
+      // y se marcan; descartarlos es decision de una persona, no del filtro.
+      //
+      // `include_trash` NO: la papelera es un borrado deliberado de alguien y
+      // resucitarlo seria deshacer esa decision en cada corrida.
+      include_spam: "true",
+      include_blocked: "true",
+      include_unauthenticated: "true",
     });
     if (pageToken) q.set("page_token", pageToken);
 
@@ -249,6 +264,7 @@ Deno.serve(async (req) => {
   // ---------------------------------------------------------------- guardar
   let guardados = 0;
   let conAdjunto = 0;
+  let sospechosos = 0;
   const fallidos: string[] = [];
 
   for (const m of nuevos) {
@@ -292,6 +308,7 @@ Deno.serve(async (req) => {
         cuerpo: (texto ?? m.preview ?? "").slice(0, 4000) || null,
         archivo_url: archivoUrl,
         archivo_nombre: archivoNombre,
+        etiquetas: m.labels ?? [],
         recibido_at: m.timestamp ?? new Date().toISOString(),
       },
       { onConflict: "message_id" }
@@ -304,6 +321,9 @@ Deno.serve(async (req) => {
       fallidos.push(m.message_id);
     } else {
       guardados += 1;
+      if ((m.labels ?? []).some((l) => ETIQUETAS_SOSPECHOSAS.includes(l))) {
+        sospechosos += 1;
+      }
     }
   }
 
@@ -313,6 +333,7 @@ Deno.serve(async (req) => {
     revisados: mensajes.length,
     nuevos: guardados,
     con_adjunto: conAdjunto,
+    sospechosos,
     fallidos,
   });
 });

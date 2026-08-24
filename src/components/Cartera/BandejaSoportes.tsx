@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, Loader2, Mail, Sparkles, X } from "lucide-react";
+import { AlertTriangle, ExternalLink, Loader2, Mail, Sparkles, X } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import {
   descartarSoporte,
   guardarLecturaIA,
   listSoportes,
+  motivoSospecha,
   urlComprobante,
   type EstadoSoporte,
   type SoportePago,
@@ -113,6 +114,13 @@ export default function BandejaSoportes({ facturas }: Props) {
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[15px] font-medium">
+                  {motivoSospecha(s) && (
+                    <AlertTriangle
+                      className="mr-1.5 inline h-3.5 w-3.5 shrink-0 text-warning"
+                      strokeWidth={2}
+                      aria-label="Remitente sin verificar"
+                    />
+                  )}
                   {s.asunto || "(sin asunto)"}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
@@ -292,6 +300,16 @@ function DetalleSoporte({
           <X className="h-4 w-4" />
         </Button>
       </div>
+
+      {motivoSospecha(soporte) && (
+        <div className="mb-4 flex items-start gap-3 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" strokeWidth={1.75} />
+          <div>
+            <span className="font-medium">Remitente sin verificar.</span>{" "}
+            <span className="text-muted-foreground">{motivoSospecha(soporte)}</span>
+          </div>
+        </div>
+      )}
 
       {soporte.cuerpo && (
         <p className="mb-4 whitespace-pre-line rounded-sm border border-border bg-background px-3 py-2 text-sm text-muted-foreground">

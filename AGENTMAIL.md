@@ -114,3 +114,44 @@ para cualquiera que llegue a esa tabla.
 
 **Conciliar es solo de admin.** Es lo que mueve el saldo de una factura.
 Comercial ve la bandeja pero no concilia.
+
+## Correos corporativos: lo que hay que saber
+
+AgentMail **excluye del listado por defecto** los mensajes marcados como
+`spam`, `blocked` o `unauthenticated`. Y etiqueta `unauthenticated` a todo
+correo que llegue sin cabeceras de autenticación (SPF/DKIM/DMARC) — algo
+frecuente en servidores corporativos que reenvían por un gateway interno.
+
+Es decir: **un comprobante mandado desde el correo de una empresa podía no
+aparecer nunca**, sin error y sin rastro. Justo lo que este módulo existe para
+evitar.
+
+La sincronización ahora los pide explícitamente y los marca. En la bandeja
+salen con un triángulo y, al abrirlos, con la advertencia completa: *"El correo
+no trae la firma del dominio del remitente"*. Entra, pero quien concilia lo ve.
+
+No se descartan porque perder un pago real es peor que revisar uno dudoso, y no
+se aceptan callados porque la bandeja de cobranza es exactamente donde a alguien
+le conviene colar un comprobante falso. Esa diferencia no la puede hacer el
+sistema; la hace una persona, y para eso necesita verlo.
+
+`include_trash` **no** se pide: la papelera es un borrado deliberado de alguien
+y resucitarlo en cada corrida sería deshacer esa decisión.
+
+### Lo que esto NO arregla
+
+- **Fallos duros de autenticación.** Si las cabeceras están presentes y fallan
+  explícitamente, AgentMail descarta el correo antes de que exista: no hay nada
+  que sincronizar. Eso se arregla del lado del remitente.
+- **Listas de recepción del buzón.** Si el buzón tiene una *receive allow list*
+  con entradas, todo lo que no esté ahí se rechaza. Revisar en la consola de
+  AgentMail, o por API:
+
+  ```sh
+  curl -H "Authorization: Bearer $AGENTMAIL_API_KEY" \
+    https://api.agentmail.to/v0/inboxes/selecta@agentmail.to/lists/receive/allow
+  ```
+
+  La key actual no tiene el permiso `list_entry_read`, así que esto hay que
+  mirarlo desde la consola o con una key de mayor alcance. **Si esa lista tiene
+  entradas, hay que agregar los dominios de los clientes** o vaciarla.
